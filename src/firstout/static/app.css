@@ -1,6 +1,19 @@
 /* 손잡고 마중 — 화면 전체 스타일
-   시제품에서 검증한 색과 글꼴을 그대로 옮겼다.
+
+   글꼴은 서버에 함께 둔다. 원내망에 인터넷이 없어도 모든 기기에서 같은 화면이어야 하기 때문이다.
+   Pretendard 가변 폰트 파일 하나로 300~700 굵기를 모두 쓴다 (SIL OFL 1.1, fonts/OFL.txt).
+   숫자 정렬은 이 글꼴의 tabular-nums 로 처리하므로 별도 고정폭 글꼴이 필요 없다.
    태블릿에서 손가락으로 누르므로 누르는 것은 최소 44px 을 지킨다. */
+
+@font-face{
+  font-family:"Pretendard";
+  /* format 은 "woff2" 로 둔다. "woff2-variations" 를 모르는 브라우저는 이 src 를 통째로
+     건너뛰어 글꼴이 아예 안 걸린다. woff2 를 지원하면 가변 축도 함께 동작한다. */
+  src:url("/static/fonts/PretendardVariable.woff2") format("woff2");
+  font-weight:300 700;
+  font-style:normal;
+  font-display:swap;
+}
 
 :root{
   --paper:#EFF3F1; --card:#FFFFFF; --card-2:#E9EFEC; --sunk:#DFE7E3;
@@ -10,8 +23,9 @@
   --gold:#8F5D06; --gold-2:#E09B22; --gold-soft:#FBEED2; --gold-line:#DDB35E;
   --clay:#B02618; --clay-2:#D9503C; --clay-soft:#FBDFD9; --clay-line:#E39887;
   --plum:#5B3A86; --plum-soft:#EDE4F8; --plum-line:#C0A6E0;
-  --sans:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",sans-serif;
-  --mono:"IBM Plex Mono","Noto Sans KR",ui-monospace,monospace;
+  --sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",sans-serif;
+  /* 숫자는 같은 글꼴에 tabular 만 켠다 — 한글이 고정폭 글꼴로 떨어지는 문제가 사라진다 */
+  --mono:"Pretendard",-apple-system,"Malgun Gothic",sans-serif;
   --shadow:0 1px 2px rgba(13,22,19,.07);
 }
 @media (prefers-color-scheme:dark){
@@ -300,3 +314,13 @@ tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
   background:var(--card-2);touch-action:none;display:block;cursor:crosshair}
 .sig-line{font-size:.75rem;color:var(--ink-3);text-align:center}
 .sig-acts{display:flex;gap:.4rem}
+
+/* ── 날짜 이동 ── */
+.daybar{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin:.9rem 0 .2rem}
+.daybar .d-now{font-weight:700;font-size:.95rem;margin-right:.3rem}
+.daybar .d-sub{font-size:.77rem;color:var(--ink-3)}
+.daybar form{display:flex;gap:.35rem;align-items:center}
+.daybar .field{min-width:0;width:9.5rem}
+.daybar .spacer{flex:1}
+.past{background:var(--gold-soft);border:1px solid var(--gold-line);color:var(--gold);
+  border-radius:2px;padding:.14rem .45rem;font-size:.72rem;white-space:nowrap}

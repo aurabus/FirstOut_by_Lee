@@ -1,0 +1,15 @@
+{# 날짜 이동 — 지난 기록 조회와 시연에 쓴다.
+   평소에는 오늘만 보면 되지만, 주말에 시연하거나 어제 기록을 확인할 때 필요하다. #}
+<div class="daybar no-print">
+  <span class="d-now">{{ day_ko }}</span>
+  {% if not is_today %}<span class="past">지난 기록 보는 중</span>{% endif %}
+  {% if weekend %}<span class="d-sub">주말 — 주간 계획은 월~금 기준</span>{% endif %}
+  <span class="spacer"></span>
+  <a class="btn sm" href="{{ base_url }}?d={{ prev_day }}">◀ 어제</a>
+  <a class="btn sm{% if is_today %} go{% endif %}" href="{{ base_url }}">오늘</a>
+  <a class="btn sm" href="{{ base_url }}?d={{ next_day }}">내일 ▶</a>
+  <form method="get" action="{{ base_url }}">
+    <input class="field" type="date" name="d" value="{{ day }}">
+    <button class="btn sm">이동</button>
+  </form>
+</div>

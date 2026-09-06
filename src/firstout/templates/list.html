@@ -4,6 +4,9 @@
 {% block body %}
 <div class="wrap">
 
+  {% set base_url = "/list/" ~ rnd.key %}
+  {% include "_daybar.html" %}
+
   {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
 
   <dl class="tiles">
@@ -22,9 +25,7 @@
     <button class="pick" style="margin-left:auto" onclick="window.print()">인쇄 / PDF</button>
   </div>
 
-  {% if weekend %}
-    <p class="empty">주말에는 귀가 명단이 없습니다. 주간 계획은 월~금 기준입니다.</p>
-  {% else %}
+  {% if not weekend %}
   <div class="{% if sign_all %}note-sign{% elif sign_any %}note-sign{% else %}note-quick{% endif %} no-print"
        style="border-left:3px solid {% if sign_any %}var(--plum){% else %}var(--pine){% endif %};
               background:{% if sign_any %}var(--plum-soft){% else %}var(--pine-soft){% endif %};

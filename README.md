@@ -29,15 +29,32 @@ pip install -r requirements-dev.txt
 ## 실행
 
 ```powershell
-# 시연용 예시 원아 95명을 함께 넣고 실행 (처음 한 번)
-python -m firstout.main --demo
+# 처음 한 번 — 시연용 예시 원아 95명을 넣고 브라우저까지 열기
+python -m firstout.main --demo --open
 
 # 평소 실행
 python -m firstout.main
 
-# 코드 고치면서 개발할 때
-python -m firstout.main --reload
+# 개발 (코드 고치면 자동 반영)
+python -m firstout.main --reload --open
+
+# 자료를 지우고 처음부터 다시 (주의)
+python -m firstout.main --reset --demo
 ```
+
+| 옵션 | 뜻 |
+|---|---|
+| `--demo` | 시연용 가상 원아 95명을 넣는다 |
+| `--open` | 브라우저를 함께 연다 |
+| `--reload` | 코드를 고치면 서버가 자동으로 다시 읽는다 |
+| `--reset` | 자료를 모두 지우고 처음부터 |
+| `--port 9000` | 다른 포트로 |
+
+### 테스트할 때
+
+주간 계획은 월~금 기준이라 **주말에는 명단이 비어 있습니다.**
+화면 위 날짜 막대에서 **◀ 어제** 를 누르거나 날짜를 골라 평일을 보면 됩니다.
+지난 날짜를 보는 중이면 「지난 기록 보는 중」이 표시되고, 그날에 기록됩니다.
 
 실행하면 접속 주소가 표시됩니다.
 
@@ -61,6 +78,13 @@ ruff check .    # 코드 점검
 - `data/`, `*.db`, `*.xlsx` 는 **`.gitignore` 로 커밋이 차단**되어 있습니다.
   원아 이름과 보호자 정보가 저장소에 올라가지 않습니다.
 - 저장소는 **비공개**로 유지해야 합니다.
+
+## 글꼴
+
+`static/fonts/PretendardVariable.woff2` 를 서버가 직접 내려줍니다.
+인터넷이 끊겨도 모든 기기에서 같은 화면이 나오고, 외부로 나가는 요청이 없습니다.
+가변 폰트라 파일 하나(2MB)로 300~700 굵기를 모두 쓰며, 숫자 정렬도 이 글꼴로 처리합니다.
+SIL OFL 1.1 — `static/fonts/OFL.txt`
 
 ## 구조
 

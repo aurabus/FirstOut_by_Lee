@@ -4,6 +4,9 @@
 {% block body %}
 <div class="wrap">
 
+  {% set base_url = "/board" %}
+  {% include "_daybar.html" %}
+
   <dl class="tiles">
     <div class="tile"><dt>총원</dt><dd>{{ total.total }}</dd></div>
     <div class="tile pine"><dt>귀가</dt><dd>{{ total.home }}</dd></div>
@@ -22,13 +25,8 @@
     <p class="ok-bar">남은 아이가 없습니다 — 오늘 귀가 마감 가능합니다.</p>
   {% endif %}
 
-  {% if weekend %}
-  <p class="empty">주말입니다 — 주간 계획은 월~금 기준이라 오늘 귀가 명단은 없습니다.
-    지난 평일 기록을 보시려면 주소 끝에 <b>?d=2026-09-07</b> 처럼 날짜를 붙이세요.</p>
-  {% endif %}
-
   <div class="sec">
-    <div class="sec-h"><h2>{% if d %}{{ day }}{% else %}오늘{% endif %} 귀가 차수</h2>
+    <div class="sec-h"><h2>귀가 차수</h2>
       {% if setting.route_note %}<span class="hint">{{ setting.route_note }} 순서로 데려옵니다</span>{% endif %}
     </div>
     <div class="rounds">
@@ -45,7 +43,7 @@
 
   <div class="sec">
     <div class="sec-h"><h2>반별 현황</h2><span class="n">{{ stats | length }}개 반</span></div>
-    <div class="print-head"><b>{{ today }} 반별 귀가 현황</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="print-head"><b>{{ day }} 반별 귀가 현황</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
     <div class="tw"><table class="board">
       <thead>
         <tr>
