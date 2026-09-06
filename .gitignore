@@ -93,3 +93,13 @@ TestResults/
 *.sqlite
 *.sqlite3
 *.db
+
+# ===== 개인정보 차단 (원아 명부·DB는 절대 커밋 금지) =====
+data/
+backup/
+uploads/
+*.sqlite3
+*.xlsx
+*.xls
+*.csv
+!docs/**/*_sample.xlsx

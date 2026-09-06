@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% set nav = 'board' %}
+{% block title %}오늘 현황 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+
+  <dl class="tiles">
+    <div class="tile"><dt>총원</dt><dd>{{ total.total }}</dd></div>
+    <div class="tile pine"><dt>귀가</dt><dd>{{ total.home }}</dd></div>
+    <div class="tile key"><dt>현원</dt><dd>{{ total.staying }}</dd></div>
+    <div class="tile {% if total.waiting %}warn{% endif %}"><dt>인계대기</dt><dd>{{ total.waiting }}</dd></div>
+  </dl>
+
+  {% if late %}
+    {% for r in late %}
+    <div class="alert" data-late-row>
+      <b><span data-since="{{ r.dep.called_at.isoformat() }}">00:00</span> 경과</b>
+      <span><strong>{{ r.child.name }}</strong>({{ r.child.classroom.name }}) — 호출 후 아직 인계되지 않았습니다.</span>
+    </div>
+    {% endfor %}
+  {% elif total.staying == 0 and total.total %}
+    <p class="ok-bar">남은 아이가 없습니다 — 오늘 귀가 마감 가능합니다.</p>
+  {% endif %}
+
+  {% if weekend %}
+  <p class="empty">주말입니다 — 주간 계획은 월~금 기준이라 오늘 귀가 명단은 없습니다.
+    지난 평일 기록을 보시려면 주소 끝에 <b>?d=2026-09-07</b> 처럼 날짜를 붙이세요.</p>
+  {% endif %}
+
+  <div class="sec">
+    <div class="sec-h"><h2>{% if d %}{{ day }}{% else %}오늘{% endif %} 귀가 차수</h2>
+      {% if setting.route_note %}<span class="hint">{{ setting.route_note }} 순서로 데려옵니다</span>{% endif %}
+    </div>
+    <div class="rounds">
+      {% for p in progress %}
+      <a class="rnd {% if p.total and p.done == p.total %}ok{% endif %}" href="/list/{{ p.round.key }}{% if d %}?d={{ d }}{% endif %}">
+        <span class="rnd-t">{{ p.round.at_time }}{% if p.round.note %} <em>{{ p.round.note }}</em>{% endif %}</span>
+        <span class="rnd-n">{{ p.round.name }}{% if p.sign %}<i class="sg">✎</i>{% endif %}</span>
+        <span class="rnd-c">{{ p.done }}<i>/{{ p.total }}</i></span>
+        <span class="bar-g"><i class="b-home" style="width:{{ (p.done / p.total * 100) | round(0) if p.total else 0 }}%"></i></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>반별 현황</h2><span class="n">{{ stats | length }}개 반</span></div>
+    <div class="print-head"><b>{{ today }} 반별 귀가 현황</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="tw"><table class="board">
+      <thead>
+        <tr>
+          <th rowspan="2">반</th><th rowspan="2">총원</th>
+          <th colspan="2" class="gh grp">출결</th>
+          <th colspan="3" class="gh grp">귀가 현황</th>
+          <th rowspan="2" class="grp tx">진행</th>
+        </tr>
+        <tr>
+          <th class="grp">결석</th><th>조퇴</th>
+          <th class="grp">귀가</th><th>현원</th><th>인계대기</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in stats %}
+        {% set out = s.absent + s.early %}
+        <tr class="{% if s.late %}is-late{% elif s.waiting %}is-wait{% endif %}">
+          <td class="tx nm">{{ s.room.name }}</td>
+          <td class="v-tot">{{ s.total }}</td>
+          <td class="grp {% if s.absent %}v-abs{% else %}z{% endif %}">{{ s.absent or '·' }}</td>
+          <td class="{% if s.early %}v-early{% else %}z{% endif %}">{{ s.early or '·' }}</td>
+          <td class="grp v-home">{{ s.home }}</td>
+          <td class="v-left">{{ s.staying }}</td>
+          <td class="{% if s.waiting %}v-wait{% else %}z{% endif %}">{{ s.waiting or '·' }}</td>
+          <td class="tx grp">
+            {% if s.total %}
+            <span class="bar-g" title="귀가 {{ s.home }} · 현원 {{ s.staying }} · 결석조퇴 {{ out }}">
+              <i class="b-home" style="width:{{ (s.home / s.total * 100) | round(1) }}%"></i>
+              <i class="b-stay" style="width:{{ (s.staying / s.total * 100) | round(1) }}%"></i>
+              <i class="b-out" style="width:{{ (out / s.total * 100) | round(1) }}%"></i>
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        <tr class="tot">
+          <td class="tx nm">합계</td><td class="v-tot">{{ total.total }}</td>
+          <td class="grp v-abs">{{ total.absent }}</td><td class="v-early">{{ total.early }}</td>
+          <td class="grp v-home">{{ total.home }}</td><td class="v-left">{{ total.staying }}</td>
+          <td class="v-wait">{{ total.waiting }}</td><td class="tx grp"></td>
+        </tr>
+      </tbody>
+    </table></div>
+    <div class="legend no-print">
+      <span><i class="b-home"></i>귀가</span>
+      <span><i class="b-stay"></i>현원 (아직 원에 있음)</span>
+      <span><i class="b-out"></i>결석 · 조퇴</span>
+      <span style="margin-left:auto">총원 = 결석 + 조퇴 + 귀가 + 현원</span>
+    </div>
+  </div>
+
+  <div class="foot"><span>{{ app_name }} · {{ setting.kinder_name }}</span><span>{{ today_ko }}</span></div>
+</div>
+{% endblock %}

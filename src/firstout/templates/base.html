@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ app_name }}{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+{% if me %}
+<div class="bar no-print">
+  <div class="bar-in">
+    <a class="brand" href="/board"><i>손잡고</i>마중</a>
+    <span class="kname">{{ setting.kinder_name }}</span>
+    <span class="clock" id="clock">{{ today_ko }}</span>
+    <span class="spacer"></span>
+    <span class="who"><i class="dotlive" id="live" title="서버 연결됨"></i>{{ me.name }}{% if me.role %} · {{ me.role }}{% endif %}</span>
+    <form method="post" action="/logout"><button class="out">전환</button></form>
+  </div>
+  <div class="tabs">
+    <a class="tab {% if nav == 'board' %}on{% endif %}" href="/board">오늘 현황</a>
+    <a class="tab {% if nav == 'roster' %}on{% endif %}" href="/roster">원아 명부</a>
+    {% if me.is_admin %}
+    <a class="tab {% if nav == 'settings' %}on{% endif %}" href="/settings">설정</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% block body %}{% endblock %}
+
+{% if me %}
+<script src="/static/app.js" defer></script>
+{% endif %}
+</body>
+</html>

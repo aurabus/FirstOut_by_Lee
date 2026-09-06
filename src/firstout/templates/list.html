@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% set nav = 'board' %}
+{% block title %}{{ rnd.name }} 명단 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
+  <dl class="tiles">
+    <div class="tile"><dt>대상</dt><dd>{{ target | length }}</dd></div>
+    <div class="tile pine"><dt>완료</dt><dd>{{ done }}</dd></div>
+    <div class="tile {% if target | length - done %}warn{% else %}key{% endif %}">
+      <dt>남음</dt><dd>{{ target | length - done }}</dd></div>
+    <div class="tile"><dt>기준 시각</dt><dd style="font-size:1.2rem">{{ rnd.at_time }}</dd></div>
+  </dl>
+
+  <div class="picks no-print">
+    {% for r in rounds %}
+    <a class="pick {% if r.id == rnd.id %}on{% endif %}" href="/list/{{ r.key }}{% if d %}?d={{ d }}{% endif %}">
+      {{ r.name }}{% if r.needs_sign %} ✎{% endif %}<span class="sub">{{ r.at_time }}</span></a>
+    {% endfor %}
+    <button class="pick" style="margin-left:auto" onclick="window.print()">인쇄 / PDF</button>
+  </div>
+
+  {% if weekend %}
+    <p class="empty">주말에는 귀가 명단이 없습니다. 주간 계획은 월~금 기준입니다.</p>
+  {% else %}
+  <div class="{% if sign_all %}note-sign{% elif sign_any %}note-sign{% else %}note-quick{% endif %} no-print"
+       style="border-left:3px solid {% if sign_any %}var(--plum){% else %}var(--pine){% endif %};
+              background:{% if sign_any %}var(--plum-soft){% else %}var(--pine-soft){% endif %};
+              padding:.55rem .8rem;font-size:.84rem;color:var(--ink-2);margin-bottom:.8rem">
+    {% if sign_all %}
+      <b style="color:var(--plum)">서명 인계</b> 이름을 누르면 <strong>기본 인계자</strong>가 미리 잡혀 있고, 서명만 받으면 끝납니다.
+    {% elif sign_any %}
+      <b style="color:var(--plum)">섞여 있음</b> ✎ 표시된 아이는 보호자에게 인계하므로 <strong>서명</strong>을, 학원차는 <strong>체크만</strong> 합니다.
+    {% else %}
+      <b style="color:var(--pine)">빠른 확인</b> 이름을 누르면 <strong>바로 체크</strong>됩니다. 차에 태우는 것이라 서명은 받지 않습니다.
+    {% endif %}
+    &nbsp;특이사항은 오른쪽 <strong>비고</strong>에 적어두시면 기록에 남습니다.
+  </div>
+
+  <div class="sec" style="padding-top:.1rem">
+    <div class="print-head">
+      <b>{{ day }} {{ rnd.name }} 명단 · {{ rnd.at_time }}{% if rnd.note %} ({{ rnd.note }}){% endif %}</b>
+      <span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span>
+    </div>
+    <div class="sec-h no-print">
+      <h2>{{ rnd.name }} 명단</h2><span class="n">{{ target | length }}명</span>
+      {% if setting.route_note %}<span class="hint">{{ setting.route_note }} 순서</span>{% endif %}
+    </div>
+
+    <div class="gl">
+      {% for room, items in groups %}
+      <div class="gl-h">{{ room.name }}
+        <span>{{ items | selectattr('done') | list | length }} / {{ items | length }}</span></div>
+        {% for r in items %}
+        {% set g = r.child.default_guardian %}
+        <div class="gl-item {% if r.done %}done{% endif %}">
+          {% if r.done %}
+            <form method="post" action="/list/{{ rnd.key }}/{{ r.child.id }}/undo" class="gl-form">
+              <input type="hidden" name="d" value="{{ d }}">
+              <button class="gl-row" title="누르면 처리 취소">
+                <span class="gl-chk">✓</span>
+                <span><span class="gl-name">{{ r.child.name }}</span>
+                  <span class="gl-sub">{{ r.dep.how }}</span></span>
+              </button>
+            </form>
+          {% elif r.needs_sign %}
+            <button class="gl-row" data-sign
+              data-cid="{{ r.child.id }}" data-name="{{ r.child.name }}"
+              data-cls="{{ room.name }}" data-label="{{ r.label }}"
+              data-gs='{{ r.child.guardians | map(attribute="name") | list | tojson }}'
+              data-gr='{{ r.child.guardians | map(attribute="relation") | list | tojson }}'
+              data-def="{{ r.child.guardians.index(g) if g else 0 }}"
+              data-memo="{{ r.dep.memo if r.dep else '' }}">
+              <span class="gl-chk">✓</span>
+              <span><span class="gl-name">{{ r.child.name }}</span><i class="sg-need">✎</i>
+                <span class="gl-sub">{% if g %}{{ g.name }} · {{ g.relation }}{% endif %}{% if r.at_time and r.at_time != rnd.at_time %} · {{ r.at_time }}{% endif %}{% if r.called %} · 인계대기{% endif %}</span></span>
+            </button>
+          {% else %}
+            <form method="post" action="/list/{{ rnd.key }}/{{ r.child.id }}/check" class="gl-form">
+              <input type="hidden" name="how" value="{% if r.is_academy %}{{ r.academy }} 학원차{% else %}{{ rnd.name }}{% endif %}">
+              <input type="hidden" name="d" value="{{ d }}">
+              <button class="gl-row">
+                <span class="gl-chk">✓</span>
+                <span><span class="gl-name">{{ r.child.name }}</span>
+                  <span class="gl-sub">{% if r.is_academy %}학원차 {{ r.academy }}{% else %}{{ rnd.name }}{% endif %}</span></span>
+              </button>
+            </form>
+          {% endif %}
+          <button class="gl-memo {% if r.dep and r.dep.memo %}has{% endif %}" data-memo-open
+                  data-cid="{{ r.child.id }}" data-name="{{ r.child.name }}"
+                  data-text="{{ r.dep.memo if r.dep else '' }}">
+            {{ (r.dep.memo if r.dep and r.dep.memo else '비고') }}</button>
+          <span class="gl-t">{% if r.done %}{% if r.dep.signature %}✎ {% endif %}{{ r.dep.done_at.strftime('%H:%M') }}{% endif %}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+      <p class="empty" style="padding:1rem">이 차수로 가는 아이가 없습니다.</p>
+      {% endfor %}
+    </div>
+
+    {% if skipped %}
+      <div style="margin-top:.6rem">
+      {% for r in skipped %}
+      <div class="alert"><b>{{ r.att.status }}</b>
+        <span><strong>{{ r.child.name }}</strong>({{ r.child.classroom.name }}) — 제외{% if r.att.reason %} · {{ r.att.reason }}{% endif %}</span></div>
+      {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="sign-row">
+      <span>완료 {{ done }} / {{ target | length }}명</span>
+      <span>{% if sign_any %}인계 서명은 기록에 저장됩니다{% else %}담당교사 확인 ______________{% endif %}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="foot"><span>{{ app_name }} · {{ rnd.name }}</span><span>{{ today_ko }}</span></div>
+</div>
+
+<!-- 서명 인계 -->
+<dialog id="dlg" class="dlg">
+  <form method="post" id="signForm" class="dlg-in">
+    <h3 id="d-title">서명 인계</h3>
+    <p class="dlg-who" id="d-who"></p>
+
+    <div class="dg-box">
+      <span class="dg-who"><b id="d-gn">—</b><span id="d-gr">—</span></span>
+      <button type="button" class="btn sm" id="d-other">다른 분</button>
+    </div>
+    <div id="d-picklist" class="glist" hidden></div>
+
+    <label class="login-lbl" for="d-memo">특이사항 (선택)</label>
+    <input class="field" id="d-memo" name="memo" placeholder="예: 오늘 이모가 오심 · 약 전달" style="width:100%">
+
+    <canvas class="sigpad" id="sig"></canvas>
+    <p class="sig-line">위 보호자에게 아이를 인계했음을 확인합니다</p>
+    <input type="hidden" name="receiver" id="d-recv">
+    <input type="hidden" name="signature" id="d-sig">
+    <input type="hidden" name="d" value="{{ d }}">
+    <div class="sig-acts">
+      <button type="button" class="btn" id="d-clear">다시 쓰기</button>
+      <button class="btn go" style="flex:1">서명 완료 · 인계</button>
+    </div>
+    <button type="button" class="btn" id="d-close">닫기</button>
+  </form>
+</dialog>
+
+<!-- 특이사항 -->
+<dialog id="mdlg" class="dlg">
+  <form method="post" id="memoForm" class="dlg-in">
+    <h3>특이사항</h3>
+    <p class="dlg-who" id="m-who"></p>
+    <input class="field" id="m-text" name="memo" style="width:100%" placeholder="예: 멀미약 소지">
+    <input type="hidden" name="d" value="{{ d }}">
+    <div class="sig-acts">
+      <button type="button" class="btn" id="m-close">닫기</button>
+      <button class="btn go" style="flex:1">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  var KEY = {{ rnd.key | tojson }};
+  var dlg = document.getElementById("dlg"), f = document.getElementById("signForm");
+  var cv = document.getElementById("sig"), ctx = null, drawn = false;
+  var names = [], rels = [], cur = 0;
+
+  function setWho(i){
+    cur = i;
+    document.getElementById("d-gn").textContent = names[i] || "보호자";
+    document.getElementById("d-gr").textContent = (rels[i] || "") + (i === +f.dataset.def ? " · 기본 인계자" : " · 오늘만");
+    document.getElementById("d-recv").value = (names[i] || "보호자") + " · " + (rels[i] || "");
+  }
+  function fitCanvas(){
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = getComputedStyle(document.body).color;
+    drawn = false;
+  }
+  var on = false;
+  function pos(e){ var b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
+  cv.addEventListener("pointerdown", function(e){
+    on = true; drawn = true; cv.setPointerCapture(e.pointerId);
+    var p = pos(e); ctx.beginPath(); ctx.moveTo(p[0], p[1]); e.preventDefault();
+  });
+  cv.addEventListener("pointermove", function(e){
+    if(!on) return; var p = pos(e); ctx.lineTo(p[0], p[1]); ctx.stroke();
+  });
+  cv.addEventListener("pointerup", function(){ on = false; });
+  cv.addEventListener("pointercancel", function(){ on = false; });
+
+  document.getElementById("d-clear").onclick = function(){ ctx.clearRect(0,0,cv.width,cv.height); drawn = false; };
+  document.getElementById("d-close").onclick = function(){ dlg.close(); };
+
+  document.getElementById("d-other").onclick = function(){
+    var box = document.getElementById("d-picklist");
+    box.hidden = !box.hidden;
+    box.innerHTML = names.map(function(n,i){
+      return '<button type="button" class="gitem" data-i="'+i+'"><b>'+n+'</b><span>'+(rels[i]||"")+'</span></button>';
+    }).join("");
+  };
+  document.getElementById("d-picklist").onclick = function(e){
+    var b = e.target.closest("[data-i]"); if(!b) return;
+    setWho(+b.dataset.i); this.hidden = true;
+  };
+
+  document.querySelectorAll("[data-sign]").forEach(function(btn){
+    btn.onclick = function(){
+      names = JSON.parse(btn.dataset.gs || "[]");
+      rels  = JSON.parse(btn.dataset.gr || "[]");
+      f.dataset.def = btn.dataset.def || 0;
+      f.action = "/list/" + KEY + "/" + btn.dataset.cid + "/sign";
+      document.getElementById("d-title").textContent = "{{ rnd.name }} · 서명 인계";
+      document.getElementById("d-who").textContent =
+        btn.dataset.name + " · " + btn.dataset.cls + " · " + btn.dataset.label;
+      document.getElementById("d-memo").value = btn.dataset.memo || "";
+      document.getElementById("d-picklist").hidden = true;
+      document.getElementById("d-sig").value = "";
+      dlg.showModal();
+      requestAnimationFrame(function(){ fitCanvas(); setWho(+(btn.dataset.def || 0)); });
+    };
+  });
+
+  f.addEventListener("submit", function(e){
+    if(!drawn){ e.preventDefault(); alert("보호자 서명을 받아주세요."); return; }
+    document.getElementById("d-sig").value = cv.toDataURL("image/png");
+  });
+
+  /* 특이사항 */
+  var mdlg = document.getElementById("mdlg"), mf = document.getElementById("memoForm");
+  document.querySelectorAll("[data-memo-open]").forEach(function(btn){
+    btn.onclick = function(){
+      mf.action = "/list/" + KEY + "/" + btn.dataset.cid + "/memo";
+      document.getElementById("m-who").textContent = btn.dataset.name;
+      document.getElementById("m-text").value = btn.dataset.text || "";
+      mdlg.showModal();
+    };
+  });
+  document.getElementById("m-close").onclick = function(){ mdlg.close(); };
+})();
+</script>
+{% endblock %}

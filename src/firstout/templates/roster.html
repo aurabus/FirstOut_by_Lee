@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set nav = 'roster' %}
+{% block title %}원아 명부 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+
+  <dl class="tiles">
+    <div class="tile key"><dt>전체 원아</dt><dd>{{ kids | length }}</dd></div>
+    <div class="tile"><dt>반</dt><dd>{{ classes | length }}</dd></div>
+    <div class="tile pine"><dt>차수</dt><dd>{{ rounds | length }}</dd></div>
+    <div class="tile"><dt>기준</dt><dd style="font-size:1.1rem">{{ today_ko }}</dd></div>
+  </dl>
+
+  <div class="picks no-print">
+    <a class="pick {% if not sel_cls %}on{% endif %}" href="/roster">전체</a>
+    {% for c in classes %}
+    <a class="pick {% if sel_cls == c.id %}on{% endif %}" href="/roster?cls={{ c.id }}">{{ c.name }}</a>
+    {% endfor %}
+    <button class="pick" style="margin-left:auto" onclick="window.print()">명부 인쇄 / PDF</button>
+  </div>
+
+  <div class="sec" style="padding-top:.1rem">
+    <div class="print-head"><b>{{ today }} 원아 주간 귀가 계획</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="sec-h no-print">
+      <h2>원아 명부 · 주간 귀가 계획</h2><span class="n">{{ kids | length }}명</span>
+      <span class="hint">아이 한 명이 한 줄 — 이 표에서 매일 명단이 자동 생성됩니다</span>
+    </div>
+
+    <form method="get" action="/roster" class="no-print">
+      {% if sel_cls %}<input type="hidden" name="cls" value="{{ sel_cls }}">{% endif %}
+      <input class="search" name="q" value="{{ q }}" placeholder="이름 또는 반 검색 후 Enter">
+    </form>
+
+    {% if kids %}
+    <div class="tw"><table style="min-width:46rem">
+      <thead><tr>
+        <th class="tx">이름</th><th class="tx">반</th>
+        {% for d in weekdays %}<th class="tx">{{ d }}</th>{% endfor %}
+        <th class="tx">기본 인계자</th>
+      </tr></thead>
+      <tbody>
+        {% for k in kids %}
+        <tr>
+          <td class="tx"><b>{{ k.name }}</b></td>
+          <td class="tx">{{ k.classroom.name }}</td>
+          {% for wd in range(5) %}
+            {% set p = plans[k.id].get(wd) %}
+            <td class="tx">
+              {% if p and p.round %}
+                {% if p.academy %}
+                  <span class="ty 학원">학원({{ p.academy.name }})</span>
+                {% else %}
+                  <span class="ty {{ p.round.kind }}">{{ p.round.name }}{% if p.time_override %} {{ p.time_override }}{% endif %}</span>
+                {% endif %}
+              {% else %}
+                <span class="z">—</span>
+              {% endif %}
+            </td>
+          {% endfor %}
+          <td class="tx">
+            {% set g = k.default_guardian %}
+            {% if g %}{{ g.name }} · {{ g.relation }}{% if k.guardians | length > 1 %}
+              <span class="z">외 {{ k.guardians | length - 1 }}</span>{% endif %}
+            {% else %}<span class="z">미등록</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    <p class="empty no-print">— 표시는 그날 명단에 없는 날입니다 (정규 후 귀가).</p>
+    {% else %}
+    <div class="cfg">
+      <p class="cfg-note" style="background:var(--card);padding:1.2rem .9rem">
+        아직 등록된 원아가 없습니다.<br>
+        시연용 예시 명부를 넣으려면 서버를 <b>python -m firstout.main --demo</b> 로 한 번 실행하세요.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="foot"><span>{{ app_name }} · {{ setting.kinder_name }}</span><span>총 {{ kids | length }}명</span></div>
+</div>
+{% endblock %}

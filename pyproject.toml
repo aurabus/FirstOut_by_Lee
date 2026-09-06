@@ -5,10 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "firstout"
 version = "0.1.0"
-description = "FirstOut by Lee"
+description = "손잡고 마중 — 유치원 귀가 관리"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "sqlalchemy>=2.0",
+  "jinja2>=3.1",
+  "python-multipart>=0.0.9",
+  "openpyxl>=3.1",
+  "passlib[bcrypt]>=1.7",
+  "itsdangerous>=2.2",
+]
 
 [project.scripts]
 firstout = "firstout.main:main"
@@ -26,3 +35,5 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+# FastAPI 는 Depends()·Form() 을 기본값 자리에 두는 것이 표준 사용법이라 B008 은 오탐이다.
+ignore = ["B008"]
