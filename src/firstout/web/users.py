@@ -199,6 +199,8 @@ def user_save(
         # 본인 권한은 못 내린다 — 마지막 관리자가 스스로 문을 잠그면 아무도 못 연다
         if u.role == ROLE_ADMIN and role == ROLE_TEACHER and _admin_count(db, me.kinder_id) < 2:
             return _back("관리자가 한 분뿐이라 권한을 내릴 수 없습니다")
+        if u.role != role:
+            request.state.audit_note = f"{u.name} 권한 {u.role} → {role}"
         u.role = role
     u.class_id = int(class_id) if class_id.isdigit() else None
     db.commit()
@@ -242,6 +244,7 @@ def user_toggle(uid: int, request: Request, db: Session = Depends(get_db)):
         return _back("관리자가 한 분뿐이라 멈출 수 없습니다")
 
     u.active = not u.active
+    request.state.audit_note = f"{u.name} 계정 {'사용' if u.active else '중지'}"
     db.commit()
     return _back(f"{u.name} 선생님 — {'사용' if u.active else '중지'}")
 

@@ -132,9 +132,12 @@ class AuditMiddleware:
         try:
             await self.app(scope, receive, watch)
         finally:
-            self._record(scope, path, status["code"], status["set"])
+            # 화면이 남긴 쪽지 — 되돌리기 어려운 일에만 붙는다 (request.state.audit_note)
+            note = str(scope.get("state", {}).get("audit_note", "") or "")
+            self._record(scope, path, status["code"], status["set"], note)
 
-    def _record(self, scope, path: str, status: int, set_cookies: list[str]) -> None:
+    def _record(self, scope, path: str, status: int, set_cookies: list[str],
+                note: str = "") -> None:
         import time
 
         from . import audit
@@ -151,6 +154,7 @@ class AuditMiddleware:
                     status=status,
                     ip=client_ip(scope),
                     agent=_header(scope, b"user-agent"),
+                    detail=note,
                 )
                 # 한 시간에 한 번만 뒷정리를 한다 — 매 요청마다 훑을 일이 아니다.
                 # 유치원은 서버를 몇 달씩 켜 두므로 시작할 때만 해서는 안 된다.

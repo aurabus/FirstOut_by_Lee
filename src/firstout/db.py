@@ -37,7 +37,24 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 def init_db() -> None:
     Base.metadata.create_all(engine)
+    _add_columns()
     _rename_roles()
+
+
+def _add_columns() -> None:
+    """이미 만들어진 표에 늘어난 칸을 붙인다.
+
+    create_all 은 없는 표만 만들고 있는 표는 건드리지 않는다. 그래서 칸이 늘어나면
+    쓰던 자료에서만 조용히 터진다. 있으면 아무 일도 하지 않는다.
+    """
+    from sqlalchemy import text
+
+    want = {("audit_log", "detail"): "varchar(200) not null default ''"}
+    with engine.begin() as conn:
+        for (table, column), kind in want.items():
+            have = {r[1] for r in conn.execute(text(f"pragma table_info({table})"))}
+            if column not in have:
+                conn.execute(text(f"alter table {table} add column {column} {kind}"))
 
 
 def _rename_roles() -> None:

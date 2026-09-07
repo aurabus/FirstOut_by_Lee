@@ -115,6 +115,7 @@ def write(
     status: int,
     ip: str = "",
     agent: str = "",
+    detail: str = "",
 ) -> None:
     db.add(
         AuditLog(
@@ -129,6 +130,7 @@ def write(
             status=status,
             ip=ip[:45],
             agent=agent[:120],
+            detail=detail[:200],
         )
     )
     db.commit()

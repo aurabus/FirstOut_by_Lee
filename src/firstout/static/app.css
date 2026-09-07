@@ -738,3 +738,6 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
 .res.ok{color:var(--pine);font-weight:700}
 .res.bad{color:var(--clay);font-weight:700}
 .res.plain{color:var(--ink-3)}
+.what{display:block;font-style:normal;font-size:.78rem;color:var(--ink-2);
+  margin-top:.15rem;padding-left:.1rem;border-left:2px solid var(--gold-line);
+  padding-left:.45rem}

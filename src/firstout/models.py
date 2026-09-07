@@ -344,6 +344,9 @@ class AuditLog(Base):
     status: Mapped[int] = mapped_column(Integer, default=0)
     ip: Mapped[str] = mapped_column(String(45), default="")
     agent: Mapped[str] = mapped_column(String(120), default="")
+    # 되돌리기 어렵고 드물게 일어나는 일에만 「무엇이 어떻게」를 한 줄로 남긴다.
+    # 값이 바뀔 때마다 남기면 하루 수백 줄이 되어 정작 볼 것이 묻힌다.
+    detail: Mapped[str] = mapped_column(String(200), default="")
 
     @property
     def changed(self) -> bool:

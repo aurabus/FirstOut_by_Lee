@@ -134,10 +134,10 @@ def class_delete(cid: int, request: Request, db: Session = Depends(get_db)):
         return _back()
     if db.scalar(select(func.count(Child.id)).where(Child.class_id == cid)):
         return _back("원아가 있는 반은 삭제할 수 없습니다")
-    if c:
-        db.delete(c)
-        db.commit()
-    return _back("반 삭제")
+    request.state.audit_note = f"{c.name} 반 삭제"
+    db.delete(c)
+    db.commit()
+    return _back(f"{c.name} 반 삭제")
 
 
 # ── 차량 ────────────────────────────────────────────────

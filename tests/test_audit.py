@@ -136,3 +136,49 @@ def test_실패한_로그인을_가려낸다():
     assert audit.outcome("POST", 303, False, "/signin")[0] == "로그인 실패"
     assert audit.outcome("POST", 303, True, "/signin")[0] == "처리됨"
     assert audit.outcome("GET", 200, False, "/signin")[0] == "열어봄"
+
+
+# ── 되돌리기 어려운 일에는 무엇이 어떻게 ────────────────
+
+def test_늘어난_칸이_쓰던_자료에도_붙는다(tmp_path, monkeypatch):
+    """create_all 은 있는 표를 건드리지 않는다. 그래서 칸이 늘면 쓰던 자료에서만 터진다."""
+    import sqlite3
+
+    from sqlalchemy import create_engine
+
+    import firstout.db as fdb
+
+    path = tmp_path / "old.db"
+    con = sqlite3.connect(path)
+    con.executescript(
+        "create table audit_log (id integer primary key, path text, action text);"
+        "insert into audit_log (path, action) values ('/board', '오늘 현황');"
+    )
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr(fdb, "engine", create_engine(f"sqlite:///{path}"))
+    fdb._add_columns()
+    fdb._add_columns()          # 두 번 돌려도 같다
+
+    con = sqlite3.connect(path)
+    cols = {r[1] for r in con.execute("pragma table_info(audit_log)")}
+    rows = con.execute("select action, detail from audit_log").fetchall()
+    con.close()
+    assert "detail" in cols
+    assert rows == [("오늘 현황", "")]        # 있던 줄은 그대로
+
+
+def test_남기는_말이_사람이_읽는_말이다():
+    """「무엇이 어떻게」가 한 줄로 읽혀야 한다."""
+    said = [
+        "김미영 권한 선생님 → 관리자",
+        "박선생 계정 중지",
+        "김민준 · 지혜1 퇴원",
+        "전체 교체 · 기존 95명 → 등록 97명",
+        "지혜2 반 삭제",
+    ]
+    for line in said:
+        assert len(line) <= 200
+        assert "/" not in line          # 주소가 섞이지 않는다
+        assert line.strip() == line

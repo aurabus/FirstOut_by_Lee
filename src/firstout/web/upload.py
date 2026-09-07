@@ -136,7 +136,15 @@ def upload_apply(
 
     if mode not in ("add", "update", "replace"):
         mode = "add"
+    before = db.scalar(
+        select(func.count(Child.id)).where(Child.kinder_id == me.kinder_id, Child.active.is_(True))
+    ) or 0
     made, changed = excel.apply(f.read_bytes(), db, me.kinder_id, mode=mode)
+    how = {"add": "새 아이만 추가", "update": "이번 파일로 맞추기", "replace": "전체 교체"}[mode]
+    request.state.audit_note = (
+        f"{how} · 기존 {before}명 → 등록 {made}명"
+        + (f" · 갱신 {changed}명" if changed else "")
+    )
     try:
         f.unlink()   # 원아 정보가 담긴 파일은 바로 지운다
     except OSError:

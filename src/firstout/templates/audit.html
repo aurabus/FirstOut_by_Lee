@@ -50,7 +50,8 @@
           <td class="tx">{% if r.user_name %}<b>{{ r.user_name }}</b>{% else %}<span class="z">로그인 전</span>{% endif %}</td>
           <td class="tx">
             {% if r.changed %}<span class="chg">변경</span>{% else %}<span class="vw">접속</span>{% endif %}
-            {{ r.action }}</td>
+            {{ r.action }}
+            {% if r.detail %}<em class="what">{{ r.detail }}</em>{% endif %}</td>
           <td class="tx"><span class="res {{ said[1] }}">{{ said[0] }}</span></td>
           <td class="tx n-f" style="font-size:.75rem;color:var(--ink-3)">{{ r.ip }}</td>
         </tr>
@@ -74,7 +75,9 @@
 
     <p class="empty no-print">
       <span class="vw">접속</span> 은 화면을 연 것이고 <span class="chg">변경</span> 은
-      무언가를 바꾼 것입니다. 개인정보는 담지 않습니다.
+      무언가를 바꾼 것입니다. 되돌리기 어려운 일 — 권한 변경 · 계정 중지 · 퇴원 ·
+      명부 전체 교체 · 반 삭제 — 에는 <strong>무엇이 어떻게 바뀌었는지</strong>가 함께 남습니다.
+      연락처 같은 것은 어떤 경우에도 담지 않습니다.
       <strong>{{ keep_days }}일이 지난 기록은 자동으로 지워집니다.</strong>
     </p>
   </div>

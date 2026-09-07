@@ -145,8 +145,10 @@ def leave(cid: int, request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/roster", status_code=303)
 
     child.active = not child.active
-    db.commit()
     word = "다시 등원" if child.active else "퇴원"
+    room = child.classroom.name if child.classroom else ""
+    request.state.audit_note = f"{child.name}{' · ' + room if room else ''} {word}"
+    db.commit()
     return _back(cid, f"{child.name} — {word} 처리했습니다")
 
 
