@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% set nav = 'roster' %}
+{% block title %}{{ child.name }} · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:48rem">
+
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
+  <div class="crumb no-print">
+    <a href="/roster">원아 명부</a> <span>›</span> <b>{{ child.name }}</b>
+    {% if not child.active %}<span class="ustate off">퇴원</span>{% endif %}
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>기본 정보</h2>
+      <span class="hint">{{ child.classroom.name if child.classroom else "반 없음" }}</span>
+    </div>
+    <form method="post" action="/child/{{ child.id }}/save" class="krow">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <label class="kf"><span>이름</span>
+        <input class="field" name="name" value="{{ child.name }}" required></label>
+      <label class="kf"><span>반</span>
+        <select class="field" name="class_id">
+          {% for r in classes %}
+          <option value="{{ r.id }}" {% if r.id == child.class_id %}selected{% endif %}>{{ r.name }}</option>
+          {% endfor %}
+        </select></label>
+      <label class="kf wide"><span>특이사항</span>
+        <input class="field" name="note" value="{{ child.note }}"
+               placeholder="알레르기 · 투약 등 인계할 때 알아야 할 것"></label>
+      <button class="btn go">저장</button>
+    </form>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>주간 귀가 계획</h2>
+      <span class="hint">고르면 바로 저장됩니다 — 오늘 명단에도 반영됩니다</span>
+    </div>
+    <div class="plan">
+      {% for wd in range(weekdays | length) %}
+      {% set p = plans.get(wd) %}
+      <form method="post" action="/child/{{ child.id }}/plan" class="plan-day">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="weekday" value="{{ wd }}">
+        <b class="plan-lbl">{{ weekdays[wd] }}</b>
+        <select class="field" name="how" onchange="this.form.requestSubmit()">
+          <option value="">정규 후 귀가 (명단 없음)</option>
+          {% for r in rounds %}
+          <option value="r:{{ r.id }}"
+            {% if p and p.round_id == r.id and not p.academy_id %}selected{% endif %}>
+            {{ r.name }} · {{ r.at_time }}</option>
+          {% endfor %}
+          {% for a in academies %}
+          <option value="a:{{ a.id }}"
+            {% if p and p.academy_id == a.id %}selected{% endif %}>학원차 · {{ a.name }}</option>
+          {% endfor %}
+        </select>
+        <input class="field plan-t" name="at_time" placeholder="시각"
+               value="{{ p.time_override if p else '' }}"
+               title="기준 시각과 다를 때만 적습니다 (예: 16:10)">
+        <button class="btn sm">적용</button>
+      </form>
+      {% endfor %}
+    </div>
+    <p class="cfg-note">시각 칸은 <strong>그 요일만 다를 때</strong> 적습니다. 비워두면 차수의 기준 시각을 씁니다.
+      학원차는 서명 없이 태우기만 합니다.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>인계자</h2><span class="n">{{ child.guardians | length }}명</span>
+      <span class="hint">기본 인계자가 서명 창에 먼저 뜹니다</span>
+    </div>
+    <div class="cfg">
+      {% for g in child.guardians %}
+      <div class="cfg-row">
+        <form method="post" action="/child/{{ child.id }}/guardian/{{ g.id }}/save" class="grow">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          {% if g.is_default %}<span class="gbadge">기본</span>{% endif %}
+          <input class="field" name="name" value="{{ g.name }}" style="max-width:8rem">
+          <input class="field" name="relation" value="{{ g.relation }}"
+                 placeholder="관계" style="max-width:6.5rem">
+          <input class="field" name="phone" placeholder="{{ g.phone_masked or '연락처 없음' }}"
+                 style="max-width:10rem"
+                 title="개인정보 보호를 위해 가려서 보여드립니다. 바꾸실 때만 새로 적어주세요">
+          <button class="btn sm">저장</button>
+        </form>
+        {% if not g.is_default %}
+        <form method="post" action="/child/{{ child.id }}/guardian/{{ g.id }}/default">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn sm">기본으로</button>
+        </form>
+        {% endif %}
+        {% if child.guardians | length > 1 %}
+        <form method="post" action="/child/{{ child.id }}/guardian/{{ g.id }}/delete">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn sm del">빼기</button>
+        </form>
+        {% endif %}
+      </div>
+      {% else %}
+      <p class="empty">인계자가 없습니다 — 인계할 때 곤란합니다. 아래에서 추가해 주세요.</p>
+      {% endfor %}
+
+      <form method="post" action="/child/{{ child.id }}/guardian/add" class="grow addg">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <b>추가</b>
+        <input class="field" name="name" placeholder="성함" style="max-width:8rem" required>
+        <input class="field" name="relation" placeholder="관계 (모·부·조모…)" style="max-width:9rem">
+        <input class="field" name="phone" placeholder="연락처" style="max-width:10rem">
+        <button class="btn go sm">인계자 추가</button>
+      </form>
+    </div>
+    <p class="cfg-note">연락처는 결석 확인 전화에 쓰려고 저장하지만 화면에는 가려서 보여드립니다.
+      바꾸실 때만 새 번호를 적으시면 되고, 비워두면 그대로 둡니다.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>귀가 기록</h2><span class="n">최근 {{ history | length }}건</span>
+      <span class="hint">서명은 한 달이 지나면 지워집니다</span>
+    </div>
+    {% if history %}
+    <div class="tw">
+      <table class="board">
+        <thead><tr>
+          <th class="nm">날짜</th><th class="tx">방법</th><th class="tx">인계받은 분</th>
+          <th class="tx">시각</th><th class="tx">처리</th><th class="tx">서명</th>
+        </tr></thead>
+        <tbody>
+          {% for h in history %}
+          <tr>
+            <td class="nm">{{ h.on_date }}</td>
+            <td class="tx">{{ h.round.name if h.round else "—" }}</td>
+            <td class="tx">{{ h.receiver or h.how or "—" }}
+              {% if h.memo %}<em class="sub">{{ h.memo }}</em>{% endif %}</td>
+            <td class="tx">{{ h.done_at.strftime('%H:%M') if h.done_at else "—" }}</td>
+            <td class="tx">{{ h.teacher.name if h.teacher else "—" }}</td>
+            <td class="tx">
+              {% if h.signature %}
+              <img class="sigshot" src="{{ h.signature }}" alt="{{ h.on_date }} 서명"
+                   loading="lazy">
+              {% else %}<span class="z">—</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">아직 귀가 기록이 없습니다.</p>
+    {% endif %}
+  </div>
+
+  {% if me.is_admin %}
+  <div class="sec">
+    <div class="sec-h"><h2>{% if child.active %}퇴원{% else %}다시 등원{% endif %}</h2></div>
+    <div class="cfg">
+      <div class="cfg-row">
+        <span style="flex:1">
+          {% if child.active %}
+          <b>퇴원 처리하면 오늘부터 명단에 나오지 않습니다.</b>
+          <em class="sub">지난 귀가 기록은 그대로 남습니다 — 「그때 누가 데려갔나」를 되짚을 수 있어야 하니까요.
+            다시 오면 되돌릴 수 있습니다.</em>
+          {% else %}
+          <b>퇴원 처리된 아이입니다.</b>
+          <em class="sub">다시 등원하면 눌러주세요. 예전 계획과 인계자가 그대로 살아납니다.</em>
+          {% endif %}
+        </span>
+        <form method="post" action="/child/{{ child.id }}/leave">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn sm {% if child.active %}del{% endif %}">
+            {% if child.active %}퇴원 처리{% else %}다시 등원{% endif %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="foot"><span>{{ app_name }} · 원아</span><span>{{ today_ko }}</span></div>
+</div>
+{% endblock %}

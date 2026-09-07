@@ -47,3 +47,36 @@ def test_qr_는_svg_를_돌려준다():
 
 def test_utf8_콘솔_설정이_예외를_내지_않는다():
     M.use_utf8_console()
+
+
+def test_안내문이_도착하는_화면은_모두_그것을_보여준다():
+    """처리 결과 안내(flash)가 화면에 없으면 아무 일도 안 일어난 것처럼 보인다.
+
+    실제로 「원아 95명을 등록했습니다」와 「비밀번호를 바꿨습니다」가 이렇게 묻혀 있었다.
+    안내문을 보내는 곳이 늘어날 때마다 받는 쪽도 함께 챙기도록 시험으로 묶어 둔다.
+    """
+    from pathlib import Path
+
+    import firstout
+
+    # flash.put 이 보내는 곳들 (web/*.py 의 RedirectResponse 목적지)
+    targets = [
+        "board.html",      # "/"
+        "roster.html",     # "/roster"
+        "child.html",      # "/child/{id}"
+        "list.html",       # "/list/{key}"
+        "attend.html",     # "/attend"
+        "users.html",      # "/users"
+        "invite.html",     # "/users/{id}/invite"
+        "join.html",       # "/join/{token}"
+        "reauth.html",     # "/reauth"
+        "upload.html",     # "/upload"
+        "settings.html",   # "/settings"
+        "operator.html",   # "/operator"
+    ]
+    root = Path(firstout.__file__).parent / "templates"
+    missing = [
+        name for name in targets
+        if "{% if msg %}" not in (root / name).read_text(encoding="utf-8")
+    ]
+    assert missing == [], f"안내문을 보여주지 않는 화면: {missing}"

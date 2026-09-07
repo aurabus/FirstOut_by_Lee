@@ -11,6 +11,8 @@
     <div class="tile"><dt>기준</dt><dd style="font-size:1.1rem">{{ today_ko }}</dd></div>
   </dl>
 
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
   <div class="picks no-print">
     <a class="pick {% if not sel_cls %}on{% endif %}" href="/roster">전체</a>
     {% for c in classes %}
@@ -20,6 +22,22 @@
     <a class="pick" style="margin-left:auto" href="/roster/export">엑셀로 내려받기</a>
     <button class="pick" onclick="window.print()">명부 인쇄 / PDF</button>
   </div>
+
+  {% if me.is_admin %}
+  <form method="post" action="/roster/add" class="addbox no-print">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <b>원아 추가</b>
+    <select class="field" name="class_id" style="max-width:8rem" required>
+      {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    <input class="field" name="name" placeholder="유아명" style="max-width:8rem" required>
+    <input class="field" name="g_name" placeholder="보호자 성함" style="max-width:8rem">
+    <input class="field" name="g_relation" placeholder="관계" style="max-width:5.5rem">
+    <input class="field" name="g_phone" placeholder="연락처" style="max-width:9.5rem">
+    <button class="btn go">등록</button>
+    <span class="addnote">전학 온 아이 한 명. 여러 명이면 <strong>엑셀</strong>이 빠릅니다</span>
+  </form>
+  {% endif %}
 
   <div class="sec" style="padding-top:.1rem">
     <div class="print-head"><b>{{ today }} 원아 주간 귀가 계획</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
@@ -43,7 +61,7 @@
       <tbody>
         {% for k in kids %}
         <tr>
-          <td class="tx"><b>{{ k.name }}</b></td>
+          <td class="tx"><a class="klink" href="/child/{{ k.id }}"><b>{{ k.name }}</b></a></td>
           <td class="tx">{{ k.classroom.name }}</td>
           {% for wd in range(5) %}
             {% set p = plans[k.id].get(wd) %}

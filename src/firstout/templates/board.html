@@ -7,6 +7,8 @@
   {% set base_url = "/board" %}
   {% include "_daybar.html" %}
 
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
   <dl class="tiles">
     <div class="tile"><dt>총원</dt><dd>{{ total.total }}</dd></div>
     <div class="tile pine"><dt>귀가</dt><dd>{{ total.home }}</dd></div>
