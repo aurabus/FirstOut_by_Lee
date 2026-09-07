@@ -29,8 +29,12 @@ def _guard(request: Request, db: Session):
     me = current_user(request, db)
     if me is None:
         return None, RedirectResponse("/signin", status_code=303)
-    if not me.is_admin or me.kinder_id is None:
+    if not me.is_admin:
         return None, RedirectResponse("/board", status_code=303)
+    # 운영자는 어느 유치원에도 속하지 않는다. 유치원 화면에 들어오면
+    # 빈 목록이 뜨거나 저장하다 터진다 — 운영 화면으로 돌려보낸다.
+    if me.kinder_id is None:
+        return None, RedirectResponse("/", status_code=303)
     if wall := reauth.wall(request, me, back="/users"):   # 계정을 만들고 지우는 화면이다
         return None, wall
     return me, None
@@ -139,6 +143,9 @@ def user_invite(uid: int, request: Request, db: Session = Depends(get_db)):
     u = db.get(User, uid)
     if u is None or u.kinder_id != me.kinder_id:
         return _back()
+    if u.id == me.id:
+        # 초대를 쓰면 비밀번호가 새로 정해진다. 본인 것은 비밀번호 화면에서 바꾼다.
+        return _back("본인 비밀번호는 위쪽 「비밀번호」 에서 바꿔주세요")
     return _invite_now(db, me, u, f"{u.name} 선생님 초대를 새로 만들었습니다")
 
 

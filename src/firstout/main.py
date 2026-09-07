@@ -334,7 +334,7 @@ def _demo_users(db, kinder) -> None:
     """시연용 계정 — 총괄 관리자와 담임 한 명. 실제 운영에서는 가입과 사용자 관리로 만든다."""
     from sqlalchemy import select
 
-    from .models import ROLE_OWNER, ROLE_TEACHER, ClassRoom, User
+    from .models import ROLE_ADMIN, ROLE_TEACHER, ClassRoom, User
     from .security import hash_password
 
     if db.scalar(select(User).where(User.kinder_id == kinder.id)):
@@ -343,7 +343,7 @@ def _demo_users(db, kinder) -> None:
         select(ClassRoom).where(ClassRoom.kinder_id == kinder.id).order_by(ClassRoom.seq)
     )
     db.add(User(kinder_id=kinder.id, login_id="wonjang", password_hash=hash_password("majung1234"),
-                name="최영호", role=ROLE_OWNER, title="원장"))
+                name="최영호", role=ROLE_ADMIN, title="원장"))
     db.add(User(kinder_id=kinder.id, login_id="teacher1", password_hash=hash_password("majung1234"),
                 name="김미영", role=ROLE_TEACHER, title="지혜1 담임",
                 class_id=room.id if room else None))

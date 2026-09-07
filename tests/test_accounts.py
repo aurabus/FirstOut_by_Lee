@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from firstout.models import ROLE_OPERATOR, ROLE_OWNER, ROLE_TEACHER, Guardian, User
+from firstout.models import ROLE_ADMIN, ROLE_OPERATOR, ROLE_TEACHER, Guardian, User
 from firstout.security import (
     csrf_ok,
     hash_password,
@@ -69,7 +69,7 @@ def test_csrf_는_같은_값일_때만_통과한다():
 
 def test_역할에_따라_권한이_갈린다():
     op = User(login_id="op", name="운영자", role=ROLE_OPERATOR)
-    owner = User(login_id="w", name="원장", role=ROLE_OWNER, kinder_id=1)
+    owner = User(login_id="w", name="원장", role=ROLE_ADMIN, kinder_id=1)
     teacher = User(login_id="t", name="교사", role=ROLE_TEACHER, kinder_id=1)
 
     assert op.is_operator and op.is_admin

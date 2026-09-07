@@ -12,7 +12,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from .. import excel, reauth, service
+from .. import excel, flash, reauth, service
 from ..db import get_db
 from ..models import Child, PlanEntry
 from . import xlsx
@@ -32,6 +32,10 @@ def roster(
     me = current_user(request, db)
     if me is None:
         return RedirectResponse("/signin", status_code=303)
+    # 운영자는 어느 유치원에도 속하지 않는다. 유치원 화면에 들어오면
+    # 빈 목록이 뜨거나 저장하다 터진다 — 운영 화면으로 돌려보낸다.
+    if me.kinder_id is None:
+        return RedirectResponse("/", status_code=303)
 
     stmt = (
         select(Child)
@@ -82,7 +86,13 @@ def export(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/signin", status_code=303)
     if me.kinder_id is None:
         return RedirectResponse("/", status_code=303)
-    if wall := reauth.wall(request, me):     # 보호자 연락처가 파일로 나간다
+    if not me.is_admin:
+        # 보호자 연락처가 통째로 파일로 나가는 가장 민감한 길이다. 올리는 쪽(/upload)도
+        # 관리자만 할 수 있으므로 내려받기만 열어두면 앞뒤가 맞지 않는다.
+        # 선생님이 명부를 손에 들어야 할 때는 인쇄를 쓰면 된다 (연락처는 인쇄에서 빠진다).
+        return flash.put(RedirectResponse("/roster", status_code=303),
+                         "명부 엑셀 내려받기는 총괄 관리자만 하실 수 있습니다")
+    if wall := reauth.wall(request, me):
         return wall
 
     data = excel.export_roster(db, me.kinder_id)

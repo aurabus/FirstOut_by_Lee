@@ -131,7 +131,6 @@ ROLE_OPERATOR = "운영자"   # 우리 회사 — 유치원 가입 승인
 ROLE_ADMIN = "관리자"      # 유치원 총괄 관리자 — 계정과 설정을 맡는다
 ROLE_TEACHER = "선생님"
 
-ROLE_OWNER = ROLE_ADMIN    # 예전 이름 (쓰던 곳이 남아 있을 수 있다)
 
 # 계정을 만들 때 고르는 직함. 유치원마다 부르는 말이 달라 직접 적을 수도 있다.
 TITLES = ["원장", "원감", "주임", "담임", "부담임", "방과후", "돌봄", "행정"]
@@ -176,7 +175,7 @@ class User(Base):
     @property
     def is_admin(self) -> bool:
         """유치원 설정을 만질 수 있는 사람."""
-        return self.role in (ROLE_OWNER, ROLE_OPERATOR)
+        return self.role in (ROLE_ADMIN, ROLE_OPERATOR)
 
 
 class Child(Base):

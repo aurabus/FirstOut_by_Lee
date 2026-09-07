@@ -19,8 +19,12 @@
     <a class="pick {% if sel_cls == c.id %}on{% endif %}" href="/roster?cls={{ c.id }}">{{ c.name }}</a>
     {% endfor %}
     {% if me.is_admin %}<a class="btn go" href="/upload">엑셀로 명부 올리기</a>{% endif %}
+    {% if me.is_admin %}
     <a class="pick" style="margin-left:auto" href="/roster/export">엑셀로 내려받기</a>
     <button class="pick" data-print>명부 인쇄 / PDF</button>
+    {% else %}
+    <button class="pick" style="margin-left:auto" data-print>명부 인쇄 / PDF</button>
+    {% endif %}
   </div>
 
   {% if me.is_admin %}

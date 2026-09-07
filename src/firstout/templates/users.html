@@ -46,7 +46,7 @@
           <button class="btn sm">저장</button>
         </form>
         <span class="uid">{{ u.login_id }}</span>
-        <span class="urole {% if u.role == '원장' %}owner{% endif %}">{{ u.role }}</span>
+        <span class="urole {% if u.role == role_admin %}owner{% endif %}">{{ u.role }}</span>
         {% if u.role == role_admin %}<span class="rolemark">총괄 관리자</span>{% endif %}
         {% if u.must_change_pw %}<span class="ustate">첫 로그인 대기</span>{% endif %}
         {% if not u.active %}<span class="ustate off">중지</span>{% endif %}

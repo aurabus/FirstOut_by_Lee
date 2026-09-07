@@ -192,3 +192,65 @@ def test_기본_인계자는_한_명뿐이다(db):
 
     assert sum(1 for g in child.guardians if g.is_default) == 1
     assert child.default_guardian.name == "김철수"
+
+
+# ── 인계자 ──────────────────────────────────────────────
+
+def _guardians(s, child, names):
+    for i, (name, rel) in enumerate(names):
+        s.add(Guardian(child_id=child.id, name=name, relation=rel,
+                       is_default=(i == 0), seq=i))
+    s.commit()
+
+
+def _remove_guardian(s, child, g):
+    """화면(child.guardian_delete)이 하는 일과 같은 순서."""
+    was_default = g.is_default
+    child.guardians.remove(g)
+    s.flush()
+    if was_default:
+        left = sorted(child.guardians, key=lambda x: x.seq)
+        if left:
+            left[0].is_default = True
+    s.commit()
+
+
+def test_기본_인계자를_지우면_다음_사람이_기본이_된다(db):
+    """기본이 아무도 없으면 서명 창이 매번 비어 나온다 — 매일 겪는 일이 된다."""
+    child = _kid(db)
+    db.query(Guardian).delete()
+    _guardians(db, child, [("엄마", "모"), ("아빠", "부"), ("이모", "이모")])
+    db.refresh(child)
+
+    _remove_guardian(db, child, next(g for g in child.guardians if g.is_default))
+    db.refresh(child)
+
+    assert [g.name for g in child.guardians] == ["아빠", "이모"]
+    assert child.default_guardian.name == "아빠"
+    assert sum(1 for g in child.guardians if g.is_default) == 1
+
+
+def test_기본이_아닌_사람을_지우면_기본은_그대로다(db):
+    child = _kid(db)
+    db.query(Guardian).delete()
+    _guardians(db, child, [("엄마", "모"), ("아빠", "부")])
+    db.refresh(child)
+
+    _remove_guardian(db, child, next(g for g in child.guardians if not g.is_default))
+    db.refresh(child)
+
+    assert [g.name for g in child.guardians] == ["엄마"]
+    assert child.default_guardian.name == "엄마"
+
+
+def test_기본_인계자는_언제나_한_명이다(db):
+    """둘이면 서명 창에 어느 쪽이 뜰지 알 수 없다."""
+    child = _kid(db)
+    db.query(Guardian).delete()
+    _guardians(db, child, [("엄마", "모"), ("아빠", "부"), ("이모", "이모")])
+    db.refresh(child)
+
+    while len(child.guardians) > 1:
+        _remove_guardian(db, child, next(g for g in child.guardians if g.is_default))
+        db.refresh(child)
+        assert sum(1 for g in child.guardians if g.is_default) == 1

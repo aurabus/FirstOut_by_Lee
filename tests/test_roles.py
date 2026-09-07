@@ -126,3 +126,27 @@ def test_두_번_옮겨도_같다(tmp_path, monkeypatch):
     con = sqlite3.connect(path)
     assert con.execute("select role, title from user").fetchall() == [("관리자", "원장")]
     con.close()
+
+
+# ── 운영자와 유치원 화면 ────────────────────────────────
+
+def test_운영자는_어느_유치원에도_속하지_않는다(db):
+    """속하지 않으므로 유치원 화면에 들어가면 빈 목록이 뜨거나 저장하다 터진다.
+
+    실제로 운영자가 설정 화면에서 반을 추가하면 500 오류가 났다.
+    화면 쪽에서 운영 화면으로 돌려보내도록 고쳤고, 그 전제가 이것이다.
+    """
+    op = _user(db, "sysop", ROLE_OPERATOR, "서비스 운영")
+    op.kinder_id = None
+    db.commit()
+
+    assert op.kinder_id is None
+    assert op.is_admin          # 권한은 있지만
+    assert op.is_operator       # 유치원 사람은 아니다
+
+
+def test_유치원_사람은_반드시_유치원에_속한다(db):
+    for role in (ROLE_ADMIN, ROLE_TEACHER):
+        u = _user(db, f"u{role}", role, "담임")
+        assert u.kinder_id == KID
+        assert not u.is_operator

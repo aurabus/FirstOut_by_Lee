@@ -11,8 +11,6 @@
 
 from __future__ import annotations
 
-import datetime as dt
-
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from starlette.responses import RedirectResponse, Response
 
@@ -81,16 +79,3 @@ def wall(request, user, back: str = "/") -> RedirectResponse | None:
 def clear(res: Response) -> Response:
     res.delete_cookie(COOKIE)
     return res
-
-
-def left(request, user) -> int:
-    """남은 시간(초) — 화면에 보여주려고 쓴다."""
-    raw = request.cookies.get(COOKIE)
-    if not raw or not ok(request, user):
-        return 0
-    try:
-        _, made = _ser.loads(raw, max_age=MAX_AGE, return_timestamp=True)
-    except (BadSignature, ValueError, TypeError):
-        return 0
-    used = (dt.datetime.now(dt.timezone.utc) - made).total_seconds()
-    return max(0, int(MAX_AGE - used))

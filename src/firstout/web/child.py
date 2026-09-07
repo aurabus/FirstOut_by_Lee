@@ -302,10 +302,16 @@ def guardian_delete(cid: int, gid: int, request: Request, db: Session = Depends(
         return _back(cid, "인계자가 한 분뿐이라 지울 수 없습니다")
 
     name, was_default = g.name, g.is_default
-    db.delete(g)
+
+    # 관계에서 빼야 목록이 바로 갱신된다. db.delete() 만 하면 지운 사람이 목록에
+    # 그대로 남아 있어, 그 사람에게 기본을 넘기고 함께 사라진다 —
+    # 그러면 기본 인계자가 아무도 없어져 서명 창이 매번 비어 나온다.
+    child.guardians.remove(g)
     db.flush()
-    if was_default and child.guardians:
-        child.guardians[0].is_default = True
+    if was_default:
+        left = sorted(child.guardians, key=lambda x: x.seq)
+        if left:
+            left[0].is_default = True
     db.commit()
     return _back(cid, f"{name} 님을 인계자에서 뺐습니다")
 

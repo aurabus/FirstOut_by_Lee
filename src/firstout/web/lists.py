@@ -59,6 +59,10 @@ def show(request: Request, key: str, db: Session = Depends(get_db), d: str = "")
     me = current_user(request, db)
     if me is None:
         return RedirectResponse("/signin", status_code=303)
+    # 운영자는 어느 유치원에도 속하지 않는다. 유치원 화면에 들어오면
+    # 빈 목록이 뜨거나 저장하다 터진다 — 운영 화면으로 돌려보낸다.
+    if me.kinder_id is None:
+        return RedirectResponse("/", status_code=303)
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     if rnd is None:
