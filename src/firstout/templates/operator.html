@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% set nav = 'operator' %}
+{% block title %}운영 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:56rem">
+
+  {% if msg %}<p class="msg">{{ msg }}</p>{% endif %}
+
+  <dl class="tiles">
+    <div class="tile key"><dt>유치원</dt><dd>{{ kinders | length }}</dd></div>
+    <div class="tile {% if pending %}warn{% endif %}"><dt>승인 대기</dt><dd>{{ pending | length }}</dd></div>
+    <div class="tile pine"><dt>이용중</dt>
+      <dd>{{ kinders | selectattr('usable') | list | length }}</dd></div>
+    <div class="tile"><dt>전체 원아</dt><dd>{{ kid_counts.values() | sum }}</dd></div>
+  </dl>
+
+  {% if pending %}
+  <div class="sec">
+    <div class="sec-h"><h2>승인 대기</h2><span class="n">{{ pending | length }}곳</span>
+      <span class="hint">승인해야 이용이 시작됩니다</span>
+    </div>
+    <div class="cfg">
+      {% for k in pending %}
+      {% set o = owners.get(k.id) %}
+      <div class="cfg-row">
+        <span style="flex:1">
+          <b>{{ k.name }}</b>
+          <em class="sub">{% if o %}{{ o.name }} 원장 · {{ o.login_id }}{% if o.email %} · {{ o.email }}{% endif %}{% endif %}</em>
+          <em class="sub">{% if k.phone %}{{ k.phone }} · {% endif %}{{ k.created_at.strftime('%Y-%m-%d %H:%M') }} 신청</em>
+        </span>
+        <form method="post" action="/operator/{{ k.id }}/approve">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn go">승인</button>
+        </form>
+        <form method="post" action="/operator/{{ k.id }}/suspend">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn sm del">거절</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="sec">
+    <div class="sec-h"><h2>전체 유치원</h2><span class="n">{{ kinders | length }}곳</span></div>
+    <div class="tw"><table style="min-width:40rem">
+      <thead><tr>
+        <th class="tx">유치원</th><th class="tx">원장</th><th>계정</th><th>원아</th>
+        <th class="tx">상태</th><th class="tx">메모</th><th class="tx"></th>
+      </tr></thead>
+      <tbody>
+        {% for k in kinders %}
+        {% set o = owners.get(k.id) %}
+        <tr>
+          <td class="tx"><b>{{ k.name }}</b>
+            {% if k.phone %}<span class="sub">{{ k.phone }}</span>{% endif %}</td>
+          <td class="tx">{% if o %}{{ o.name }}<span class="sub">{{ o.login_id }}</span>{% else %}—{% endif %}</td>
+          <td>{{ user_counts.get(k.id, 0) }}</td>
+          <td>{{ kid_counts.get(k.id, 0) }}</td>
+          <td class="tx">
+            <span class="ustate {% if k.usable %}ok{% elif k.status == '승인대기' %}wait{% else %}off{% endif %}">
+              {{ k.status }}</span>
+          </td>
+          <td class="tx">
+            <form method="post" action="/operator/{{ k.id }}/memo" style="display:flex;gap:.25rem">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input class="field" name="memo" value="{{ k.memo }}" placeholder="메모" style="min-width:6rem">
+              <button class="btn sm">저장</button>
+            </form>
+          </td>
+          <td class="tx">
+            {% if k.usable %}
+            <form method="post" action="/operator/{{ k.id }}/suspend">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <button class="btn sm del">중지</button>
+            </form>
+            {% else %}
+            <form method="post" action="/operator/{{ k.id }}/approve">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <button class="btn sm">이용 시작</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="foot"><span>{{ app_name }} · 서비스 운영</span><span>{{ today_ko }}</span></div>
+</div>
+{% endblock %}

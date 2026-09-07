@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}신청 완료 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="login">
+  <div class="login-card" style="text-align:center">
+    <div>
+      <span class="lb-1">손잡고</span>
+      <span class="lb-2">마중</span>
+    </div>
+    <div class="login-mark"></div>
+    <p class="login-sub">가입 신청이 접수되었습니다</p>
+
+    <p class="msg" style="text-align:left;margin:.6rem 0">
+      저희가 확인한 뒤 승인해 드립니다. 승인되면 신청하신 아이디로 바로 로그인하실 수 있습니다.
+    </p>
+
+    <div class="cfg" style="text-align:left">
+      <div class="cfg-row"><b style="flex:0 0 5.5rem">다음 단계</b>
+        <span style="flex:1">승인 후 로그인 → 반 이름 확인 → 선생님 계정 만들기 → 원아 명부 등록</span></div>
+      <p class="cfg-note">반·귀가 차수·학원은 기본값이 이미 들어가 있어, 승인 직후 바로 쓰실 수 있습니다.</p>
+    </div>
+
+    <a class="btn" href="/signin" style="margin-top:.6rem">로그인 화면으로</a>
+  </div>
+</div>
+{% endblock %}

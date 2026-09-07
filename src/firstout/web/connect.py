@@ -18,14 +18,14 @@ router = APIRouter()
 @router.get("/connect")
 def connect(request: Request, db: Session = Depends(get_db)):
     """로그인 전에도 볼 수 있다. 설치한 사람이 바로 열어 확인하는 화면이기 때문이다."""
-    from ..main import RUN_PORT, current_teacher, page
+    from ..main import RUN_PORT, current_user, page
 
     port = RUN_PORT or (request.url.port or 8000)
     urls = net.all_urls(port)
     main_url = urls[0]
 
     return page(
-        request, "connect.html", db, current_teacher(request, db),
+        request, "connect.html", db, current_user(request, db),
         main_url=main_url,
         other_urls=urls[1:],
         qr=net.qr_svg(main_url),

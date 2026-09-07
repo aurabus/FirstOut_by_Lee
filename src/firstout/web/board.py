@@ -14,11 +14,11 @@ router = APIRouter()
 
 @router.get("/board")
 def board(request: Request, db: Session = Depends(get_db), d: str = ""):
-    from ..main import current_teacher, now, page, pick_date
+    from ..main import current_user, now, page, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     day, at = pick_date(d), now()
     rows = service.day_rows(db, me.kinder_id, day)

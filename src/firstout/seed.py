@@ -10,6 +10,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .models import (
+    KG_ACTIVE,
+    ROLE_OPERATOR,
     Academy,
     Bus,
     Child,
@@ -18,9 +20,9 @@ from .models import (
     Kindergarten,
     PlanEntry,
     Round,
-    Teacher,
+    User,
 )
-from .security import hash_pin
+from .security import hash_password
 
 DEFAULT_CLASSES = ["지혜1", "지혜2", "행복1", "행복2", "사랑1", "사랑2"]
 DEFAULT_ACADEMIES = ["태권도", "미술", "푸르넷", "하라온", "피아노"]
@@ -34,24 +36,19 @@ DEFAULT_ROUNDS = [
     ("care", "돌봄", "돌봄", "19:00", "저녁·온종일", True),
 ]
 
-DEFAULT_PIN = "0000"
 
 
-def create_kinder(
+
+def fill_new_kinder(
     db: Session,
-    name: str,
-    route_note: str = "",
+    k: Kindergarten,
     class_names: list[str] | None = None,
 ) -> Kindergarten:
-    """유치원 한 곳을 만들고 바로 쓸 수 있는 기본 자료를 채운다."""
-    k = Kindergarten(
-        name=name,
-        route_note=route_note,
-        seq=(db.scalar(select(func.max(Kindergarten.seq))) or 0) + 1,
-    )
-    db.add(k)
-    db.flush()
+    """새 유치원에 바로 쓸 수 있는 기본 자료를 채운다.
 
+    승인 직후 빈 화면을 마주하지 않도록 반·차수·학원을 미리 넣어두고,
+    원장이 설정 화면에서 자기 원에 맞게 고치게 한다.
+    """
     for i, n in enumerate(class_names or DEFAULT_CLASSES):
         db.add(ClassRoom(kinder_id=k.id, name=n, seq=i))
     bus = Bus(kinder_id=k.id, name="차량 1호", seq=0)
@@ -75,25 +72,48 @@ def create_kinder(
             )
         )
 
-    rooms = list(
-        db.scalars(select(ClassRoom).where(ClassRoom.kinder_id == k.id).order_by(ClassRoom.seq))
-    )
-    db.add(Teacher(kinder_id=k.id, name="원장", role="전체 관리",
-                   pin_hash=hash_pin(DEFAULT_PIN), is_admin=True))
-    for r in rooms:
-        db.add(Teacher(kinder_id=k.id, name=f"{r.name} 담임", role=f"{r.name} 담임",
-                       pin_hash=hash_pin(DEFAULT_PIN), class_id=r.id))
-    db.add(Teacher(kinder_id=k.id, name="하원 도우미", role="하원 도우미",
-                   pin_hash=hash_pin(DEFAULT_PIN)))
-
-    db.commit()
+    db.flush()
     return k
 
 
+def seed_operator(db: Session, login_id: str, password: str) -> User | None:
+    """운영자 계정 — 서버를 세울 때 한 번 만든다."""
+    if db.scalar(select(User).where(User.role == ROLE_OPERATOR)):
+        return None
+    u = User(
+        kinder_id=None,
+        login_id=login_id.strip().lower(),
+        password_hash=hash_password(password),
+        name="운영자",
+        role=ROLE_OPERATOR,
+        title="서비스 운영",
+    )
+    db.add(u)
+    db.commit()
+    return u
+
+
 def seed_base(db: Session) -> None:
-    """설치 직후 유치원이 하나도 없으면 첫 곳을 만들어 둔다."""
-    if db.scalar(select(func.count(Kindergarten.id))) == 0:
-        create_kinder(db, "가득유치원", "지혜가득 → 행복가득 → 사랑가득")
+    """지금은 자동으로 만들 것이 없다. 유치원은 가입 신청으로만 생긴다."""
+    return None
+
+
+def seed_demo_kinder(db: Session, name: str = "가득유치원") -> Kindergarten:
+    """시연용 유치원 — 승인까지 끝난 상태로 만든다."""
+    k = db.scalar(select(Kindergarten).where(Kindergarten.name == name))
+    if k:
+        return k
+    k = Kindergarten(
+        name=name,
+        route_note="지혜가득 → 행복가득 → 사랑가득",
+        status=KG_ACTIVE,
+        seq=(db.scalar(select(func.max(Kindergarten.seq))) or 0) + 1,
+    )
+    db.add(k)
+    db.flush()
+    fill_new_kinder(db, k)
+    db.commit()
+    return k
 
 
 # ── 시연용 원아 ─────────────────────────────────────────

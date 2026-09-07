@@ -59,6 +59,7 @@
         <div class="gl-item {% if r.done %}done{% endif %}">
           {% if r.done %}
             <form method="post" action="/list/{{ rnd.key }}/{{ r.child.id }}/undo" class="gl-form">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
               <input type="hidden" name="d" value="{{ d }}">
               <button class="gl-row" title="누르면 처리 취소">
                 <span class="gl-chk">✓</span>
@@ -80,6 +81,7 @@
             </button>
           {% else %}
             <form method="post" action="/list/{{ rnd.key }}/{{ r.child.id }}/check" class="gl-form">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
               <input type="hidden" name="how" value="{% if r.is_academy %}{{ r.academy }} 학원차{% else %}{{ rnd.name }}{% endif %}">
               <input type="hidden" name="d" value="{{ d }}">
               <button class="gl-row">
@@ -123,6 +125,7 @@
 <!-- 서명 인계 -->
 <dialog id="dlg" class="dlg">
   <form method="post" id="signForm" class="dlg-in">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
     <h3 id="d-title">서명 인계</h3>
     <p class="dlg-who" id="d-who"></p>
 
@@ -151,6 +154,7 @@
 <!-- 특이사항 -->
 <dialog id="mdlg" class="dlg">
   <form method="post" id="memoForm" class="dlg-in">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
     <h3>특이사항</h3>
     <p class="dlg-who" id="m-who"></p>
     <input class="field" id="m-text" name="memo" style="width:100%" placeholder="예: 멀미약 소지">

@@ -16,16 +16,22 @@
     <span class="kname">{{ kinder.name if kinder else "" }}</span>
     <span class="clock" id="clock">{{ today_ko }}</span>
     <span class="spacer"></span>
-    <span class="who"><i class="dotlive" id="live" title="서버 연결됨"></i>{{ me.name }}{% if me.role %} · {{ me.role }}{% endif %}</span>
-    <form method="post" action="/logout"><button class="out">전환</button></form>
+    <span class="who"><i class="dotlive" id="live" title="서버 연결됨"></i>{{ me.name }}{% if me.title %} · {{ me.title }}{% endif %}</span>
+    <a class="out" href="/me/password">비밀번호</a>
+    <form method="post" action="/signout">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><button class="out">로그아웃</button></form>
   </div>
   <div class="tabs">
+    {% if me.is_operator %}
+    <a class="tab {% if nav == 'operator' %}on{% endif %}" href="/operator">유치원 운영</a>
+    {% else %}
     <a class="tab {% if nav == 'board' %}on{% endif %}" href="/board">오늘 현황</a>
     <a class="tab {% if nav == 'roster' %}on{% endif %}" href="/roster">원아 명부</a>
     {% if me.is_admin %}
+    <a class="tab {% if nav == 'users' %}on{% endif %}" href="/users">선생님 관리</a>
     <a class="tab {% if nav == 'settings' %}on{% endif %}" href="/settings">설정</a>
     {% endif %}
-    <a class="tab {% if nav == 'connect' %}on{% endif %}" href="/connect">접속 안내</a>
+    {% endif %}
   </div>
 </div>
 {% endif %}

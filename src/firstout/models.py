@@ -1,8 +1,10 @@
 """데이터 구조.
 
 핵심 설계
-- 한 번 설치해 **여러 유치원**이 함께 쓴다. 반·차량·차수·학원·교사·원아는 모두
+- 회사 서버 한 곳에서 **여러 유치원**에 서비스한다. 반·차량·차수·학원·계정·원아는 모두
   유치원(Kindergarten)에 속하며, 조회는 언제나 유치원 단위로 걸러진다.
+- 계정은 셋으로 나뉜다. 운영자(우리)·원장(유치원 관리자)·교사.
+  유치원 가입은 원장만 신청하고 운영자가 승인하며, 교사 계정은 원장이 만든다.
 - 아이의 귀가 방법은 "아이 × 요일" 단위(PlanEntry)로 저장한다. 요일마다 다르기 때문.
 - 하루치 기록(Attendance·Departure)은 날짜별로 따로 쌓아 과거를 그대로 보존한다.
 """
@@ -30,18 +32,31 @@ class Base(DeclarativeBase):
 
 # ── 유치원 ──────────────────────────────────────────────
 
-class Kindergarten(Base):
-    """이 프로그램을 쓰는 유치원 한 곳.
+KG_PENDING = "승인대기"
+KG_ACTIVE = "이용중"
+KG_SUSPENDED = "정지"
 
-    첫 화면에서 고르는 대상이며, 아래 모든 자료의 주인이다.
+
+class Kindergarten(Base):
+    """서비스를 쓰는 유치원 한 곳. 아래 모든 자료의 주인이다.
+
+    원장이 가입을 신청하면 승인대기 상태로 만들어지고, 운영자가 승인해야 쓸 수 있다.
     """
 
     __tablename__ = "kindergarten"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(60), unique=True)
     route_note: Mapped[str] = mapped_column(String(120), default="")
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String(10), default=KG_PENDING)
+    phone: Mapped[str] = mapped_column(String(30), default="")
+    memo: Mapped[str] = mapped_column(String(200), default="")   # 운영자 메모
     seq: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.now)
+    approved_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    @property
+    def usable(self) -> bool:
+        return self.status == KG_ACTIVE
 
 
 # ── 설정 자료 (유치원별) ────────────────────────────────
@@ -108,19 +123,50 @@ class Round(Base):
 
 # ── 사람 ────────────────────────────────────────────────
 
-class Teacher(Base):
-    __tablename__ = "teacher"
+ROLE_OPERATOR = "운영자"   # 우리 회사 — 유치원 가입 승인
+ROLE_OWNER = "원장"        # 유치원 관리자 — 선생님 계정과 설정을 맡는다
+ROLE_TEACHER = "교사"
+
+
+class User(Base):
+    """로그인 계정.
+
+    아이디는 서비스 전체에서 유일하다. 유치원을 고르는 화면 없이
+    아이디 하나로 어느 유치원 사람인지 정해지므로 로그인이 한 단계 짧아지고,
+    무엇보다 유치원 목록과 선생님 명단이 밖으로 드러나지 않는다.
+    """
+
+    __tablename__ = "user"
     id: Mapped[int] = mapped_column(primary_key=True)
-    kinder_id: Mapped[int] = mapped_column(ForeignKey("kindergarten.id"))
+    kinder_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kindergarten.id"), nullable=True
+    )   # 운영자는 특정 유치원에 속하지 않는다
+    login_id: Mapped[str] = mapped_column(String(40), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(200), default="")
     name: Mapped[str] = mapped_column(String(40))
-    role: Mapped[str] = mapped_column(String(40), default="")
-    pin_hash: Mapped[str] = mapped_column(String(200), default="")
-    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    role: Mapped[str] = mapped_column(String(10), default=ROLE_TEACHER)
+    title: Mapped[str] = mapped_column(String(40), default="")   # 화면에 보일 직함
+    email: Mapped[str] = mapped_column(String(80), default="")
+    phone: Mapped[str] = mapped_column(String(30), default="")
     class_id: Mapped[int | None] = mapped_column(ForeignKey("classroom.id"), nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    must_change_pw: Mapped[bool] = mapped_column(Boolean, default=False)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    last_login_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.now)
 
     classroom: Mapped[ClassRoom | None] = relationship()
-    kinder: Mapped[Kindergarten] = relationship()
+    kinder: Mapped[Kindergarten | None] = relationship()
+
+    @property
+    def is_operator(self) -> bool:
+        return self.role == ROLE_OPERATOR
+
+    @property
+    def is_admin(self) -> bool:
+        """유치원 설정을 만질 수 있는 사람."""
+        return self.role in (ROLE_OWNER, ROLE_OPERATOR)
 
 
 class Child(Base):
@@ -204,7 +250,7 @@ class Attendance(Base):
     status: Mapped[str] = mapped_column(String(10), default=ATT_PRESENT)
     reason: Mapped[str] = mapped_column(String(60), default="")
     left_at: Mapped[str] = mapped_column(String(10), default="")
-    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teacher.id"), nullable=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
 
     child: Mapped[Child] = relationship()
 
@@ -227,7 +273,7 @@ class Departure(Base):
     status: Mapped[str] = mapped_column(String(10), default=DEP_WAITING)
     called_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     done_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
-    handled_by: Mapped[int | None] = mapped_column(ForeignKey("teacher.id"), nullable=True)
+    handled_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
     receiver: Mapped[str] = mapped_column(String(60), default="")   # 인계받은 사람
     how: Mapped[str] = mapped_column(String(60), default="")        # 차량 탑승 · 학원차 등
     signature: Mapped[str] = mapped_column(Text, default="")        # data:image/png;base64,…
@@ -235,4 +281,4 @@ class Departure(Base):
 
     child: Mapped[Child] = relationship()
     round: Mapped[Round | None] = relationship()
-    teacher: Mapped[Teacher | None] = relationship()
+    teacher: Mapped[User | None] = relationship()

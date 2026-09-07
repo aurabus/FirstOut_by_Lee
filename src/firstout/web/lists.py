@@ -44,11 +44,11 @@ def _back(key: str, msg: str = "", day: str = "") -> RedirectResponse:
 
 @router.get("/list/{key}")
 def show(request: Request, key: str, db: Session = Depends(get_db), msg: str = "", d: str = ""):
-    from ..main import current_teacher, page, pick_date
+    from ..main import current_user, page, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     if rnd is None:
@@ -86,11 +86,11 @@ def check(
 
     12명을 태우면서 매번 확인을 누르면 현장에서 못 쓴다는 의견을 반영했다.
     """
-    from ..main import current_teacher, now, pick_date
+    from ..main import current_user, now, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     child = db.get(Child, cid)
@@ -122,11 +122,11 @@ def sign(
 
     서명이 없으면 처리하지 않는다. 나중에 "누가 데려갔나"를 확인할 근거이기 때문이다.
     """
-    from ..main import current_teacher, now, pick_date
+    from ..main import current_user, now, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     child = db.get(Child, cid)
@@ -153,11 +153,11 @@ def call(
     key: str, cid: int, request: Request, d: str = Form(""), db: Session = Depends(get_db)
 ):
     """전화만 받은 상태 — 여기서부터 대기 시간이 흐른다."""
-    from ..main import current_teacher, now, pick_date
+    from ..main import current_user, now, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     child = db.get(Child, cid)
@@ -176,11 +176,11 @@ def undo(
     key: str, cid: int, request: Request, d: str = Form(""), db: Session = Depends(get_db)
 ):
     """잘못 누른 것을 되돌린다. 특이사항은 지우지 않는다."""
-    from ..main import current_teacher, pick_date
+    from ..main import current_user, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     dep = db.scalar(
         select(Departure).where(Departure.child_id == cid, Departure.on_date == pick_date(d))
@@ -206,11 +206,11 @@ def memo(
     db: Session = Depends(get_db),
 ):
     """특이사항 — 차에 태우는 아이도 적을 수 있다."""
-    from ..main import current_teacher, pick_date
+    from ..main import current_user, pick_date
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     dep = _dep(db, cid, pick_date(d), rnd.id if rnd else None)

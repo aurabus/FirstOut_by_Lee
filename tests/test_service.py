@@ -38,7 +38,7 @@ def db():
     Base.metadata.create_all(engine)
     s = sessionmaker(bind=engine)()
 
-    s.add(Kindergarten(id=KID, name="시험유치원"))
+    s.add(Kindergarten(id=KID, name="시험유치원", status="이용중"))
     s.add_all([
         ClassRoom(kinder_id=KID, name="지혜1", seq=0),
         ClassRoom(kinder_id=KID, name="행복1", seq=1),

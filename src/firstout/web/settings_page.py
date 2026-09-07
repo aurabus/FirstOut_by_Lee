@@ -18,11 +18,11 @@ router = APIRouter()
 
 
 def _guard(request: Request, db: Session):
-    from ..main import current_teacher
+    from ..main import current_user
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return None, RedirectResponse("/login", status_code=303)
+        return None, RedirectResponse("/signin", status_code=303)
     if not me.is_admin:
         return None, RedirectResponse("/board", status_code=303)
     return me, None

@@ -10,6 +10,7 @@
     <div class="sec-h"><h2>반 관리</h2><span class="n">{{ classes | length }}개</span>
       <span class="hint">
         <form method="post" action="/settings/class/add" style="display:flex;gap:.3rem">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input class="field" name="name" placeholder="새 반 이름">
           <button class="btn sm">+ 추가</button>
         </form>
@@ -19,15 +20,19 @@
       {% for c in classes %}
       <div class="cfg-row">
         <span class="ord">
-          <form method="post" action="/settings/class/{{ c.id }}/move"><input type="hidden" name="dir" value="-1"><button {% if loop.first %}disabled{% endif %}>▲</button></form>
-          <form method="post" action="/settings/class/{{ c.id }}/move"><input type="hidden" name="dir" value="1"><button {% if loop.last %}disabled{% endif %}>▼</button></form>
+          <form method="post" action="/settings/class/{{ c.id }}/move">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="dir" value="-1"><button {% if loop.first %}disabled{% endif %}>▲</button></form>
+          <form method="post" action="/settings/class/{{ c.id }}/move">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="dir" value="1"><button {% if loop.last %}disabled{% endif %}>▼</button></form>
         </span>
         <form method="post" action="/settings/class/{{ c.id }}/rename" style="flex:1;display:flex;gap:.3rem">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input class="field" name="name" value="{{ c.name }}" style="flex:1">
           <button class="btn sm">저장</button>
         </form>
         <span class="cfg-cnt">{{ counts.get(c.id, 0) }}명</span>
-        <form method="post" action="/settings/class/{{ c.id }}/delete"><button class="btn sm del">삭제</button></form>
+        <form method="post" action="/settings/class/{{ c.id }}/delete">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn sm del">삭제</button></form>
       </div>
       {% endfor %}
       <p class="cfg-note">순서는 아이를 데려오는 동선입니다 — 모든 명단이 이 순서로 정렬됩니다. 원아가 있는 반은 삭제되지 않습니다.</p>
@@ -36,16 +41,19 @@
 
   <div class="sec">
     <div class="sec-h"><h2>차량 관리</h2><span class="n">{{ buses | length }}대</span>
-      <span class="hint"><form method="post" action="/settings/bus/add"><button class="btn sm">+ 차량 추가</button></form></span>
+      <span class="hint"><form method="post" action="/settings/bus/add">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn sm">+ 차량 추가</button></form></span>
     </div>
     <div class="cfg">
       {% for b in buses %}
       <div class="cfg-row">
         <form method="post" action="/settings/bus/{{ b.id }}/rename" style="flex:1;display:flex;gap:.3rem">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input class="field" name="name" value="{{ b.name }}" style="flex:1">
           <button class="btn sm">저장</button>
         </form>
-        <form method="post" action="/settings/bus/{{ b.id }}/delete"><button class="btn sm del">삭제</button></form>
+        <form method="post" action="/settings/bus/{{ b.id }}/delete">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><button class="btn sm del">삭제</button></form>
       </div>
       {% endfor %}
       <p class="cfg-note">차량이 두 대 이상이면 귀가 명단이 차량별로 나뉩니다. 지금은 {{ buses | length }}대입니다.</p>
@@ -62,12 +70,14 @@
           <em style="font-style:normal;color:var(--ink-3);font-size:.78rem">· {{ r.kind }}{% if r.bus %} · {{ r.bus.name }}{% endif %}</em>
         </span>
         <form method="post" action="/settings/round/{{ r.id }}" style="display:flex;gap:.3rem;align-items:center">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input class="field t" name="at_time" value="{{ r.at_time }}">
           {% if r.kind == '차량' %}<input class="field t" name="note" value="{{ r.note }}" placeholder="탑승 시간" style="max-width:7rem">
           {% else %}<input type="hidden" name="note" value="{{ r.note }}">{% endif %}
           <button class="btn sm">저장</button>
         </form>
         <form method="post" action="/settings/round/{{ r.id }}/sign">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
           <button class="pick {% if r.needs_sign %}on{% endif %}" style="min-height:38px">
             {% if r.needs_sign %}✎ 서명 받음{% else %}체크만{% endif %}
           </button>
@@ -83,6 +93,7 @@
     <div class="sec-h"><h2>학원 목록</h2><span class="n">{{ academies | length }}곳</span>
       <span class="hint">
         <form method="post" action="/settings/academy/add" style="display:flex;gap:.3rem">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input class="field" name="name" placeholder="학원 이름">
           <button class="btn sm">+ 추가</button>
         </form>
@@ -92,7 +103,8 @@
       <div class="tags">
         {% for a in academies %}
         <span class="tag-x"><b>{{ a.name }}</b>
-          <form method="post" action="/settings/academy/{{ a.id }}/delete"><button>✕</button></form>
+          <form method="post" action="/settings/academy/{{ a.id }}/delete">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><button>✕</button></form>
         </span>
         {% else %}
         <span class="empty">등록된 학원이 없습니다.</span>
@@ -105,6 +117,7 @@
   <div class="sec">
     <div class="sec-h"><h2>유치원 정보</h2></div>
     <form method="post" action="/settings/kinder">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
       <div class="cfg">
         <div class="cfg-row"><span style="flex:0 0 6rem">이름</span>
           <input class="field" name="kinder_name" value="{{ kinder.name }}" style="flex:1"></div>

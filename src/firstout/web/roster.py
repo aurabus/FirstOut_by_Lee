@@ -24,11 +24,11 @@ def roster(
     q: str = "",
     db: Session = Depends(get_db),
 ):
-    from ..main import current_teacher, page
+    from ..main import current_user, page
 
-    me = current_teacher(request, db)
+    me = current_user(request, db)
     if me is None:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
 
     stmt = (
         select(Child)

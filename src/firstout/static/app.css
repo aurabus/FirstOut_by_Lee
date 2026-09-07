@@ -346,3 +346,22 @@ tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
   .conn{grid-template-columns:1fr}
   .conn-qr svg{margin:0 auto;max-width:100%;height:auto}
 }
+
+/* ── 계정 관리 ── */
+.uid{font-size:.78rem;color:var(--ink-3);min-width:6rem}
+.urole{font-size:.72rem;border:1px solid var(--rule);border-radius:2px;padding:.1rem .4rem;color:var(--ink-3)}
+.urole.owner{border-color:var(--pine);color:var(--pine);font-weight:700}
+.ustate{font-size:.72rem;border-radius:2px;padding:.1rem .4rem;
+  border:1px solid var(--gold-line);background:var(--gold-soft);color:var(--gold)}
+.ustate.off{border-color:var(--clay-line);background:var(--clay-soft);color:var(--clay)}
+.ustate.ok{border-color:var(--pine);background:var(--pine-soft);color:var(--pine)}
+.ustate.wait{border-color:var(--gold-line);background:var(--gold-soft);color:var(--gold)}
+.cfg-row.off{opacity:.55}
+.sub{display:block;font-style:normal;font-size:.75rem;color:var(--ink-3)}
+.pw-box{border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:3px;
+  padding:.75rem .9rem;margin:1rem 0;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.pw-box b{color:var(--gold);font-size:.85rem}
+.pw-box code{font-size:1.1rem;font-weight:700;color:var(--ink);
+  background:var(--card);border:1px solid var(--gold-line);border-radius:2px;padding:.2rem .6rem}
+.pw-box p{flex:1 0 100%;font-size:.8rem;color:var(--ink-2);margin-top:.3rem}
+select.field{min-height:40px}

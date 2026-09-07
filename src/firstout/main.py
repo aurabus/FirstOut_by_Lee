@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import mimetypes
+import sys
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse
@@ -19,15 +20,16 @@ from sqlalchemy.orm import Session
 
 from . import service
 from .config import APP_NAME, APP_TAGLINE, STATIC_DIR, TEMPLATE_DIR, WEEKDAYS, ensure_dirs
+from .csrf import CSRFMiddleware
 from .db import SessionLocal, get_db, init_db
-from .models import Teacher
-from .security import read_token
-from .seed import seed_base
+from .models import User
+from .security import CSRF_COOKIE, new_csrf, read_token
 
 # Windows 기본 목록에 woff2 가 없어 octet-stream 으로 나가므로 직접 등록한다
 mimetypes.add_type("font/woff2", ".woff2")
 
 app = FastAPI(title=APP_NAME, docs_url=None, redoc_url=None)
+app.add_middleware(CSRFMiddleware)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
@@ -55,12 +57,24 @@ def now() -> dt.datetime:
 RUN_PORT: int = 0   # 실행 포트 — 접속 안내 화면이 쓴다
 
 
-def current_teacher(request: Request, db: Session) -> Teacher | None:
-    tid = read_token(request.cookies.get("majung"))
-    return db.get(Teacher, tid) if tid else None
+def current_user(request: Request, db: Session) -> User | None:
+    uid = read_token(request.cookies.get("majung"))
+    if uid is None:
+        return None
+    u = db.get(User, uid)
+    if u is None or not u.active:
+        return None
+    # 승인 전이거나 중지된 유치원이면 들여보내지 않는다
+    if u.kinder_id is not None and (u.kinder is None or not u.kinder.usable):
+        return None
+    return u
 
 
-def page(request: Request, name: str, db: Session, teacher: Teacher | None, **ctx):
+# 예전 이름 — 화면 코드가 아직 쓰는 곳이 있어 남겨둔다
+current_teacher = current_user
+
+
+def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
     """모든 화면이 공통으로 쓰는 값을 채워 렌더한다."""
     d = ctx.pop("day", None) or today()
     base = {
@@ -77,20 +91,25 @@ def page(request: Request, name: str, db: Session, teacher: Teacher | None, **ct
         "prev_day": (d - dt.timedelta(days=1)).isoformat(),
         "next_day": (d + dt.timedelta(days=1)).isoformat(),
         "weekdays": WEEKDAYS,
-        "classes": service.classes(db, teacher.kinder_id) if teacher else [],
-        "rounds": service.rounds(db, teacher.kinder_id) if teacher else [],
+        "classes": service.classes(db, teacher.kinder_id) if teacher and teacher.kinder_id else [],
+        "rounds": service.rounds(db, teacher.kinder_id) if teacher and teacher.kinder_id else [],
         "now": now(),
+        "csrf": request.cookies.get(CSRF_COOKIE) or new_csrf(),
     }
     base.update(ctx)
-    return templates.TemplateResponse(request, name, base)
+    res = templates.TemplateResponse(request, name, base)
+    if not request.cookies.get(CSRF_COOKIE):
+        res.set_cookie(
+            CSRF_COOKIE, base["csrf"], httponly=False, samesite="lax",
+            secure=request.url.scheme == "https", max_age=60 * 60 * 24 * 14,
+        )
+    return res
 
 
 @app.on_event("startup")
 def _startup() -> None:
     ensure_dirs()
     init_db()
-    with SessionLocal() as db:
-        seed_base(db)
 
 
 @app.get("/health")
@@ -101,19 +120,56 @@ def health() -> dict[str, str]:
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
-    me = current_teacher(request, db)
-    return RedirectResponse("/board" if me else "/pick", status_code=303)
+    me = current_user(request, db)
+    if me is None:
+        return RedirectResponse("/signin", status_code=303)
+    if me.must_change_pw:
+        return RedirectResponse("/me/password", status_code=303)
+    if me.is_operator:
+        return RedirectResponse("/operator", status_code=303)
+    return RedirectResponse("/board", status_code=303)
 
 
 # 라우터는 아래에서 등록한다 (순환 참조를 피하려고 마지막에 둔다)
-from .web import auth, board, connect, lists, roster, settings_page  # noqa: E402
+from .web import (  # noqa: E402
+    auth,
+    board,
+    connect,
+    lists,
+    operator,
+    roster,
+    settings_page,
+    users,
+)
 
-for mod in (auth, board, connect, lists, roster, settings_page):
+for mod in (auth, board, connect, lists, operator, roster, settings_page, users):
     app.include_router(mod.router)
+
+
+def use_utf8_console() -> None:
+    """한글 Windows 콘솔은 기본이 cp949 라 「—」 같은 글자에서 print 가 죽는다.
+
+    배너 한 줄 때문에 서버가 아예 시작되지 않는 일이 있어, 출력 인코딩을 먼저 고정한다.
+    콘솔 설정에 실패하더라도 errors="replace" 덕분에 죽지는 않는다.
+    """
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        except (AttributeError, OSError):
+            pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            pass
 
 
 def main() -> None:
     import uvicorn
+
+    use_utf8_console()
 
     ap = argparse.ArgumentParser(description="손잡고 마중 서버")
     ap.add_argument("--host", default="0.0.0.0")
@@ -122,6 +178,8 @@ def main() -> None:
     ap.add_argument("--demo", action="store_true", help="시연용 가상 원아를 넣는다")
     ap.add_argument("--reset", action="store_true", help="자료를 모두 지우고 처음부터 (주의)")
     ap.add_argument("--open", action="store_true", help="브라우저를 함께 연다")
+    ap.add_argument("--operator", metavar="아이디:비밀번호",
+                    help="운영자 계정을 만든다 (서버를 처음 세울 때 한 번)")
     args = ap.parse_args()
 
     ensure_dirs()
@@ -140,14 +198,26 @@ def main() -> None:
 
     init_db()
     with SessionLocal() as db:
-        seed_base(db)
-        if args.demo:
-            from .seed import seed_demo
+        if args.operator:
+            from .seed import seed_operator
 
-            for k in service.kindergartens(db):
-                made = seed_demo(db, k.id)
-                if made:
-                    print(f"  {k.name}: 시연용 원아 {made}명 생성")
+            login_id, _, pw = args.operator.partition(":")
+            if not pw:
+                print("  --operator 아이디:비밀번호 형태로 넣어주세요")
+                return
+            if seed_operator(db, login_id, pw):
+                print(f"  운영자 계정 생성: {login_id}")
+            else:
+                print("  운영자 계정이 이미 있습니다")
+
+        if args.demo:
+            from .seed import seed_demo, seed_demo_kinder
+
+            k = seed_demo_kinder(db)
+            made = seed_demo(db, k.id)
+            if made:
+                print(f"  {k.name}: 시연용 원아 {made}명 생성")
+            _demo_users(db, k)
 
         kinders = service.kindergartens(db)
 
@@ -163,7 +233,28 @@ def main() -> None:
     uvicorn.run("firstout.main:app", host=args.host, port=args.port, reload=args.reload)
 
 
-def _print_banner(port: int, kinders: list) -> None:
+def _demo_users(db, kinder) -> None:
+    """시연용 계정 — 원장과 담임 한 명. 실제 운영에서는 가입과 사용자 관리로 만든다."""
+    from sqlalchemy import select
+
+    from .models import ROLE_OWNER, ROLE_TEACHER, ClassRoom, User
+    from .security import hash_password
+
+    if db.scalar(select(User).where(User.kinder_id == kinder.id)):
+        return
+    room = db.scalar(
+        select(ClassRoom).where(ClassRoom.kinder_id == kinder.id).order_by(ClassRoom.seq)
+    )
+    db.add(User(kinder_id=kinder.id, login_id="wonjang", password_hash=hash_password("majung1234"),
+                name="최영호", role=ROLE_OWNER, title="원장"))
+    db.add(User(kinder_id=kinder.id, login_id="teacher1", password_hash=hash_password("majung1234"),
+                name="김미영", role=ROLE_TEACHER, title="지혜1 담임",
+                class_id=room.id if room else None))
+    db.commit()
+    print("  시연 계정: wonjang / teacher1  비밀번호 majung1234")
+
+
+def _print_banner(port: int, kinders: list, file=None) -> None:
     """실행하자마자 접속 주소를 알 수 있어야 한다.
 
     설치 후 가장 많이 막히는 것이 "선생님들이 어떤 주소로 들어가나요?" 라서
@@ -171,31 +262,35 @@ def _print_banner(port: int, kinders: list) -> None:
     """
     from . import net
 
+    out = file or sys.stdout
+
+    def say(text: str = "") -> None:
+        print(text, file=out)
+
     urls = net.all_urls(port)
     line = "─" * 58
 
-    print(f"\n  {line}")
-    print(f"   {APP_NAME} — {APP_TAGLINE}")
-    print(f"  {line}")
-    print(f"   선생님 기기   {urls[0]}          ← 이 주소를 알려주세요")
+    say(f"\n  {line}")
+    say(f"   {APP_NAME} — {APP_TAGLINE}")
+    say(f"  {line}")
+    say(f"   선생님 기기   {urls[0]}          ← 이 주소를 알려주세요")
     for u in urls[1:]:
-        print(f"                 {u}")
-    print(f"   이 PC         http://127.0.0.1:{port}")
-    print(f"   접속 안내·QR   http://127.0.0.1:{port}/connect")
-    print(f"  {line}")
+        say(f"                 {u}")
+    say(f"   이 PC         http://127.0.0.1:{port}")
+    say(f"   접속 안내·QR   http://127.0.0.1:{port}/connect")
+    say(f"  {line}")
 
     if kinders:
-        names = " · ".join(k.name for k in kinders)
-        print(f"   등록된 유치원  {len(kinders)}곳 — {names}")
+        names = " · ".join(f"{k.name}({k.status})" for k in kinders)
+        say(f"   등록된 유치원  {len(kinders)}곳 — {names}")
     else:
-        print("   등록된 유치원  없음 — 첫 화면에서 등록해 주세요")
-    print("   로그인 PIN    0000  (설정에서 바꾸세요)")
+        say("   등록된 유치원  없음 — /signup 에서 가입 신청을 받습니다")
 
     d = today()
     if d.weekday() > 4:
         weekday = d - dt.timedelta(days=d.weekday() - 4)
-        print(f"   오늘은 주말   화면의 「어제」를 누르거나 {weekday} 로 평일을 보세요")
-    print(f"  {line}\n")
+        say(f"   오늘은 주말   화면의 「어제」를 누르거나 {weekday} 로 평일을 보세요")
+    say(f"  {line}\n")
 
 
 if __name__ == "__main__":
