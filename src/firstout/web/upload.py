@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import datetime as dt
 import secrets
-from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -20,6 +19,7 @@ from .. import excel, flash
 from ..config import UPLOAD_DIR
 from ..db import get_db
 from ..models import Child
+from . import xlsx
 
 router = APIRouter()
 
@@ -80,20 +80,8 @@ def template(request: Request, db: Session = Depends(get_db)):
         return redirect
 
     data = excel.make_template(db, me.kinder_id, me.kinder.name)
-
-    # 헤더는 latin-1 만 담을 수 있어 한글 파일 이름을 그대로 넣으면 500 이 난다.
-    # 옛 브라우저용 ASCII 이름과 UTF-8 이름을 함께 보낸다 (RFC 5987).
-    name = f"원아명부_양식_{dt.date.today()}.xlsx"
-    quoted = quote(name)
-    return Response(
-        content=data,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition":
-                f'attachment; filename="majung_roster_{dt.date.today()}.xlsx"; '
-                f"filename*=UTF-8''{quoted}"
-        },
-    )
+    today = dt.date.today()
+    return xlsx(data, f"원아명부_양식_{today}.xlsx", f"majung_template_{today}.xlsx")
 
 
 def _path(token: str):

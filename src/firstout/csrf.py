@@ -144,10 +144,15 @@ class AuditMiddleware:
                     ip=_client_ip(scope),
                     agent=_header(scope, b"user-agent"),
                 )
-                # 한 시간에 한 번만 오래된 기록을 치운다 — 매 요청마다 훑을 일이 아니다
+                # 한 시간에 한 번만 뒷정리를 한다 — 매 요청마다 훑을 일이 아니다.
+                # 유치원은 서버를 몇 달씩 켜 두므로 시작할 때만 해서는 안 된다.
                 if time.time() - self._last_purge > 3600:
                     self._last_purge = time.time()
+                    from . import backup, retention
+
                     audit.purge_old(db)
+                    retention.purge_signatures(db)
+                    backup.run()          # 오늘 사본이 이미 있으면 아무것도 하지 않는다
         except Exception:   # noqa: BLE001 — 기록 실패가 서비스를 멈추면 안 된다
             pass
 

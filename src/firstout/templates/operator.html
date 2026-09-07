@@ -88,6 +88,29 @@
     </table></div>
   </div>
 
+  <div class="sec">
+    <div class="sec-h"><h2>백업</h2>
+      <span class="n">{{ backup_count }}일치</span>
+      <span class="hint">매일 자동으로 만들고 {{ backup_days }}일 뒤 지웁니다</span>
+    </div>
+    <div class="cfg">
+      <div class="cfg-row">
+        <span style="flex:1">
+          {% if backup_last %}
+          <b>{{ backup_last[0] }}</b>
+          <em class="sub">{{ "{:,}".format(backup_kb) }}KB · 가장 최근 사본</em>
+          {% else %}
+          <b class="v-abs">아직 백업이 없습니다</b>
+          <em class="sub">서버를 다시 시작하면 만들어집니다</em>
+          {% endif %}
+          <em class="sub">{{ backup_dir }}</em>
+        </span>
+      </div>
+    </div>
+    <p class="empty">이 폴더를 NAS 가 매일 가져가야 서버 디스크가 죽어도 자료가 남습니다.
+      <strong>가져간 사본으로 실제 복구가 되는지</strong> 반년에 한 번 확인해 주세요.</p>
+  </div>
+
   <div class="foot"><span>{{ app_name }} · 서비스 운영</span><span>{{ today_ko }}</span></div>
 </div>
 {% endblock %}

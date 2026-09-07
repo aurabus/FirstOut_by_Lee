@@ -5,14 +5,17 @@
 
 from __future__ import annotations
 
+import datetime as dt
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from .. import service
+from .. import excel, service
 from ..db import get_db
 from ..models import Child, PlanEntry
+from . import xlsx
 
 router = APIRouter()
 
@@ -59,3 +62,23 @@ def roster(
         request, "roster.html", db, me,
         kids=kids, plans=plans, sel_cls=cls, q=q,
     )
+
+
+@router.get("/roster/export")
+def export(request: Request, db: Session = Depends(get_db)):
+    """지금 명부를 엑셀로 내려받는다.
+
+    올릴 때와 같은 양식이라 고쳐서 그대로 다시 올릴 수 있고,
+    서버에 문제가 생겼을 때 선생님 손에 남는 마지막 사본이 된다.
+    """
+    from ..main import current_user
+
+    me = current_user(request, db)
+    if me is None:
+        return RedirectResponse("/signin", status_code=303)
+    if me.kinder_id is None:
+        return RedirectResponse("/", status_code=303)
+
+    data = excel.export_roster(db, me.kinder_id)
+    today = dt.date.today()
+    return xlsx(data, f"원아명부_{me.kinder.name}_{today}.xlsx", f"majung_roster_{today}.xlsx")

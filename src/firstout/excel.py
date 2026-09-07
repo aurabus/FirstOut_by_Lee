@@ -17,7 +17,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from . import service
 from .config import WEEKDAYS
@@ -35,21 +35,8 @@ _THIN = Side(style="thin", color="CBD4CF")
 _BOX = Border(left=_THIN, right=_THIN, top=_THIN, bottom=_THIN)
 
 
-def make_template(db: Session, kinder_id: int, kinder_name: str) -> bytes:
-    """그 유치원 기준으로 채워진 빈 양식."""
-    classes = service.classes(db, kinder_id)
-    rounds = service.rounds(db, kinder_id)
-    aca_names = [
-        a.name
-        for a in db.scalars(
-            select(Academy).where(Academy.kinder_id == kinder_id).order_by(Academy.name)
-        )
-    ]
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = SHEET
-
+def _write_head(ws, classes) -> None:
+    """머리글과 열 너비 — 양식과 내보내기가 같은 모양이어야 다시 올릴 수 있다."""
     for i, h in enumerate(HEAD, start=1):
         c = ws.cell(row=1, column=i, value=h)
         c.font = Font(bold=True, color=_PINE)
@@ -74,6 +61,27 @@ def make_template(db: Session, kinder_id: int, kinder_name: str) -> bytes:
         )
         ws.add_data_validation(dv)
         dv.add("A2:A2000")
+
+
+def _academies(db: Session, kinder_id: int) -> list[str]:
+    return [
+        a.name
+        for a in db.scalars(
+            select(Academy).where(Academy.kinder_id == kinder_id).order_by(Academy.name)
+        )
+    ]
+
+
+def make_template(db: Session, kinder_id: int, kinder_name: str) -> bytes:
+    """그 유치원 기준으로 채워진 빈 양식."""
+    classes = service.classes(db, kinder_id)
+    rounds = service.rounds(db, kinder_id)
+    aca_names = _academies(db, kinder_id)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = SHEET
+    _write_head(ws, classes)
 
     # 예시 두 줄 — 지우고 쓰시라고 안내한다
     r1 = rounds[0].name if rounds else "1차 개별"
@@ -131,6 +139,69 @@ def _write_guide(wb: Workbook, classes, rounds, aca_names) -> None:
     line("주의", "", True)
     line("", "반 이름은 위 목록과 정확히 같아야 합니다. 올린 뒤 미리보기에서 "
              "확인하고 「등록하기」를 눌러야 저장됩니다.")
+
+
+# ── 내려받기 ────────────────────────────────────────────
+
+def _day_cell(p) -> str:
+    """주간 계획 한 칸을 양식에 적히는 말로 돌려놓는다 — parse() 가 그대로 읽는다."""
+    if p is None:
+        return ""
+    if p.academy_id and p.academy:
+        return f"학원({p.academy.name})"
+    if not p.round:
+        return ""
+    return p.round.name + (f" {p.time_override}" if p.time_override else "")
+
+
+def export_roster(db: Session, kinder_id: int) -> bytes:
+    """지금 등록된 명부를 양식 그대로 내보낸다.
+
+    올릴 때 쓰는 양식과 같은 모양이라, 내려받아 고친 뒤 그대로 다시 올릴 수 있다.
+    서버에 무슨 일이 생겨도 이 파일 하나면 명부와 주간 계획은 살아남는다.
+    """
+    classes = service.classes(db, kinder_id)
+    order = {c.id: c.seq for c in classes}
+
+    kids = list(
+        db.scalars(
+            select(Child)
+            .where(Child.kinder_id == kinder_id, Child.active.is_(True))
+            .options(
+                selectinload(Child.classroom),
+                selectinload(Child.guardians),
+                selectinload(Child.plan).selectinload(PlanEntry.round),
+                selectinload(Child.plan).selectinload(PlanEntry.academy),
+            )
+        )
+    )
+    kids.sort(key=lambda k: (order.get(k.class_id, 99), k.name))
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = SHEET
+    _write_head(ws, classes)
+
+    for ri, k in enumerate(kids, start=2):
+        plans = {pl.weekday: pl for pl in k.plan}
+        row = [k.classroom.name if k.classroom else "", k.name]
+        row += [_day_cell(plans.get(w)) for w in range(len(WEEKDAYS))]
+
+        # 기본 인계자가 보호자1 자리에 오도록 정렬한다
+        gs = sorted(k.guardians, key=lambda g: (not g.is_default, g.seq))[:2]
+        for i in range(2):
+            g = gs[i] if i < len(gs) else None
+            row += [g.name if g else "", g.relation if g else "", g.phone if g else ""]
+        row.append(k.note)
+
+        for ci, v in enumerate(row, start=1):
+            ws.cell(row=ri, column=ci, value=v).border = _BOX
+
+    _write_guide(wb, classes, service.rounds(db, kinder_id), _academies(db, kinder_id))
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
 
 
 # ── 읽어들이기 ──────────────────────────────────────────

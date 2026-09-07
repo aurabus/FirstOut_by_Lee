@@ -11,7 +11,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import flash
+from .. import backup, flash
+from ..config import BACKUP_DIR
 from ..db import get_db
 from ..models import (
     KG_ACTIVE,
@@ -67,10 +68,16 @@ def operator_view(request: Request, db: Session = Depends(get_db)):
         u.kinder_id: u
         for u in db.scalars(select(User).where(User.role == "원장").order_by(User.id))
     }
+    last = backup.latest()
     return page(
         request, "operator.html", db, me,
         kinders=kinders, kid_counts=kids, user_counts=users, owners=owners,
         pending=[k for k in kinders if k.status == KG_PENDING],
+        backup_last=last,
+        backup_kb=(last[1] // 1024) if last else 0,
+        backup_dir=str(BACKUP_DIR),
+        backup_days=backup.KEEP_DAYS,
+        backup_count=len(list(BACKUP_DIR.glob("majung-*.db"))),
     )
 
 

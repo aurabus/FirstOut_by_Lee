@@ -145,11 +145,21 @@ def _startup() -> None:
     ensure_dirs()
     init_db()
     with SessionLocal() as db:
-        from . import audit
+        from . import audit, backup, retention
 
         gone = audit.purge_old(db)
         if gone:
             print(f"  감사 로그 {gone}건 정리 (한 달 지난 기록)")
+
+        sigs = retention.purge_signatures(db)
+        if sigs:
+            print(f"  서명 {sigs}건 삭제 (한 달 지난 그림)")
+
+        try:
+            note, dropped = backup.run()
+            print(f"  {note}" + (f" · 오래된 사본 {dropped}개 정리" if dropped else ""))
+        except Exception as e:   # noqa: BLE001 — 백업 실패가 서비스를 막으면 안 된다
+            print(f"  백업 실패: {e}")
 
 
 @app.get("/health")
