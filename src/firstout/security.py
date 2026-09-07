@@ -56,15 +56,26 @@ _session = URLSafeTimedSerializer(SECRET_KEY, salt="majung-session")
 SESSION_MAX_AGE = 60 * 60 * 24 * 14   # 2주 — 하원 때마다 다시 로그인하지 않도록
 
 
-def make_token(user_id: int) -> str:
-    return _session.dumps({"u": user_id})
+def pw_stamp(password_hash: str) -> str:
+    """비밀번호가 바뀌면 달라지는 짧은 표식."""
+    return hashlib.sha256(password_hash.encode()).hexdigest()[:12]
 
 
-def read_token(token: str | None, max_age: int = SESSION_MAX_AGE) -> int | None:
+def make_token(user_id: int, password_hash: str = "") -> str:
+    return _session.dumps({"u": user_id, "p": pw_stamp(password_hash)})
+
+
+def read_token(token: str | None, max_age: int = SESSION_MAX_AGE) -> tuple[int, str] | None:
+    """(계정 id, 비밀번호 표식) 을 돌려준다.
+
+    표식을 함께 담아두면, 비밀번호를 바꾸는 순간 다른 기기에 남아 있던
+    로그인이 모두 끊긴다. 비밀번호가 샜을 때 되찾는 유일한 방법이다.
+    """
     if not token:
         return None
     try:
-        return int(_session.loads(token, max_age=max_age)["u"])
+        data = _session.loads(token, max_age=max_age)
+        return int(data["u"]), str(data.get("p", ""))
     except (BadSignature, KeyError, ValueError, TypeError):
         return None
 

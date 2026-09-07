@@ -10,7 +10,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import service
+from .. import flash, service
 from ..db import get_db
 from ..models import Academy, Bus, Child, ClassRoom, Kindergarten, PlanEntry, Round
 
@@ -29,7 +29,7 @@ def _guard(request: Request, db: Session):
 
 
 @router.get("/settings")
-def settings_view(request: Request, db: Session = Depends(get_db), msg: str = ""):
+def settings_view(request: Request, db: Session = Depends(get_db)):
     from ..main import page
 
     me, redirect = _guard(request, db)
@@ -51,12 +51,24 @@ def settings_view(request: Request, db: Session = Depends(get_db), msg: str = ""
     )
     return page(
         request, "settings.html", db, me,
-        counts=counts, buses=buses, academies=academies, msg=msg,
+        counts=counts, buses=buses, academies=academies,
     )
 
 
 def _back(msg: str = "") -> RedirectResponse:
-    return RedirectResponse(f"/settings?msg={msg}", status_code=303)
+    return flash.put(RedirectResponse("/settings", status_code=303), msg)
+
+
+def _own(db: Session, model, obj_id: int, me):
+    """내 유치원 것일 때만 돌려준다.
+
+    주소의 숫자만 바꾸면 남의 유치원 반을 지울 수 있었다.
+    조회할 때마다 주인을 확인한다.
+    """
+    obj = db.get(model, obj_id)
+    if obj is None or obj.kinder_id != me.kinder_id:
+        return None
+    return obj
 
 
 # ── 반 ──────────────────────────────────────────────────
@@ -81,10 +93,10 @@ def class_add(request: Request, name: str = Form(""), db: Session = Depends(get_
 
 @router.post("/settings/class/{cid}/rename")
 def class_rename(cid: int, request: Request, name: str = Form(""), db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    c = db.get(ClassRoom, cid)
+    c = _own(db, ClassRoom, cid, me)
     if c and name.strip():
         c.name = name.strip()
         db.commit()
@@ -109,12 +121,14 @@ def class_move(cid: int, request: Request, dir: int = Form(0), db: Session = Dep
 
 @router.post("/settings/class/{cid}/delete")
 def class_delete(cid: int, request: Request, db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
+    c = _own(db, ClassRoom, cid, me)
+    if c is None:
+        return _back()
     if db.scalar(select(func.count(Child.id)).where(Child.class_id == cid)):
         return _back("원아가 있는 반은 삭제할 수 없습니다")
-    c = db.get(ClassRoom, cid)
     if c:
         db.delete(c)
         db.commit()
@@ -136,10 +150,10 @@ def bus_add(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/settings/bus/{bid}/rename")
 def bus_rename(bid: int, request: Request, name: str = Form(""), db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    b = db.get(Bus, bid)
+    b = _own(db, Bus, bid, me)
     if b and name.strip():
         b.name = name.strip()
         db.commit()
@@ -155,7 +169,7 @@ def bus_delete(bid: int, request: Request, db: Session = Depends(get_db)):
         return _back("차량은 최소 한 대가 필요합니다")
     if db.scalar(select(func.count(Round.id)).where(Round.bus_id == bid)):
         return _back("이 차량을 쓰는 차수가 있어 삭제할 수 없습니다")
-    b = db.get(Bus, bid)
+    b = _own(db, Bus, bid, me)
     if b:
         db.delete(b)
         db.commit()
@@ -173,10 +187,10 @@ def round_save(
     db: Session = Depends(get_db),
 ):
     """시각은 매월·매 학기 바뀌므로 여기서 고친다."""
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    r = db.get(Round, rid)
+    r = _own(db, Round, rid, me)
     if r:
         r.at_time = at_time.strip() or r.at_time
         r.note = note.strip()
@@ -186,10 +200,10 @@ def round_save(
 
 @router.post("/settings/round/{rid}/sign")
 def round_sign(rid: int, request: Request, db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    r = db.get(Round, rid)
+    r = _own(db, Round, rid, me)
     if r:
         r.needs_sign = not r.needs_sign
         db.commit()
@@ -216,12 +230,14 @@ def academy_add(request: Request, name: str = Form(""), db: Session = Depends(ge
 
 @router.post("/settings/academy/{aid}/delete")
 def academy_delete(aid: int, request: Request, db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
+    a = _own(db, Academy, aid, me)
+    if a is None:
+        return _back()
     if db.scalar(select(func.count(PlanEntry.id)).where(PlanEntry.academy_id == aid)):
         return _back("이 학원으로 가는 아이가 있어 삭제할 수 없습니다")
-    a = db.get(Academy, aid)
     if a:
         db.delete(a)
         db.commit()

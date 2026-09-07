@@ -22,8 +22,11 @@ STATIC_DIR = PKG_DIR / "static"
 APP_NAME = "손잡고 마중"
 APP_TAGLINE = "아이를 안전하게, 집으로"
 
-# 세션 서명 키 — 운영 시 환경변수로 덮어쓴다
-SECRET_KEY = os.environ.get("MAJUNG_SECRET", "majung-dev-secret-change-me")
+# 세션 서명 키. 이 값을 아는 사람은 남의 로그인 세션을 만들어낼 수 있으므로
+# 운영에서는 반드시 환경변수로 덮어써야 한다. main 에서 확인하고 막는다.
+DEV_SECRET = "majung-dev-secret-change-me"
+SECRET_KEY = os.environ.get("MAJUNG_SECRET", DEV_SECRET)
+IS_DEV_SECRET = SECRET_KEY == DEV_SECRET
 
 WEEKDAYS = ["월", "화", "수", "목", "금"]
 

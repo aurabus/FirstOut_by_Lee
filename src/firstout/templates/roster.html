@@ -59,8 +59,9 @@
           {% endfor %}
           <td class="tx">
             {% set g = k.default_guardian %}
-            {% if g %}{{ g.name }} · {{ g.relation }}{% if k.guardians | length > 1 %}
-              <span class="z">외 {{ k.guardians | length - 1 }}</span>{% endif %}
+            {% if g %}{{ g.name }} · {{ g.relation }}
+              {% if g.has_phone %}<span class="masked" title="개인정보 보호를 위해 가려서 표시합니다">{{ g.phone_masked }}</span>{% endif %}
+              {% if k.guardians | length > 1 %}<span class="z">외 {{ k.guardians | length - 1 }}</span>{% endif %}
             {% else %}<span class="z">미등록</span>{% endif %}
           </td>
         </tr>

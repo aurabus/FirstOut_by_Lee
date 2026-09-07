@@ -14,6 +14,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from .. import flash
 from ..db import get_db
 from ..models import (
     KG_ACTIVE,
@@ -37,10 +38,10 @@ LOCK_AFTER = 5              # 이만큼 틀리면 잠근다
 LOCK_MINUTES = 10           # 자동 대입을 막을 만큼만 — 선생님이 오래 못 쓰면 안 된다
 
 
-def _set_session(res: RedirectResponse, user_id: int, secure: bool) -> None:
+def _set_session(res: RedirectResponse, user: User, secure: bool) -> None:
     res.set_cookie(
         "majung",
-        make_token(user_id),
+        make_token(user.id, user.password_hash),
         max_age=SESSION_MAX_AGE,
         httponly=True,
         samesite="lax",
@@ -108,7 +109,9 @@ def signin(
 
     dest = "/me/password" if u.must_change_pw else "/"
     res = RedirectResponse(dest, status_code=303)
-    _set_session(res, u.id, secure=request.url.scheme == "https")
+    from ..main import is_secure
+
+    _set_session(res, u, secure=is_secure(request))
     return res
 
 
@@ -236,7 +239,14 @@ def password_change(
     me.password_hash = hash_password(password)
     me.must_change_pw = False
     db.commit()
-    return RedirectResponse("/?msg=비밀번호를 바꿨습니다", status_code=303)
+
+    # 다른 기기에 남아 있던 로그인은 모두 끊기므로, 이 기기만 새로 이어준다
+    from ..main import is_secure
+
+    res = flash.put(RedirectResponse("/", status_code=303),
+                    "비밀번호를 바꿨습니다 — 다른 기기의 로그인은 모두 해제되었습니다")
+    _set_session(res, me, secure=is_secure(request))
+    return res
 
 
 # 예전 주소를 눌러도 헤매지 않게

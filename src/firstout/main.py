@@ -18,12 +18,20 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from . import service
-from .config import APP_NAME, APP_TAGLINE, STATIC_DIR, TEMPLATE_DIR, WEEKDAYS, ensure_dirs
+from . import flash, service
+from .config import (
+    APP_NAME,
+    APP_TAGLINE,
+    IS_DEV_SECRET,
+    STATIC_DIR,
+    TEMPLATE_DIR,
+    WEEKDAYS,
+    ensure_dirs,
+)
 from .csrf import CSRFMiddleware
 from .db import SessionLocal, get_db, init_db
 from .models import User
-from .security import CSRF_COOKIE, new_csrf, read_token
+from .security import CSRF_COOKIE, new_csrf, pw_stamp, read_token
 
 # Windows 기본 목록에 woff2 가 없어 octet-stream 으로 나가므로 직접 등록한다
 mimetypes.add_type("font/woff2", ".woff2")
@@ -57,12 +65,26 @@ def now() -> dt.datetime:
 RUN_PORT: int = 0   # 실행 포트 — 접속 안내 화면이 쓴다
 
 
+def is_secure(request: Request) -> bool:
+    """리버스 프록시 뒤에서는 요청이 http 로 보인다.
+
+    그대로 판단하면 secure 쿠키가 영영 걸리지 않아, 비밀번호로 지킨 세션이
+    평문으로 새어 나갈 수 있다. 프록시가 알려주는 원래 방식을 함께 본다.
+    """
+    fwd = request.headers.get("x-forwarded-proto", "")
+    return request.url.scheme == "https" or fwd.split(",")[0].strip() == "https"
+
+
 def current_user(request: Request, db: Session) -> User | None:
-    uid = read_token(request.cookies.get("majung"))
-    if uid is None:
+    got = read_token(request.cookies.get("majung"))
+    if got is None:
         return None
+    uid, stamp = got
     u = db.get(User, uid)
     if u is None or not u.active:
+        return None
+    # 비밀번호를 바꾸면 예전 로그인은 더 이상 통하지 않는다
+    if stamp != pw_stamp(u.password_hash):
         return None
     # 승인 전이거나 중지된 유치원이면 들여보내지 않는다
     if u.kinder_id is not None and (u.kinder is None or not u.kinder.usable):
@@ -96,12 +118,22 @@ def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
         "now": now(),
         "csrf": request.cookies.get(CSRF_COOKIE) or new_csrf(),
     }
-    base.update(ctx)
+    # 처리 결과 안내는 주소가 아니라 쿠키로 온다 (원아 이름이 로그에 남지 않게)
+    fmsg, fsecret = flash.take(request)
+    base.setdefault("msg", "")
+    if fmsg:
+        base["msg"] = fmsg
+    if fsecret:
+        base["new_pw"] = fsecret
+
+    base.update({k: v for k, v in ctx.items() if k not in ("msg",) or v})
     res = templates.TemplateResponse(request, name, base)
+    if fmsg or fsecret:
+        flash.clear(res)
     if not request.cookies.get(CSRF_COOKIE):
         res.set_cookie(
             CSRF_COOKIE, base["csrf"], httponly=False, samesite="lax",
-            secure=request.url.scheme == "https", max_age=60 * 60 * 24 * 14,
+            secure=is_secure(request), max_age=60 * 60 * 24 * 14,
         )
     return res
 
@@ -183,6 +215,20 @@ def main() -> None:
     args = ap.parse_args()
 
     ensure_dirs()
+
+    # 기본 서명 키로 외부에 열면 남의 로그인 세션을 만들어낼 수 있다. 아예 막는다.
+    if IS_DEV_SECRET and args.host not in ("127.0.0.1", "localhost"):
+        say = print
+        say()
+        say("  세션 서명 키가 기본값입니다.")
+        say("  이대로 외부에 열면 남의 로그인 세션을 만들어낼 수 있습니다.")
+        say("  환경변수를 정하고 다시 실행해 주세요.")
+        say()
+        say('      $env:MAJUNG_SECRET = "충분히 긴 임의의 문자열"')
+        say()
+        say("  (내 PC 에서만 시험하려면 --host 127.0.0.1)")
+        say()
+        return
 
     if args.reset:
         from .config import DB_PATH

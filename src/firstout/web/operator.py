@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from .. import flash
 from ..db import get_db
 from ..models import (
     KG_ACTIVE,
@@ -36,11 +37,11 @@ def _guard(request: Request, db: Session):
 
 
 def _back(msg: str = "") -> RedirectResponse:
-    return RedirectResponse(f"/operator?msg={msg}", status_code=303)
+    return flash.put(RedirectResponse("/operator", status_code=303), msg)
 
 
 @router.get("/operator")
-def operator_view(request: Request, db: Session = Depends(get_db), msg: str = ""):
+def operator_view(request: Request, db: Session = Depends(get_db)):
     from ..main import page
 
     me, redirect = _guard(request, db)
@@ -70,7 +71,6 @@ def operator_view(request: Request, db: Session = Depends(get_db), msg: str = ""
         request, "operator.html", db, me,
         kinders=kinders, kid_counts=kids, user_counts=users, owners=owners,
         pending=[k for k in kinders if k.status == KG_PENDING],
-        msg=msg,
     )
 
 

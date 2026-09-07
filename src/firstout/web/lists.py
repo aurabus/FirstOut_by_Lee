@@ -17,7 +17,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .. import service
+from .. import flash, service
 from ..db import get_db
 from ..models import DEP_CALLED, DEP_DONE, DEP_WAITING, Child, Departure
 
@@ -37,13 +37,17 @@ def _dep(db: Session, child_id: int, day: dt.date, round_id: int | None) -> Depa
 
 
 def _back(key: str, msg: str = "", day: str = "") -> RedirectResponse:
-    """처리 후 보던 명단으로 돌아간다. 조회 중이던 날짜를 잃지 않는다."""
-    q = f"?msg={msg}" + (f"&d={day}" if day else "")
-    return RedirectResponse(f"/list/{key}{q}", status_code=303)
+    """처리 후 보던 명단으로 돌아간다.
+
+    안내문은 쿠키로 넘긴다. 주소에 실으면 원아 이름이 브라우저 기록과
+    서버 접속 로그에 그대로 남는다.
+    """
+    q = f"?d={day}" if day else ""
+    return flash.put(RedirectResponse(f"/list/{key}{q}", status_code=303), msg)
 
 
 @router.get("/list/{key}")
-def show(request: Request, key: str, db: Session = Depends(get_db), msg: str = "", d: str = ""):
+def show(request: Request, key: str, db: Session = Depends(get_db), d: str = ""):
     from ..main import current_user, page, pick_date
 
     me = current_user(request, db)
@@ -69,7 +73,6 @@ def show(request: Request, key: str, db: Session = Depends(get_db), msg: str = "
         sign_all=bool(target) and all(r.needs_sign for r in target),
         skipped=service.excluded_for_round(rows, rnd),
         weekend=service.weekday_index(day) is None,
-        msg=msg,
     )
 
 
@@ -134,6 +137,8 @@ def sign(
         return _back(key, "", d)
     if not signature.startswith("data:image/"):
         return _back(key, "서명을 받아주세요", d)
+    if len(signature) > 400_000:   # 손글씨 서명은 이보다 훨씬 작다
+        return _back(key, "서명이 너무 큽니다 — 다시 시도해 주세요", d)
 
     dep = _dep(db, cid, pick_date(d), rnd.id)
     dep.status = DEP_DONE
@@ -182,6 +187,10 @@ def undo(
     if me is None:
         return RedirectResponse("/signin", status_code=303)
 
+    child = db.get(Child, cid)
+    if child is None or child.kinder_id != me.kinder_id:
+        return _back(key, "", d)
+
     dep = db.scalar(
         select(Departure).where(Departure.child_id == cid, Departure.on_date == pick_date(d))
     )
@@ -212,8 +221,12 @@ def memo(
     if me is None:
         return RedirectResponse("/signin", status_code=303)
 
+    child = db.get(Child, cid)
+    if child is None or child.kinder_id != me.kinder_id:
+        return _back(key, "", d)
+
     rnd = service.round_by_key(db, me.kinder_id, key)
     dep = _dep(db, cid, pick_date(d), rnd.id if rnd else None)
-    dep.memo = memo.strip()
+    dep.memo = memo.strip()[:200]
     db.commit()
     return _back(key, "특이사항 저장", d)

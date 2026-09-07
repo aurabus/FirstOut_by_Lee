@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 
 from sqlalchemy import (
     Boolean,
@@ -195,7 +196,12 @@ class Child(Base):
 
 
 class Guardian(Base):
-    """인계자. 한 아이에 여러 명을 둘 수 있고 기본은 보통 학부모다."""
+    """인계자. 한 아이에 여러 명을 둘 수 있고 기본은 보통 학부모다.
+
+    연락처는 결석 확인 전화에 필요해 저장하지만 화면에는 가려서 보여준다.
+    이름만으로는 그 자체로 개인을 특정하기 어렵지만, 이름과 전화번호가 함께
+    화면에 떠 있으면 사진 한 장으로 유출된다.
+    """
 
     __tablename__ = "guardian"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -207,6 +213,28 @@ class Guardian(Base):
     seq: Mapped[int] = mapped_column(Integer, default=0)
 
     child: Mapped[Child] = relationship(back_populates="guardians")
+
+    @property
+    def phone_masked(self) -> str:
+        """가운데만 가린다. 뒤 네 자리로 본인 확인은 되고 옮겨 적을 수는 없다.
+
+        010-1234-5678 → 010-****-5678
+        02-123-4567   → 02-***-4567
+        """
+        raw = self.phone.strip()
+        if not raw:
+            return ""
+        parts = [p for p in re.split(r"[^0-9]+", raw) if p]
+        if len(parts) >= 3:
+            return f"{parts[0]}-{'*' * len(parts[1])}-{parts[-1]}"
+        digits = "".join(parts)
+        if len(digits) < 7:
+            return "*" * len(digits)
+        return f"{digits[:3]}-{'*' * (len(digits) - 7)}-{digits[-4:]}"
+
+    @property
+    def has_phone(self) -> bool:
+        return bool(self.phone.strip())
 
 
 # ── 주간 계획 ───────────────────────────────────────────

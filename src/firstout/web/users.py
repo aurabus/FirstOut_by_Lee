@@ -13,7 +13,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from .. import service
+from .. import flash, service
 from ..db import get_db
 from ..models import ROLE_OWNER, ROLE_TEACHER, User
 from ..security import hash_password
@@ -32,8 +32,9 @@ def _guard(request: Request, db: Session):
     return me, None
 
 
-def _back(msg: str = "") -> RedirectResponse:
-    return RedirectResponse(f"/users?msg={msg}", status_code=303)
+def _back(msg: str = "", secret: str = "") -> RedirectResponse:
+    """안내문은 쿠키로 넘긴다 — 임시 비밀번호가 주소에 남으면 안 된다."""
+    return flash.put(RedirectResponse("/users", status_code=303), msg, secret)
 
 
 def temp_password() -> str:
@@ -42,7 +43,7 @@ def temp_password() -> str:
 
 
 @router.get("/users")
-def users_view(request: Request, db: Session = Depends(get_db), msg: str = "", pw: str = ""):
+def users_view(request: Request, db: Session = Depends(get_db)):
     from ..main import page
 
     me, redirect = _guard(request, db)
@@ -59,7 +60,7 @@ def users_view(request: Request, db: Session = Depends(get_db), msg: str = "", p
     )
     return page(
         request, "users.html", db, me,
-        users=users, msg=msg, new_pw=pw,
+        users=users,
         classes=service.classes(db, me.kinder_id),
     )
 
@@ -101,9 +102,7 @@ def user_add(
         )
     )
     db.commit()
-    return RedirectResponse(
-        f"/users?msg={name} 선생님 계정을 만들었습니다&pw={login_id} / {pw}", status_code=303
-    )
+    return _back(f"{name} 선생님 계정을 만들었습니다", f"{login_id} / {pw}")
 
 
 @router.post("/users/{uid}/save")
@@ -145,10 +144,7 @@ def user_reset(uid: int, request: Request, db: Session = Depends(get_db)):
     u.failed_count = 0
     u.locked_until = None
     db.commit()
-    return RedirectResponse(
-        f"/users?msg={u.name} 선생님 비밀번호를 새로 발급했습니다&pw={u.login_id} / {pw}",
-        status_code=303,
-    )
+    return _back(f"{u.name} 선생님 비밀번호를 새로 발급했습니다", f"{u.login_id} / {pw}")
 
 
 @router.post("/users/{uid}/toggle")

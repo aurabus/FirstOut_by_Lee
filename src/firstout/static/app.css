@@ -365,3 +365,8 @@ tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
   background:var(--card);border:1px solid var(--gold-line);border-radius:2px;padding:.2rem .6rem}
 .pw-box p{flex:1 0 100%;font-size:.8rem;color:var(--ink-2);margin-top:.3rem}
 select.field{min-height:40px}
+
+/* 가려서 보여주는 개인정보 */
+.masked{font-size:.75rem;color:var(--ink-3);border-bottom:1px dotted var(--rule);
+  margin-left:.35rem;cursor:help;letter-spacing:.02em}
+@media print{.masked{display:none}}
