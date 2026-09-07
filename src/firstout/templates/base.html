@@ -59,6 +59,18 @@
   document.addEventListener("click", function (e) {
     if (e.target.closest("[data-print]")) { e.preventDefault(); window.print(); }
   });
+  /* 목록이 길면 안내가 화면 밖에 있어 못 본다. 있으면 보이는 자리로 올려준다. */
+  (function () {
+    var m = document.querySelector(".msg");
+    if (!m) return;
+    var top = m.getBoundingClientRect().top;
+    if (top < 0 || top > window.innerHeight - 40) {
+      m.scrollIntoView({ block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto" : "smooth" });
+    }
+  })();
+
   /* 되돌릴 수 없는 단추는 한 번 더 묻는다 */
   document.addEventListener("click", function (e) {
     var el = e.target.closest("[data-confirm]");

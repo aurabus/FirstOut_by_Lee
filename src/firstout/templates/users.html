@@ -27,9 +27,17 @@
       <div class="cfg-row {% if not u.active %}off{% endif %}">
         <form method="post" action="/users/{{ u.id }}/save" style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <input class="field" name="name" value="{{ u.name }}" style="max-width:7rem">
-          <input class="field" name="title" value="{{ u.title }}" placeholder="직함"
-                 list="titlelist" style="max-width:8rem">
+          <span class="uwho">
+            <b>{{ u.name }}</b>
+            {% if u.title %}<em>{{ u.title }}</em>{% endif %}
+          </span>
+          <span class="uedit" hidden>
+            <input class="field" name="name" value="{{ u.name }}" style="max-width:7rem"
+                   aria-label="성함">
+            <input class="field" name="title" value="{{ u.title }}"
+                   placeholder="직함 (담임 · 방과후 · 돌봄 …)" style="max-width:10rem"
+                   aria-label="직함">
+          </span>
           {% if u.id != me.id %}
           <select class="field" name="role" style="max-width:8.5rem"
                   title="권한 — 총괄 관리자는 설정과 계정 관리를 할 수 있습니다">
@@ -44,6 +52,8 @@
             {% endfor %}
           </select>
           <button class="btn sm">저장</button>
+          <button class="btn sm" type="button" data-edit
+                  title="성함과 직함을 고칩니다">이름·직함</button>
         </form>
         <span class="uid">{{ u.login_id }}</span>
         <span class="urole {% if u.role == role_admin %}owner{% endif %}">{{ u.role }}</span>
@@ -113,11 +123,21 @@
   <div class="foot"><span>{{ app_name }} · 선생님 관리</span><span>{{ kinder.name }}</span></div>
 </div>
 
-<datalist id="titlelist">
-  {% for t in titles %}<option value="{{ t }}">{% endfor %}
-</datalist>
-
 <script nonce="{{ nonce }}">
+  /* 이름·직함은 평소에 글자로만 보여준다. 목록을 훑다가 실수로 고치면
+     그 선생님의 이름이 소리 없이 바뀌기 때문이다. 「이름·직함」을 눌러야 열린다. */
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-edit]");
+    if (!b) return;
+    var row = b.closest("form");
+    var show = row.querySelector(".uwho");
+    var edit = row.querySelector(".uedit");
+    var open = edit.hidden;
+    show.hidden = open;
+    edit.hidden = !open;
+    if (open) edit.querySelector("input").focus();
+  });
+
   /* 직함에서 「기타」를 고르면 직접 적는 칸이 열린다 */
   (function () {
     var sel = document.getElementById("addTitle");

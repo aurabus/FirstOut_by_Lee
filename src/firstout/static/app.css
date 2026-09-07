@@ -109,8 +109,22 @@ form{margin:0}
 .alert span{color:var(--ink-2)}
 .ok-bar{background:var(--pine-soft);border-left:3px solid var(--pine);padding:.55rem .8rem;
   font-size:.85rem;color:var(--pine);margin:1rem 0}
-.msg{background:var(--pine-soft);border-left:3px solid var(--pine);padding:.55rem .8rem;
-  font-size:.85rem;color:var(--pine);margin:.9rem 0}
+/* 처리 결과 안내 — 눌렀는데 아무 일도 안 일어난 것처럼 보이면 안 된다.
+   ✓ 표시와 굵은 글씨로 눈에 걸리게 하고, 나타날 때 한 번 깜빡인다. */
+.msg{display:flex;align-items:center;gap:.55rem;
+  background:var(--pine-soft);border:1px solid var(--pine);border-left-width:4px;
+  border-radius:3px;padding:.7rem .9rem;font-size:.92rem;font-weight:500;
+  color:var(--pine);margin:.9rem 0;box-shadow:var(--shadow);
+  animation:msgin .45s ease-out}
+.msg::before{content:"✓";flex:0 0 1.25rem;height:1.25rem;border-radius:50%;
+  background:var(--pine);color:var(--card);font-size:.78rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+@keyframes msgin{
+  from{opacity:0;transform:translateY(-.35rem)}
+  60%{box-shadow:0 0 0 .32rem var(--pine-soft)}
+  to{opacity:1;transform:none}
+}
+@media (prefers-reduced-motion:reduce){.msg{animation:none}}
 
 /* ── 차수 카드 ── */
 .rounds{display:grid;grid-template-columns:repeat(5,1fr);gap:.45rem}
@@ -709,3 +723,10 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
   border:1px solid var(--rule);border-radius:99px;padding:.12rem .55rem;white-space:nowrap}
 .hp-go:hover{border-color:var(--pine);color:var(--pine)}
 .note .hp-go{margin-left:.4rem;border-color:var(--pine-line)}
+
+/* 선생님 목록 — 이름과 직함은 평소에 글자로만 */
+.uwho{display:flex;align-items:baseline;gap:.4rem;min-width:9rem;flex-wrap:wrap}
+.uwho b{font-size:.95rem;font-weight:600}
+.uwho em{font-style:normal;font-size:.78rem;color:var(--ink-3)}
+.uedit{display:flex;gap:.3rem;flex-wrap:wrap}
+.uedit[hidden]{display:none}
