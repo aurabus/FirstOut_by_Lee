@@ -11,7 +11,9 @@
     <code id="pwv">{{ new_pw }}</code>
     <button class="btn sm" data-copy="{{ new_pw }}">복사</button>
     <p>선생님께 전달해 주세요. <strong>첫 로그인 때 본인이 새로 정하게 됩니다.</strong>
-      이 화면을 벗어나면 다시 볼 수 없고, 잊으면 아래 <b>비밀번호 재발급</b>을 누르시면 됩니다.</p>
+      이 화면을 벗어나면 다시 볼 수 없습니다.</p>
+    <p>카카오톡으로 보내면 그 방에 계속 남습니다.
+      되도록 <b>초대 QR</b> 을 띄워 선생님 휴대폰으로 찍게 해주세요 — 아무것도 남지 않습니다.</p>
   </div>
   {% endif %}
 
@@ -39,6 +41,10 @@
         <span class="urole {% if u.role == '원장' %}owner{% endif %}">{{ u.role }}</span>
         {% if u.must_change_pw %}<span class="ustate">첫 로그인 대기</span>{% endif %}
         {% if not u.active %}<span class="ustate off">중지</span>{% endif %}
+        <form method="post" action="/users/{{ u.id }}/invite">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn sm go">초대 QR</button>
+        </form>
         <form method="post" action="/users/{{ u.id }}/reset">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <button class="btn sm">비밀번호 재발급</button>

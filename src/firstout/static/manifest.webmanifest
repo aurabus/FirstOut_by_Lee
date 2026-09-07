@@ -1,0 +1,17 @@
+{
+  "name": "손잡고 마중",
+  "short_name": "마중",
+  "description": "유치원 귀가 관리 — 아이를 안전하게, 집으로",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EFF3F1",
+  "theme_color": "#0A6B55",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

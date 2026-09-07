@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}시작하기 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:24rem">
+
+  {% if gone %}
+  <div class="login-card" style="text-align:center">
+    <div>
+      <span class="lb-1">손잡고</span>
+      <span class="lb-2">마중</span>
+    </div>
+    <div class="login-mark"></div>
+    <p class="empty" style="padding:1rem 0">
+      이 초대는 이미 쓰였거나 시간이 지났습니다.<br>
+      원장님께 <strong>새 초대</strong>를 부탁드려 주세요.
+    </p>
+    <a class="btn" href="/signin">로그인 화면으로</a>
+  </div>
+  {% else %}
+  <form class="login-card" method="post" action="/join/{{ token }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <div>
+      <span class="lb-1">손잡고</span>
+      <span class="lb-2">마중</span>
+    </div>
+    <div class="login-mark"></div>
+    <p class="login-sub">{{ who.name }} 선생님, 반갑습니다
+      <em>쓰실 비밀번호를 정해주세요 · 아이디 {{ who.login_id }}</em></p>
+
+    {% if msg %}<p class="login-err">{{ msg }}</p>{% endif %}
+
+    <label class="login-lbl" for="pw">새 비밀번호</label>
+    <input class="field" id="pw" name="password" type="password"
+           autocomplete="new-password" required minlength="8" style="width:100%">
+
+    <label class="login-lbl" for="pw2">한 번 더</label>
+    <input class="field" id="pw2" name="password2" type="password"
+           autocomplete="new-password" required minlength="8" style="width:100%">
+
+    <p class="login-sub" style="margin-top:.5rem">8자 이상, 숫자만은 안 됩니다.</p>
+
+    <div class="dev">
+      <label class="dev-opt">
+        <input type="radio" name="device" value="personal" checked>
+        <span><b>내 휴대폰이에요</b><em>60일 동안 로그인이 유지됩니다</em></span>
+      </label>
+      <label class="dev-opt">
+        <input type="radio" name="device" value="shared">
+        <span><b>공용 기기예요</b><em>12시간 뒤 자동으로 로그아웃됩니다</em></span>
+      </label>
+    </div>
+
+    <button class="btn go" style="margin-top:.6rem">시작하기</button>
+  </form>
+  {% endif %}
+
+  <p class="login-hint">{{ app_name }} · 아이를 안전하게, 집으로</p>
+</div>
+{% endblock %}

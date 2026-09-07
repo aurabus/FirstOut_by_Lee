@@ -12,7 +12,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from .. import excel, service
+from .. import excel, reauth, service
 from ..db import get_db
 from ..models import Child, PlanEntry
 from . import xlsx
@@ -78,6 +78,8 @@ def export(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/signin", status_code=303)
     if me.kinder_id is None:
         return RedirectResponse("/", status_code=303)
+    if wall := reauth.wall(request, me):     # 보호자 연락처가 파일로 나간다
+        return wall
 
     data = excel.export_roster(db, me.kinder_id)
     today = dt.date.today()

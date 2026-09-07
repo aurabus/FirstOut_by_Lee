@@ -6,6 +6,13 @@
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
 <link rel="preload" href="/static/fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/static/app.css">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<meta name="theme-color" content="#0A6B55">
+<link rel="icon" href="/static/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="마중">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
 
@@ -44,5 +51,13 @@
 {% if me %}
 <script src="/static/app.js" defer></script>
 {% endif %}
+<script>
+  /* 홈 화면에 앱으로 담을 수 있게 한다. 저장은 하지 않는다 (sw.js 참고) */
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>

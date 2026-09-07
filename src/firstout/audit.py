@@ -42,6 +42,7 @@ ACTIONS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^/list/"), "귀가 명단"),
     (re.compile(r"^/users/add$"), "선생님 계정 추가"),
     (re.compile(r"^/users/\d+/reset$"), "선생님 비밀번호 재발급"),
+    (re.compile(r"^/users/\d+/invite$"), "선생님 초대 발급"),
     (re.compile(r"^/users/\d+/toggle$"), "선생님 사용·중지"),
     (re.compile(r"^/users/\d+/save$"), "선생님 정보 수정"),
     (re.compile(r"^/users"), "선생님 관리"),
@@ -57,7 +58,20 @@ ACTIONS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^/operator"), "유치원 운영"),
     (re.compile(r"^/audit"), "감사 로그"),
     (re.compile(r"^/connect"), "접속 안내"),
+    (re.compile(r"^/join/"), "초대로 첫 로그인"),
+    (re.compile(r"^/reauth"), "본인 확인"),
 ]
+
+# 주소 자체가 비밀인 것들 — 기록에 원문을 남기면 한 달 동안 열쇠가 굴러다닌다
+SECRET_PREFIXES = ("/join/",)
+
+
+def mask(path: str) -> str:
+    """비밀이 담긴 주소는 앞부분만 남긴다."""
+    for head in SECRET_PREFIXES:
+        if path.startswith(head):
+            return head + "…"
+    return path
 
 
 def describe(path: str) -> str:
@@ -89,7 +103,7 @@ def write(
             user_name=user.name if user else "",
             kinder_id=user.kinder_id if user else None,
             method=method,
-            path=path[:200],
+            path=mask(path)[:200],
             action=describe(path),
             status=status,
             ip=ip[:45],

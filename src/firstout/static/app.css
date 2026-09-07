@@ -417,3 +417,22 @@ tr.is-change{background:var(--gold-soft)}
 .newg-in{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
 .newg-save{display:flex;align-items:center;gap:.45rem;font-size:.77rem;color:var(--ink-2)}
 .newg-save input{width:1.05rem;height:1.05rem;accent-color:var(--pine)}
+
+/* ── 로그인 기기 고르기 ── */
+.dev{display:flex;flex-direction:column;gap:.35rem;margin-top:.9rem}
+.dev-opt{display:flex;align-items:flex-start;gap:.5rem;border:1px solid var(--rule);
+  border-radius:3px;padding:.5rem .65rem;cursor:pointer;background:var(--card)}
+.dev-opt:has(input:checked){border-color:var(--pine);background:var(--pine-soft)}
+.dev-opt input{margin-top:.15rem;width:1rem;height:1rem;accent-color:var(--pine);flex:0 0 auto}
+.dev-opt span{display:flex;flex-direction:column;gap:.05rem;min-width:0}
+.dev-opt b{font-size:.85rem;font-weight:500}
+.dev-opt em{font-style:normal;font-size:.74rem;color:var(--ink-3)}
+.dev-opt:has(input:checked) b{color:var(--pine);font-weight:700}
+
+/* ── 1회용 초대 ── */
+.warnbox{border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:3px;
+  padding:.7rem .8rem;margin-top:1rem}
+.warnbox b{display:block;font-size:.82rem;color:var(--gold);font-weight:700;margin-bottom:.35rem}
+.warnbox ul{margin:0;padding-left:1.05rem}
+.warnbox li{font-size:.79rem;color:var(--ink-2);line-height:1.65}
+.warnbox p{font-size:.76rem;color:var(--ink-3);margin-top:.45rem;line-height:1.6}

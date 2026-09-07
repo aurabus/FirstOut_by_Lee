@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}본인 확인 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:24rem">
+  <form class="login-card" method="post" action="/reauth">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <div>
+      <span class="lb-1">본인 확인</span>
+      <span class="lb-2">{{ me.name }}</span>
+    </div>
+    <div class="login-mark"></div>
+    <p class="login-sub">개인정보가 걸린 화면입니다
+      <em>비밀번호를 한 번만 더 확인할게요</em></p>
+
+    {% if msg %}<p class="login-err">{{ msg }}</p>{% endif %}
+
+    <label class="login-lbl" for="pw">비밀번호</label>
+    <input class="field" id="pw" name="password" type="password"
+           autocomplete="current-password" required autofocus style="width:100%">
+
+    <button class="btn go" style="margin-top:.6rem">확인</button>
+    <a class="btn" href="/" style="text-align:center">돌아가기</a>
+
+    <p class="login-hint">한 번 확인하면 {{ minutes }}분 동안 다시 묻지 않습니다.<br>
+      귀가 처리는 이 확인 없이 그대로 하실 수 있습니다.</p>
+  </form>
+</div>
+{% endblock %}

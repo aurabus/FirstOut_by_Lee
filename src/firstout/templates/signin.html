@@ -22,6 +22,17 @@
     <input class="field" id="pw" name="password" type="password"
            autocomplete="current-password" required style="width:100%">
 
+    <div class="dev">
+      <label class="dev-opt">
+        <input type="radio" name="device" value="personal" checked>
+        <span><b>내 휴대폰이에요</b><em>60일 동안 로그인이 유지됩니다</em></span>
+      </label>
+      <label class="dev-opt">
+        <input type="radio" name="device" value="shared">
+        <span><b>공용 기기예요</b><em>12시간 뒤 자동으로 로그아웃됩니다</em></span>
+      </label>
+    </div>
+
     <button class="btn go" style="margin-top:.6rem">로그인</button>
     <p class="login-hint">
       비밀번호를 잊으셨으면 <b>원장님</b>께 재발급을 요청해 주세요.

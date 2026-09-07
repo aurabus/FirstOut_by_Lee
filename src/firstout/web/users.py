@@ -13,7 +13,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from .. import flash, service
+from .. import flash, invites, net, reauth, service
 from ..db import get_db
 from ..models import ROLE_OWNER, ROLE_TEACHER, User
 from ..security import hash_password
@@ -29,6 +29,8 @@ def _guard(request: Request, db: Session):
         return None, RedirectResponse("/signin", status_code=303)
     if not me.is_admin or me.kinder_id is None:
         return None, RedirectResponse("/board", status_code=303)
+    if wall := reauth.wall(request, me, back="/users"):   # 계정을 만들고 지우는 화면이다
+        return None, wall
     return me, None
 
 
@@ -38,8 +40,11 @@ def _back(msg: str = "", secret: str = "") -> RedirectResponse:
 
 
 def temp_password() -> str:
-    """원장이 선생님께 전달할 임시 비밀번호. 첫 로그인 때 바꾸게 한다."""
-    return "majung" + str(secrets.randbelow(9000) + 1000)
+    """초대 QR 을 못 쓸 때의 대비책. 첫 로그인 때 바꾸게 한다.
+
+    카카오톡·문자로 오가는 값이라 넉넉히 넓힌다. 네 자리면 만 가지도 안 된다.
+    """
+    return "majung" + f"{secrets.randbelow(1_000_000):06d}"
 
 
 @router.get("/users")
@@ -88,21 +93,70 @@ def user_add(
     if db.scalar(select(User).where(User.login_id == login_id)):
         return _back("이미 쓰이고 있는 아이디입니다")
 
-    pw = temp_password()
-    db.add(
-        User(
-            kinder_id=me.kinder_id,
-            login_id=login_id,
-            password_hash=hash_password(pw),
-            name=name,
-            role=ROLE_OWNER if role == ROLE_OWNER else ROLE_TEACHER,
-            title=title.strip(),
-            class_id=int(class_id) if class_id.isdigit() else None,
-            must_change_pw=True,   # 첫 로그인 때 본인이 정하게 한다
-        )
+    # 비밀번호는 아무도 모르는 값으로 둔다. 들어오는 길은 초대 QR 하나뿐이고,
+    # 그것을 못 쓰면 원장이 「비밀번호 재발급」을 누르면 된다.
+    u = User(
+        kinder_id=me.kinder_id,
+        login_id=login_id,
+        password_hash=hash_password(secrets.token_urlsafe(32)),
+        name=name,
+        role=ROLE_OWNER if role == ROLE_OWNER else ROLE_TEACHER,
+        title=title.strip(),
+        class_id=int(class_id) if class_id.isdigit() else None,
+        must_change_pw=True,   # 첫 로그인 때 본인이 정하게 한다
     )
+    db.add(u)
     db.commit()
-    return _back(f"{name} 선생님 계정을 만들었습니다", f"{login_id} / {pw}")
+    return _invite_now(db, me, u, f"{name} 선생님 계정을 만들었습니다")
+
+
+def _invite_now(db: Session, me: User, u: User, msg: str) -> RedirectResponse:
+    """초대를 만들고, 원문은 쿠키로만 넘긴다 — 주소에 실으면 기록에 남는다."""
+    from ..main import now
+
+    token = invites.issue(db, u, me, now())
+    return flash.put(
+        RedirectResponse(f"/users/{u.id}/invite", status_code=303), msg, token
+    )
+
+
+@router.post("/users/{uid}/invite")
+def user_invite(uid: int, request: Request, db: Session = Depends(get_db)):
+    """초대를 다시 만든다 — 10분이 지났거나 잘못 찍었을 때."""
+    me, redirect = _guard(request, db)
+    if redirect:
+        return redirect
+    u = db.get(User, uid)
+    if u is None or u.kinder_id != me.kinder_id:
+        return _back()
+    return _invite_now(db, me, u, f"{u.name} 선생님 초대를 새로 만들었습니다")
+
+
+@router.get("/users/{uid}/invite")
+def user_invite_view(uid: int, request: Request, db: Session = Depends(get_db)):
+    """원장이 화면을 선생님 휴대폰 쪽으로 돌려 보여주는 화면.
+
+    초대 원문은 방금 만들어 준 쿠키에만 있다. 새로고침하면 사라지므로
+    다시 만들도록 안내한다 — 그래야 화면에 오래 떠 있지 않는다.
+    """
+    from ..main import page
+
+    me, redirect = _guard(request, db)
+    if redirect:
+        return redirect
+    u = db.get(User, uid)
+    if u is None or u.kinder_id != me.kinder_id:
+        return _back()
+
+    _, token = flash.take(request)
+    url = invites.link(token, request) if token else ""
+    return page(
+        request, "invite.html", db, me,
+        who=u,
+        url=url,
+        qr=net.qr_svg(url) if url else "",
+        minutes=invites.MINUTES,
+    )
 
 
 @router.post("/users/{uid}/save")

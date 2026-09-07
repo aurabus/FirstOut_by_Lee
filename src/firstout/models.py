@@ -341,3 +341,32 @@ class AuditLog(Base):
     def changed(self) -> bool:
         """무언가를 바꾼 요청인지 — 화면을 연 것과 구분한다."""
         return self.method == "POST"
+
+
+# ── 첫 로그인 초대 ──────────────────────────────────────
+
+class Invite(Base):
+    """선생님이 처음 들어올 때 쓰는 1회용 링크.
+
+    임시 비밀번호를 카카오톡으로 전달하면 그 방에 계속 남는다. 대신 원장이
+    화면에 QR 을 띄우고 선생님이 자기 휴대폰으로 찍게 한다. 아무것도 남지 않는다.
+
+    **원문은 저장하지 않는다.** 자료가 통째로 새어도 이 표만으로는 아무도
+    들어올 수 없어야 하므로, 대조용 표식(sha256)만 둔다.
+    짧게 살고(10분), 한 번 쓰면 끝난다.
+    """
+
+    __tablename__ = "invite"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    made_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.now)
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTime)
+    used_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped[User] = relationship(foreign_keys=[user_id])
+
+    def alive(self, at: dt.datetime) -> bool:
+        return self.used_at is None and self.expires_at > at

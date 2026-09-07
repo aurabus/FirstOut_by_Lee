@@ -19,6 +19,11 @@ DB_PATH = DATA_DIR / "majung.db"
 TEMPLATE_DIR = PKG_DIR / "templates"
 STATIC_DIR = PKG_DIR / "static"
 
+# 서비스 주소. 회사 서버에 올려 서브도메인으로 열 때 반드시 정해야 한다.
+#     $env:MAJUNG_PUBLIC_URL = "https://majung.aurabus.co.kr"
+# 비워두면 원내망 주소(192.168.x.x)를 안내한다 — 시험·시연용이다.
+PUBLIC_URL = os.environ.get("MAJUNG_PUBLIC_URL", "").rstrip("/")
+
 APP_NAME = "손잡고 마중"
 APP_TAGLINE = "아이를 안전하게, 집으로"
 

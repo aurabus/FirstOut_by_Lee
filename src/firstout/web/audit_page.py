@@ -13,6 +13,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from .. import reauth
 from ..audit import KEEP_DAYS
 from ..db import get_db
 from ..models import AuditLog
@@ -38,6 +39,8 @@ def audit_view(
         return RedirectResponse("/signin", status_code=303)
     if not me.is_admin:
         return RedirectResponse("/board", status_code=303)
+    if wall := reauth.wall(request, me):     # 누가 무엇을 했는지가 모두 담긴 화면이다
+        return wall
 
     day = pick_date(d)
     start = dt.datetime.combine(day, dt.time.min)

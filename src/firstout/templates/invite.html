@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% set nav = 'users' %}
+{% block title %}선생님 초대 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:40rem">
+
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
+  <div class="sec" style="padding-top:1.2rem">
+    <div class="sec-h"><h2>{{ who.name }} 선생님 초대</h2>
+      <span class="hint">{{ who.login_id }}{% if who.title %} · {{ who.title }}{% endif %}</span>
+    </div>
+
+    {% if url %}
+    <p class="empty" style="padding-bottom:.6rem">
+      <strong>화면을 선생님 쪽으로 돌려</strong> 휴대폰 카메라로 찍게 해주세요.
+      찍으면 바로 비밀번호를 정하는 화면이 열립니다.
+    </p>
+
+    <div class="conn">
+      <div class="conn-qr">
+        {{ qr | safe }}
+        <p class="conn-cap">{{ minutes }}분 안에 찍어주세요</p>
+      </div>
+
+      <div class="conn-info">
+        <p class="conn-lbl">직접 열어야 한다면</p>
+        <p class="conn-url" style="font-size:.82rem">{{ url }}</p>
+        <div class="conn-acts">
+          <button class="btn go" data-copy="{{ url }}">주소 복사</button>
+        </div>
+        <p class="conn-note" id="done" hidden>복사했습니다</p>
+
+        <div class="warnbox">
+          <b>한 번만 쓸 수 있습니다</b>
+          <ul>
+            <li><strong>{{ minutes }}분</strong>이 지나면 저절로 사라집니다</li>
+            <li>한 번 쓰면 <strong>다시 쓸 수 없습니다</strong></li>
+            <li>이 선생님 <strong>한 사람</strong>만 들어올 수 있습니다</li>
+          </ul>
+          <p>그래서 카카오톡으로 보내셔도 되지만, <strong>찍게 하는 편이 가장 안전합니다.</strong>
+            이 화면을 벗어나면 다시 볼 수 없습니다 — 필요하면 새로 만드세요.</p>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p class="empty">초대가 화면에서 사라졌습니다. 새로 만들어 주세요.</p>
+    {% endif %}
+  </div>
+
+  <p style="text-align:center;padding:1.2rem 0;display:flex;gap:.5rem;justify-content:center">
+    <a class="btn" href="/users">선생님 관리로</a>
+    <form method="post" action="/users/{{ who.id }}/invite">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn go">초대 새로 만들기</button>
+    </form>
+  </p>
+</div>
+
+<script>
+(function(){
+  var done = document.getElementById("done");
+  document.querySelectorAll("[data-copy]").forEach(function(b){
+    b.onclick = function(){
+      var t = b.dataset.copy;
+      var ok = function(){ done.hidden = false; setTimeout(function(){ done.hidden = true; }, 2600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(ok, function(){});
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = t; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    };
+  });
+})();
+</script>
+{% endblock %}

@@ -114,19 +114,27 @@ class AuditMiddleware:
         if not audit.should_log(path):
             return await self.app(scope, receive, send)
 
-        status = {"code": 0}
+        status = {"code": 0, "set": []}
 
         async def watch(message):
             if message["type"] == "http.response.start":
                 status["code"] = message["status"]
+                # 로그인·초대처럼 **이 응답에서 처음 로그인되는** 경우가 있다.
+                # 요청 쿠키만 보면 그런 기록이 모두 「누구인지 모름」으로 남아,
+                # 정작 중요한 "누가 로그인했나" 가 유치원 감사 로그에서 빠진다.
+                status["set"] = [
+                    v.decode("latin-1")
+                    for k, v in message.get("headers", [])
+                    if k.lower() == b"set-cookie"
+                ]
             await send(message)
 
         try:
             await self.app(scope, receive, watch)
         finally:
-            self._record(scope, path, status["code"])
+            self._record(scope, path, status["code"], status["set"])
 
-    def _record(self, scope, path: str, status: int) -> None:
+    def _record(self, scope, path: str, status: int, set_cookies: list[str]) -> None:
         import time
 
         from . import audit
@@ -134,7 +142,7 @@ class AuditMiddleware:
 
         try:
             with SessionLocal() as db:
-                cookie = _cookie_named(scope, "majung")
+                cookie = _cookie_named(scope, "majung") or _set_cookie_named(set_cookies, "majung")
                 audit.write(
                     db,
                     user=audit.user_from_cookie(db, cookie),
@@ -148,13 +156,23 @@ class AuditMiddleware:
                 # 유치원은 서버를 몇 달씩 켜 두므로 시작할 때만 해서는 안 된다.
                 if time.time() - self._last_purge > 3600:
                     self._last_purge = time.time()
-                    from . import backup, retention
+                    from . import backup, invites, retention
 
                     audit.purge_old(db)
                     retention.purge_signatures(db)
+                    invites.sweep(db)
                     backup.run()          # 오늘 사본이 이미 있으면 아무것도 하지 않는다
         except Exception:   # noqa: BLE001 — 기록 실패가 서비스를 멈추면 안 된다
             pass
+
+
+def _set_cookie_named(set_cookies: list[str], want: str) -> str | None:
+    """응답에서 새로 심는 쿠키 — 방금 로그인한 사람을 알아내는 데 쓴다."""
+    for raw in set_cookies:
+        k, _, v = raw.split(";")[0].strip().partition("=")
+        if k == want and v:
+            return v
+    return None
 
 
 def _cookie_named(scope, want: str) -> str | None:

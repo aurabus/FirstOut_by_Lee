@@ -8,13 +8,14 @@
 from __future__ import annotations
 
 import datetime as dt
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import flash
+from .. import flash, invites, reauth
 from ..db import get_db
 from ..models import (
     KG_ACTIVE,
@@ -25,6 +26,8 @@ from ..models import (
 )
 from ..security import (
     SESSION_MAX_AGE,
+    SESSION_PERSONAL,
+    SESSION_SHARED,
     hash_password,
     make_token,
     password_problem,
@@ -38,15 +41,22 @@ LOCK_AFTER = 5              # 이만큼 틀리면 잠근다
 LOCK_MINUTES = 10           # 자동 대입을 막을 만큼만 — 선생님이 오래 못 쓰면 안 된다
 
 
-def _set_session(res: RedirectResponse, user: User, secure: bool) -> None:
+def _set_session(
+    res: RedirectResponse, user: User, secure: bool, lifetime: int = SESSION_MAX_AGE
+) -> None:
     res.set_cookie(
         "majung",
-        make_token(user.id, user.password_hash),
-        max_age=SESSION_MAX_AGE,
+        make_token(user.id, user.password_hash, lifetime),
+        max_age=lifetime,
         httponly=True,
         samesite="lax",
         secure=secure,
     )
+
+
+def _lifetime(device: str) -> int:
+    """공용 기기라고 하면 짧게 끊는다. 교무실 태블릿은 누구나 만질 수 있다."""
+    return SESSION_SHARED if device == "shared" else SESSION_PERSONAL
 
 
 # ── 로그인 ──────────────────────────────────────────────
@@ -65,6 +75,7 @@ def signin(
     request: Request,
     login_id: str = Form(""),
     password: str = Form(""),
+    device: str = Form("personal"),
     db: Session = Depends(get_db),
 ):
     from ..main import now
@@ -111,7 +122,7 @@ def signin(
     res = RedirectResponse(dest, status_code=303)
     from ..main import is_secure
 
-    _set_session(res, u, secure=is_secure(request))
+    _set_session(res, u, secure=is_secure(request), lifetime=_lifetime(device))
     return res
 
 
@@ -246,6 +257,110 @@ def password_change(
     res = flash.put(RedirectResponse("/", status_code=303),
                     "비밀번호를 바꿨습니다 — 다른 기기의 로그인은 모두 해제되었습니다")
     _set_session(res, me, secure=is_secure(request))
+    return res
+
+
+# ── 본인 확인 (민감한 화면 앞에서만) ────────────────────
+
+@router.get("/reauth")
+def reauth_form(request: Request, next: str = "/", db: Session = Depends(get_db)):
+    from ..main import current_user, page
+
+    me = current_user(request, db)
+    if me is None:
+        return RedirectResponse("/signin", status_code=303)
+    return page(request, "reauth.html", db, me,
+                next=reauth.safe_next(next), minutes=reauth.MAX_AGE // 60)
+
+
+@router.post("/reauth")
+def reauth_do(
+    request: Request,
+    password: str = Form(""),
+    next: str = Form("/"),
+    db: Session = Depends(get_db),
+):
+    """여기서 틀리는 것도 로그인과 똑같이 센다 — 잠금 규칙을 우회할 수 없어야 한다."""
+    from ..main import current_user, is_secure, now
+
+    me = current_user(request, db)
+    if me is None:
+        return RedirectResponse("/signin", status_code=303)
+
+    dest = reauth.safe_next(next)
+    at = now()
+
+    if me.locked_until and me.locked_until > at:
+        left = int((me.locked_until - at).total_seconds() // 60) + 1
+        return flash.put(RedirectResponse("/", status_code=303),
+                         f"여러 번 틀려 잠겼습니다 — {left}분 후 다시 시도해 주세요")
+
+    if not verify_password(password, me.password_hash):
+        me.failed_count += 1
+        if me.failed_count >= LOCK_AFTER:
+            me.locked_until = at + dt.timedelta(minutes=LOCK_MINUTES)
+            me.failed_count = 0
+        db.commit()
+        return flash.put(
+            RedirectResponse(f"/reauth?next={quote(dest, safe='')}", status_code=303),
+            "비밀번호가 맞지 않습니다",
+        )
+
+    me.failed_count = 0
+    db.commit()
+    return reauth.grant(RedirectResponse(dest, status_code=303), me, secure=is_secure(request))
+
+
+# ── 초대로 첫 로그인 ────────────────────────────────────
+
+@router.get("/join/{token}")
+def join_form(token: str, request: Request, db: Session = Depends(get_db)):
+    """원장이 띄운 QR 을 선생님이 자기 휴대폰으로 찍으면 여기로 온다."""
+    from ..main import now, page
+
+    inv = invites.find(db, token, now())
+    if inv is None:
+        return page(request, "join.html", db, None, gone=True, token="", who=None)
+    return page(request, "join.html", db, None, gone=False, token=token, who=inv.user)
+
+
+@router.post("/join/{token}")
+def join(
+    token: str,
+    request: Request,
+    password: str = Form(""),
+    password2: str = Form(""),
+    device: str = Form("personal"),
+    db: Session = Depends(get_db),
+):
+    """비밀번호를 정하는 순간 초대는 죽고, 그 자리에서 로그인된다."""
+    from ..main import is_secure, now
+
+    at = now()
+    inv = invites.find(db, token, at)
+    if inv is None:
+        return RedirectResponse(f"/join/{token}", status_code=303)
+
+    def back(msg: str) -> RedirectResponse:
+        return flash.put(RedirectResponse(f"/join/{token}", status_code=303), msg)
+
+    if password != password2:
+        return back("비밀번호가 서로 다릅니다")
+    if bad := password_problem(password):
+        return back(bad)
+
+    u = inv.user
+    u.password_hash = hash_password(password)
+    u.must_change_pw = False
+    u.failed_count = 0
+    u.locked_until = None
+    u.last_login_at = at
+    invites.use(db, inv, at)     # 한 번 쓰면 끝난다
+    db.commit()
+
+    res = flash.put(RedirectResponse("/", status_code=303),
+                    f"{u.name} 선생님, 반갑습니다")
+    _set_session(res, u, secure=is_secure(request), lifetime=_lifetime(device))
     return res
 
 

@@ -162,6 +162,21 @@ def _startup() -> None:
             print(f"  백업 실패: {e}")
 
 
+@app.get("/sw.js", include_in_schema=False)
+def service_worker():
+    """서비스 워커는 뿌리에서 내보내야 앱 전체를 맡을 수 있다.
+
+    /static/sw.js 로 두면 /static/ 아래만 맡게 되어 홈 화면 설치가 되지 않는다.
+    """
+    from fastapi.responses import FileResponse
+
+    return FileResponse(
+        STATIC_DIR / "sw.js",
+        media_type="text/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
+    )
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     """선생님 화면 상단의 「서버 연결됨」 표시가 이 주소를 확인한다."""

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import hmac
 import secrets
@@ -53,7 +54,14 @@ def password_problem(password: str) -> str:
 # ── 로그인 세션 ─────────────────────────────────────────
 
 _session = URLSafeTimedSerializer(SECRET_KEY, salt="majung-session")
-SESSION_MAX_AGE = 60 * 60 * 24 * 14   # 2주 — 하원 때마다 다시 로그인하지 않도록
+
+# 기기에 따라 로그인 유지 기간을 다르게 둔다.
+# 개인 휴대폰은 길게 — 귀가 중에 다시 로그인하라고 하면 아이 앞에서 손이 묶인다.
+# 교무실 공용 태블릿은 짧게 — 누구나 만질 수 있는 기기다.
+SESSION_MAX_AGE = 60 * 60 * 24 * 14        # 정하지 않았을 때 (2주)
+SESSION_PERSONAL = 60 * 60 * 24 * 60       # 「내 휴대폰」 (60일)
+SESSION_SHARED = 60 * 60 * 12              # 「공용 기기」 (12시간)
+_SESSION_LIMIT = SESSION_PERSONAL          # 어떤 경우에도 이보다 오래 살지 않는다
 
 
 def pw_stamp(password_hash: str) -> str:
@@ -61,11 +69,18 @@ def pw_stamp(password_hash: str) -> str:
     return hashlib.sha256(password_hash.encode()).hexdigest()[:12]
 
 
-def make_token(user_id: int, password_hash: str = "") -> str:
-    return _session.dumps({"u": user_id, "p": pw_stamp(password_hash)})
+def make_token(user_id: int, password_hash: str = "", lifetime: int = SESSION_MAX_AGE) -> str:
+    """유지 기간을 토큰 안에 적어 둔다.
+
+    쿠키의 만료 시각은 브라우저가 지키는 값이라 훔쳐간 쪽에는 아무 의미가 없다.
+    서버가 스스로 판단할 수 있도록 기간을 서명된 값 안에 넣는다.
+    """
+    return _session.dumps(
+        {"u": user_id, "p": pw_stamp(password_hash), "l": int(lifetime)}
+    )
 
 
-def read_token(token: str | None, max_age: int = SESSION_MAX_AGE) -> tuple[int, str] | None:
+def read_token(token: str | None, max_age: int | None = None) -> tuple[int, str] | None:
     """(계정 id, 비밀번호 표식) 을 돌려준다.
 
     표식을 함께 담아두면, 비밀번호를 바꾸는 순간 다른 기기에 남아 있던
@@ -74,7 +89,12 @@ def read_token(token: str | None, max_age: int = SESSION_MAX_AGE) -> tuple[int, 
     if not token:
         return None
     try:
-        data = _session.loads(token, max_age=max_age)
+        data, made_at = _session.loads(token, max_age=_SESSION_LIMIT, return_timestamp=True)
+        want = max_age if max_age is not None else int(data.get("l", SESSION_MAX_AGE))
+        want = min(want, _SESSION_LIMIT)
+        age = (dt.datetime.now(dt.timezone.utc) - made_at).total_seconds()
+        if age > want:
+            return None
         return int(data["u"]), str(data.get("p", ""))
     except (BadSignature, KeyError, ValueError, TypeError):
         return None
