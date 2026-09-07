@@ -43,6 +43,10 @@ def roster(
             selectinload(Child.plan).selectinload(PlanEntry.academy),
         )
     )
+    # 담임은 자기 반이 먼저 열린다 — 출결 화면과 같은 방식이다.
+    # 「전체」는 ?cls=0 으로 따로 부른다. 매일 쓰는 쪽이 기본이어야 한다.
+    if cls is None:
+        cls = me.class_id
     if cls:
         stmt = stmt.where(Child.class_id == cls)
     kids = list(db.scalars(stmt))

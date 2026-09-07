@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from .. import service
+from .. import service, setup_guide
 from ..db import get_db
 
 router = APIRouter()
@@ -37,6 +37,10 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
         )
 
     late = [r for r in rows if r.is_late(at)]
+
+    # 시각이 지났는데 아무도 손대지 않은 아이 — 호출하고 안 오는 것과는 다른 신호다
+    for p in progress:
+        p["overdue"] = service.overdue(rows, p["round"], at, day)
     total = {
         "total": sum(s.total for s in stats),
         "absent": sum(s.absent for s in stats),
@@ -49,5 +53,8 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
         request, "board.html", db, me,
         day=day, d=d,
         stats=stats, total=total, progress=progress, late=late,
+        nocall=service.no_contact(rows),
+        overdue=[p for p in progress if p["overdue"]],
+        todo=setup_guide.remaining(db, me.kinder_id) if me.is_admin else [],
         weekend=service.weekday_index(day) is None,
     )

@@ -14,7 +14,7 @@
   {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
 
   <div class="picks no-print">
-    <a class="pick {% if not sel_cls %}on{% endif %}" href="/roster">전체</a>
+    <a class="pick {% if not sel_cls %}on{% endif %}" href="/roster?cls=0">전체</a>
     {% for c in classes %}
     <a class="pick {% if sel_cls == c.id %}on{% endif %}" href="/roster?cls={{ c.id }}">{{ c.name }}</a>
     {% endfor %}

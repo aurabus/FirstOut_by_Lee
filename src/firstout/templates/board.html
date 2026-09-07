@@ -9,12 +9,49 @@
 
   {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
 
+  {% if todo %}
+  <div class="start no-print">
+    <div class="start-h">
+      <b>시작하기</b>
+      <span>{{ 4 - todo | length }} / 4 단계 · 네 가지만 해두시면 내일부터 그냥 쓰시면 됩니다</span>
+    </div>
+    {% for s in todo %}
+    <a class="start-row" href="{{ s.where }}">
+      <span class="start-no">{{ loop.index }}</span>
+      <span class="start-txt">
+        <b>{{ s.title }}</b>
+        <em>{{ s.why }}</em>
+        <em class="start-now">지금: {{ s.now }}</em>
+      </span>
+      <span class="start-go">하러 가기 ›</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <dl class="tiles">
     <div class="tile"><dt>총원</dt><dd>{{ total.total }}</dd></div>
     <div class="tile pine"><dt>귀가</dt><dd>{{ total.home }}</dd></div>
     <div class="tile key"><dt>현원</dt><dd>{{ total.staying }}</dd></div>
     <div class="tile {% if total.waiting %}warn{% endif %}"><dt>인계대기</dt><dd>{{ total.waiting }}</dd></div>
   </dl>
+
+  {% if nocall %}
+  <div class="alert">
+    <b>확인 전화 {{ nocall | length }}명</b>
+    <span>{% for r in nocall %}<strong>{{ r.child.name }}</strong>({{ r.child.classroom.name }}){% if not loop.last %} · {% endif %}{% endfor %}
+      — 오지 않았는데 <strong>보호자 연락이 닿지 않습니다.</strong> 확인해 주세요.</span>
+  </div>
+  {% endif %}
+
+  {% for p in overdue %}
+  <div class="alert">
+    <b>{{ p.round.at_time }} 지남</b>
+    <span><strong>{{ p.round.name }}</strong>에 {{ p.overdue | length }}명이 아직 남아 있습니다 —
+      {% for r in p.overdue[:6] %}{{ r.child.name }}{% if not loop.last %} · {% endif %}{% endfor %}{% if p.overdue | length > 6 %} 외 {{ p.overdue | length - 6 }}명{% endif %}.
+      <a href="/list/{{ p.round.key }}">명단 열기</a></span>
+  </div>
+  {% endfor %}
 
   {% if late %}
     {% for r in late %}
@@ -33,10 +70,10 @@
     </div>
     <div class="rounds">
       {% for p in progress %}
-      <a class="rnd {% if p.total and p.done == p.total %}ok{% endif %}" href="/list/{{ p.round.key }}{% if d %}?d={{ d }}{% endif %}">
+      <a class="rnd {% if p.total and p.done == p.total %}ok{% elif p.overdue %}over{% endif %}" href="/list/{{ p.round.key }}{% if d %}?d={{ d }}{% endif %}">
         <span class="rnd-t">{{ p.round.at_time }}{% if p.round.note %} <em>{{ p.round.note }}</em>{% endif %}</span>
         <span class="rnd-n">{{ p.round.name }}{% if p.sign %}<i class="sg">✎</i>{% endif %}</span>
-        <span class="rnd-c">{{ p.done }}<i>/{{ p.total }}</i></span>
+        <span class="rnd-c">{{ p.done }}<i>/{{ p.total }}</i>{% if p.overdue %}<em class="rnd-over">{{ p.overdue | length }}명 남음</em>{% endif %}</span>
         <span class="bar-g"><i class="b-home" style="width:{{ (p.done / p.total * 100) | round(0) if p.total else 0 }}%"></i></span>
       </a>
       {% endfor %}

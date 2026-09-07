@@ -20,8 +20,8 @@ from ..models import ATT_ABSENT, ATT_EARLY, ATT_PRESENT, Attendance, Child
 
 router = APIRouter()
 
-REASONS = ["질병", "가정", "기타", "연락없음"]
-NO_CONTACT = "연락없음"
+REASONS = ["질병", "가정", "기타", service.NO_CONTACT]
+NO_CONTACT = service.NO_CONTACT
 
 
 def _guard(request: Request, db: Session):

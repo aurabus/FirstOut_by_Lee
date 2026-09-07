@@ -29,6 +29,7 @@ from .models import (
 )
 
 LATE_MINUTES = 5  # 호출 후 이만큼 지나면 붉게 표시
+NO_CONTACT = "연락없음"  # 결석 사유 — 보호자에게 확인 전화가 필요하다
 
 
 # ── 조회 도우미 ─────────────────────────────────────────
@@ -284,3 +285,47 @@ def class_stats(
                 if r.is_late(now):
                     s.late = True
     return [stats[c.id] for c in classes(db, kinder_id)]
+
+
+# ── 오늘 챙겨야 할 것 ───────────────────────────────────
+
+OVERDUE_GRACE = 10   # 차수 시각이 지나고 이만큼은 기다려 준다 (분)
+
+
+def no_contact(rows: list[Row]) -> list[Row]:
+    """결석인데 사유가 「연락없음」인 아이.
+
+    담임 화면에만 뜨고 있었다. 아이가 오지 않았는데 연락도 닿지 않는 것은
+    원장이 가장 먼저 알아야 하는 일이다.
+    """
+    return [
+        r for r in rows
+        if r.att and r.att.status == ATT_ABSENT and r.att.reason == NO_CONTACT
+    ]
+
+
+def _minutes(at_time: str) -> int | None:
+    """「15:40」 을 분으로. 이상한 값이면 None."""
+    try:
+        h, _, m = at_time.partition(":")
+        h, m = int(h), int(m)
+    except (ValueError, TypeError):
+        return None
+    return h * 60 + m if 0 <= h < 24 and 0 <= m < 60 else None
+
+
+def overdue(rows: list[Row], rnd: Round, now: dt.datetime, day: dt.date) -> list[Row]:
+    """그 차수의 시각이 지났는데 아직 안 나간 아이.
+
+    「호출하고 5분」과는 다른 신호다. 그쪽은 부르고 안 오는 것이고,
+    이쪽은 **아무도 아직 손대지 않은** 것이다. 4시 20분이 지났는데 2차 차량에
+    셋이 남아 있으면 그게 사고 신호다.
+
+    지난 날짜를 들춰볼 때는 세지 않는다 — 그때는 이미 다 끝난 일이다.
+    """
+    if day != now.date():
+        return []
+    at = _minutes(rnd.at_time)
+    if at is None or (now.hour * 60 + now.minute) < at + OVERDUE_GRACE:
+        return []
+    return [r for r in rows_for_round(rows, rnd) if not r.done]

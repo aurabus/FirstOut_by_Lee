@@ -351,3 +351,69 @@ def test_승인된_유치원만_목록에_나온다(db):
     ])
     db.commit()
     assert [k.name for k in service.kindergartens(db)] == ["시험유치원"]
+
+
+# ── 오늘 챙겨야 할 것 ───────────────────────────────────
+
+def test_연락없음_결석만_따로_모인다(db):
+    """오지 않았는데 연락도 닿지 않는 것은 원장이 가장 먼저 알아야 한다."""
+    from firstout.models import Attendance
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    a = make_child(db, "서아", room, i1)
+    b = make_child(db, "하준", room, i1)
+    db.add(Attendance(child_id=a.id, on_date=MON, status=ATT_ABSENT, reason="연락없음"))
+    db.add(Attendance(child_id=b.id, on_date=MON, status=ATT_ABSENT, reason="질병"))
+    db.commit()
+
+    got = service.no_contact(service.day_rows(db, KID, MON))
+    assert [r.child.name for r in got] == ["서아"]
+
+
+def test_시각이_지나면_남은_아이를_알려준다(db):
+    """호출하고 안 오는 것과 다르다 — 아무도 아직 손대지 않은 것이다."""
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")       # 15:40
+    make_child(db, "서아", room, i1)
+    rows = service.day_rows(db, KID, MON)
+
+    before = dt.datetime.combine(MON, dt.time(15, 45))   # 5분 지남 — 아직 기다린다
+    after = dt.datetime.combine(MON, dt.time(15, 55))    # 15분 지남
+    assert service.overdue(rows, i1, before, MON) == []
+    assert [r.child.name for r in service.overdue(rows, i1, after, MON)] == ["서아"]
+
+
+def test_이미_귀가한_아이는_세지_않는다(db):
+    from firstout.models import Departure
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    c = make_child(db, "서아", room, i1)
+    db.add(Departure(child_id=c.id, on_date=MON, round_id=i1.id, status="완료"))
+    db.commit()
+
+    late = dt.datetime.combine(MON, dt.time(16, 30))
+    assert service.overdue(service.day_rows(db, KID, MON), i1, late, MON) == []
+
+
+def test_지난_날짜를_들춰볼_때는_경고하지_않는다(db):
+    """그때는 이미 다 끝난 일이다. 붉은 줄만 늘어놓으면 오늘 것이 묻힌다."""
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    make_child(db, "서아", room, i1)
+
+    rows = service.day_rows(db, KID, MON)
+    now = dt.datetime.combine(MON + dt.timedelta(days=3), dt.time(16, 30))
+    assert service.overdue(rows, i1, now, MON) == []
+
+
+def test_시각이_이상해도_터지지_않는다(db):
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    make_child(db, "서아", room, i1)
+    i1.at_time = "언제쯤"
+    db.commit()
+
+    now = dt.datetime.combine(MON, dt.time(23, 0))
+    assert service.overdue(service.day_rows(db, KID, MON), i1, now, MON) == []

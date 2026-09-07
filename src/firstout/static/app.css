@@ -583,3 +583,26 @@ tr.is-change{background:var(--gold-soft)}
 .dupmark{font-size:.66rem;font-weight:700;color:var(--gold);background:var(--gold-soft);
   border:1px solid var(--gold-line);border-radius:2px;padding:.03rem .28rem;margin-left:.3rem;
   white-space:nowrap}
+
+/* ── 시작하기 안내 ── */
+.start{background:var(--card);border:1px solid var(--pine);border-radius:3px;
+  box-shadow:var(--shadow);overflow:hidden;margin:1rem 0}
+.start-h{background:var(--pine-soft);padding:.55rem .8rem;border-bottom:1px solid var(--pine);
+  display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+.start-h b{color:var(--pine);font-weight:700;font-size:.92rem}
+.start-h span{font-size:.77rem;color:var(--ink-2)}
+.start-row{display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;
+  border-bottom:1px solid var(--rule-2);text-decoration:none;color:inherit}
+.start-row:last-child{border-bottom:none}
+.start-row:hover{background:var(--card-2)}
+.start-no{flex:0 0 1.55rem;height:1.55rem;border-radius:50%;background:var(--pine);color:#fff;
+  font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.start-txt{flex:1;display:flex;flex-direction:column;gap:.08rem;min-width:0}
+.start-txt b{font-size:.9rem;font-weight:700}
+.start-txt em{font-style:normal;font-size:.77rem;color:var(--ink-3);line-height:1.5}
+.start-now{color:var(--ink-2)!important;font-family:var(--mono);font-size:.73rem!important}
+.start-go{font-size:.79rem;color:var(--pine);font-weight:500;white-space:nowrap}
+
+/* 시각이 지났는데 남아 있는 차수 */
+.rnd.over{border-color:var(--clay);background:var(--clay-soft)}
+.rnd-over{display:block;font-style:normal;font-size:.72rem;color:var(--clay);font-weight:700}
