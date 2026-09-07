@@ -35,13 +35,15 @@ def _guard(request: Request, db: Session):
     return me, None
 
 
-def _back(cls: int | None, day: str = "", msg: str = "") -> RedirectResponse:
+def _back(cls: int | None, day: str = "", msg: str = "",
+          cid: int | None = None) -> RedirectResponse:
+    """방금 고친 아이 자리로 돌려보낸다 — 매번 맨 위로 튕기면 스크롤만 하게 된다."""
     q = []
     if cls:
         q.append(f"cls={cls}")
     if day:
         q.append(f"d={day}")
-    url = "/attend" + ("?" + "&".join(q) if q else "")
+    url = "/attend" + ("?" + "&".join(q) if q else "") + (f"#c{cid}" if cid else "")
     return flash.put(RedirectResponse(url, status_code=303), msg)
 
 
@@ -131,7 +133,7 @@ def attend_set(
         a.reason = reason if reason in REASONS else ""
         db.commit()
         note = " — 보호자 확인이 필요합니다" if reason == NO_CONTACT else ""
-        return _back(cls, d, f"{child.name} 결석 사유 · {reason}{note}")
+        return _back(cls, d, f"{child.name} 결석 사유 · {reason}{note}", child.id)
 
     if status == ATT_ABSENT:
         a.status = ATT_ABSENT
@@ -148,7 +150,7 @@ def attend_set(
 
     db.commit()
     tail = f" {a.left_at}" if a.status == ATT_EARLY else ""
-    return _back(cls, d, f"{child.name} · {a.status}{tail}")
+    return _back(cls, d, f"{child.name} · {a.status}{tail}", child.id)
 
 
 @router.post("/attend/all/{room_id}")

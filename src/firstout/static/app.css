@@ -741,3 +741,13 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
 .what{display:block;font-style:normal;font-size:.78rem;color:var(--ink-2);
   margin-top:.15rem;padding-left:.1rem;border-left:2px solid var(--gold-line);
   padding-left:.45rem}
+
+/* 방금 처리한 줄 — 어디까지 했는지 눈으로 잡아준다 */
+.gl-item.just,.att-item.just{animation:just 1.8s ease-out}
+@keyframes just{
+  0%{background:var(--pine-soft);box-shadow:inset 3px 0 var(--pine)}
+  70%{background:var(--pine-soft);box-shadow:inset 3px 0 var(--pine)}
+  100%{background:transparent;box-shadow:none}
+}
+@media (prefers-reduced-motion:reduce){.gl-item.just,.att-item.just{animation:none;
+  box-shadow:inset 3px 0 var(--pine)}}

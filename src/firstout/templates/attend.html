@@ -54,7 +54,8 @@
       {% for r in rows %}
       {% set st = r.att.status if r.att else '출석' %}
       {% set absent = st == '결석' %}
-      <div class="att-item{% if absent %} is-abs{% elif st == '조퇴' %} is-early{% elif r.att %} is-ok{% endif %}">
+      <div class="att-item{% if absent %} is-abs{% elif st == '조퇴' %} is-early{% elif r.att %} is-ok{% endif %}"
+           id="c{{ r.child.id }}">
         <div class="att-row">
           <span class="att-name">{{ r.child.name }}</span>
 

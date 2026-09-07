@@ -42,14 +42,18 @@ def _dep(db: Session, child_id: int, day: dt.date, round_id: int | None) -> Depa
     return dep
 
 
-def _back(key: str, msg: str = "", day: str = "") -> RedirectResponse:
+def _back(key: str, msg: str = "", day: str = "", cid: int | None = None) -> RedirectResponse:
     """처리 후 보던 명단으로 돌아간다.
 
     안내문은 쿠키로 넘긴다. 주소에 실으면 원아 이름이 브라우저 기록과
     서버 접속 로그에 그대로 남는다.
+
+    **방금 처리한 아이 자리로 돌려보낸다.** 한 차수에 스무 명이 넘는데 한 명 누를
+    때마다 목록 맨 위로 튕기면, 귀가 시간 내내 스크롤만 하게 된다.
     """
     q = f"?d={day}" if day else ""
-    return flash.put(RedirectResponse(f"/list/{key}{q}", status_code=303), msg)
+    at = f"#c{cid}" if cid else ""
+    return flash.put(RedirectResponse(f"/list/{key}{q}{at}", status_code=303), msg)
 
 
 @router.get("/list/{key}")
@@ -128,7 +132,7 @@ def check(
     dep.how = how or rnd.name
     dep.round_id = rnd.id
     db.commit()
-    return _back(key, f"{child.name} 귀가 처리", d)
+    return _back(key, f"{child.name} 귀가 처리", d, cid)
 
 
 @router.post("/list/{key}/{cid}/sign")
@@ -193,7 +197,7 @@ def sign(
     dep.round_id = rnd.id
     db.commit()
     tail = " · 인계자로 저장" if (typed and save_guardian) else ""
-    return _back(key, f"{child.name} 인계 완료 · 서명 받음{tail}", d)
+    return _back(key, f"{child.name} 인계 완료 · 서명 받음{tail}", d, cid)
 
 
 @router.post("/list/{key}/{cid}/call")
@@ -216,7 +220,7 @@ def call(
     dep.status = DEP_CALLED
     dep.called_at = now()
     db.commit()
-    return _back(key, f"{child.name} 인계대기 등록", d)
+    return _back(key, f"{child.name} 인계대기 등록", d, cid)
 
 
 @router.post("/list/{key}/{cid}/undo")
@@ -245,7 +249,7 @@ def undo(
         dep.receiver = ""
         dep.how = ""
         db.commit()
-    return _back(key, "처리 취소", d)
+    return _back(key, "처리 취소", d, cid)
 
 
 @router.post("/list/{key}/{cid}/memo")
@@ -272,7 +276,7 @@ def memo(
     dep = _dep(db, cid, pick_date(d), rnd.id if rnd else None)
     dep.memo = clip(memo, 200)
     db.commit()
-    return _back(key, "특이사항 저장", d)
+    return _back(key, "특이사항 저장", d, cid)
 
 
 @router.post("/list/{key}/add")
@@ -310,4 +314,4 @@ def add_today(
     dep.round_id = rnd.id      # 오늘은 이 명단으로
     dep.status = DEP_WAITING
     db.commit()
-    return _back(key, f"{child.name} — 오늘 {rnd.name} 명단에 넣었습니다", d)
+    return _back(key, f"{child.name} — 오늘 {rnd.name} 명단에 넣었습니다", d, child.id)

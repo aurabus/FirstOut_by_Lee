@@ -54,12 +54,14 @@
         <span>{{ items | selectattr('done') | list | length }} / {{ items | length }}</span></div>
         {% for r in items %}
         {% set g = r.child.default_guardian %}
-        <div class="gl-item {% if r.done %}done{% endif %}">
+        <div class="gl-item {% if r.done %}done{% endif %}" id="c{{ r.child.id }}">
           {% if r.done %}
             <form method="post" action="/list/{{ rnd.key }}/{{ r.child.id }}/undo" class="gl-form">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
               <input type="hidden" name="d" value="{{ d }}">
-              <button class="gl-row" title="누르면 처리 취소">
+              <button class="gl-row" title="누르면 처리 취소"
+                {%- if r.dep.signature %} data-confirm="{{ r.child.name }} 귀가 처리를 취소합니다.
+받아둔 서명도 함께 지워집니다."{% endif %}>
                 <span class="gl-chk">✓</span>
                 <span><span class="gl-name">{{ r.child.name }}</span>
                   <span class="gl-sub">{{ r.dep.how }}</span></span>

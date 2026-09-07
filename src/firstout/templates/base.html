@@ -61,6 +61,13 @@
   });
   /* 목록이 길면 안내가 화면 밖에 있어 못 본다. 있으면 보이는 자리로 올려준다. */
   (function () {
+    /* 방금 처리한 줄로 돌아온 것이라면 그쪽이 답이다 — 위로 끌어올리지 않는다 */
+    var at = location.hash && document.getElementById(location.hash.slice(1));
+    if (at) {
+      at.classList.add("just");
+      setTimeout(function () { at.classList.remove("just"); }, 1800);
+      return;
+    }
     var m = document.querySelector(".msg");
     if (!m) return;
     var top = m.getBoundingClientRect().top;
