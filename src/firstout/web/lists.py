@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -20,8 +21,13 @@ from sqlalchemy.orm import Session
 from .. import flash, service
 from ..db import get_db
 from ..models import DEP_CALLED, DEP_DONE, DEP_WAITING, Child, Departure, Guardian
+from . import clip
 
 router = APIRouter()
+
+# 캔버스가 만드는 값만 받는다. 「data:image/」 로 시작하기만 하면 통과시키면
+# 그림이 아닌 것도 그대로 저장되어, 나중에 그 아이 화면에서 그대로 되살아난다.
+SIGNATURE = re.compile(r"data:image/(?:png|jpeg);base64,[A-Za-z0-9+/]+={0,2}")
 
 
 def _dep(db: Session, child_id: int, day: dt.date, round_id: int | None) -> Departure:
@@ -152,20 +158,20 @@ def sign(
     child = db.get(Child, cid)
     if rnd is None or child is None or child.kinder_id != me.kinder_id:
         return _back(key, "", d)
-    if not signature.startswith("data:image/"):
-        return _back(key, "서명을 받아주세요", d)
     if len(signature) > 400_000:   # 손글씨 서명은 이보다 훨씬 작다
         return _back(key, "서명이 너무 큽니다 — 다시 시도해 주세요", d)
+    if not SIGNATURE.fullmatch(signature):
+        return _back(key, "서명을 받아주세요", d)
 
     # 그 자리에서 적은 분이 있으면 그쪽을 쓴다
-    typed = receiver_name.strip()
+    typed = clip(receiver_name, 40)
     if typed:
-        rel = receiver_rel.strip() or "보호자"
+        rel = clip(receiver_rel, 20) or "보호자"
         receiver = f"{typed} · {rel}"
         if save_guardian:
             db.add(
                 Guardian(
-                    child_id=child.id, name=typed[:40], relation=rel[:20],
+                    child_id=child.id, name=typed, relation=rel,
                     seq=len(child.guardians),
                 )
             )
@@ -176,10 +182,10 @@ def sign(
     dep.status = DEP_DONE
     dep.done_at = now()
     dep.handled_by = me.id
-    dep.receiver = receiver
-    dep.how = receiver or "보호자 인계"
+    dep.receiver = clip(receiver, 60)
+    dep.how = clip(receiver, 60) or "보호자 인계"
     dep.signature = signature
-    dep.memo = memo.strip()
+    dep.memo = clip(memo, 200)
     dep.round_id = rnd.id
     db.commit()
     tail = " · 인계자로 저장" if (typed and save_guardian) else ""
@@ -260,7 +266,7 @@ def memo(
 
     rnd = service.round_by_key(db, me.kinder_id, key)
     dep = _dep(db, cid, pick_date(d), rnd.id if rnd else None)
-    dep.memo = memo.strip()[:200]
+    dep.memo = clip(memo, 200)
     db.commit()
     return _back(key, "특이사항 저장", d)
 

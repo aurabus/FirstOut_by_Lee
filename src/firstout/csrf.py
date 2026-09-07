@@ -192,3 +192,106 @@ def _client_ip(scope) -> str:
         return fwd.split(",")[0].strip()
     client = scope.get("client")
     return client[0] if client else ""
+
+
+# ── 브라우저에게 지켜달라고 알리는 것들 ─────────────────
+
+# 우리 화면은 바깥 자원을 하나도 쓰지 않는다 (글꼴·스크립트를 모두 서버에 담았다).
+# 그래서 「우리 서버 것만 쓰라」고 못박을 수 있다. 혹시 어딘가로 남의 스크립트가
+# 끼어들어도 브라우저가 실행하지 않는다.
+#
+# img 에 data: 를 여는 것은 인계 서명이 data:image/png 이기 때문이고,
+# style 에 unsafe-inline 을 두는 것은 화면 곳곳의 style="…" 때문이다.
+# 스크립트에는 열어주지 않는다 — 그쪽이 위험한 쪽이다.
+_CSP = (
+    "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+    "img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; "
+    "connect-src 'self'; object-src 'none'; script-src 'self' 'nonce-{nonce}'"
+)
+
+_FIXED = [
+    ("X-Content-Type-Options", "nosniff"),
+    # 다른 사이트가 우리 화면을 창 안에 숨겨 띄우고 「귀가 처리」를 누르게 할 수 없도록
+    ("X-Frame-Options", "DENY"),
+    # 주소에 아이 번호가 실리므로 바깥으로 흘리지 않는다
+    ("Referrer-Policy", "same-origin"),
+    ("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()"),
+    ("Cross-Origin-Opener-Policy", "same-origin"),
+]
+
+HSTS = "max-age=31536000; includeSubDomains"
+
+
+class SecurityHeaders:
+    """모든 응답에 같은 규칙을 붙인다.
+
+    화면마다 챙기면 언젠가 빠뜨린다. 여기 한 곳에서만 정한다.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        import secrets
+
+        nonce = secrets.token_urlsafe(12)
+        scope.setdefault("state", {})["csp_nonce"] = nonce
+        https = _is_https(scope)
+
+        async def go(message):
+            if message["type"] == "http.response.start":
+                head = message.setdefault("headers", [])
+                pairs = [("Content-Security-Policy", _CSP.format(nonce=nonce)), *_FIXED]
+                if https:
+                    pairs.append(("Strict-Transport-Security", HSTS))
+                head.extend((k.encode("latin-1"), v.encode("latin-1")) for k, v in pairs)
+            await send(message)
+
+        await self.app(scope, receive, go)
+
+
+def _is_https(scope) -> bool:
+    fwd = _header(scope, b"x-forwarded-proto")
+    return scope.get("scheme") == "https" or fwd.split(",")[0].strip() == "https"
+
+
+# ── 첫 비밀번호는 반드시 바꾸게 한다 ────────────────────
+
+# 이 길들은 막지 않는다 — 막으면 비밀번호를 바꾸러 갈 수조차 없다
+_PW_FREE = ("/me/password", "/signin", "/signout", "/signup", "/join/", "/static/",
+            "/sw.js", "/health", "/favicon.ico", "/connect")
+
+
+class ForcePasswordChange:
+    """임시 비밀번호로는 첫 화면 말고 아무 데도 못 가게 한다.
+
+    지금까지는 첫 화면에서만 비밀번호 변경으로 보냈다. 그래서 주소를 직접 치면
+    그냥 지나갈 수 있었고, **카카오톡으로 오간 임시 비밀번호가 계속 살아 있었다.**
+    바꾸기 전까지는 어느 문도 열리지 않아야 한다.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if scope["type"] != "http" or path.startswith(_PW_FREE):
+            return await self.app(scope, receive, send)
+
+        from . import audit
+        from .db import SessionLocal
+
+        try:
+            with SessionLocal() as db:
+                me = audit.user_from_cookie(db, _cookie_named(scope, "majung"))
+                must = bool(me and me.must_change_pw)
+        except Exception:   # noqa: BLE001 — 확인에 실패했다고 서비스를 멈추지 않는다
+            must = False
+
+        if must:
+            res = RedirectResponse("/me/password", status_code=303)
+            return await res(scope, receive, send)
+        return await self.app(scope, receive, send)

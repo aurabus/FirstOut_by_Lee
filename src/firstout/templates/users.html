@@ -92,7 +92,7 @@
   <div class="foot"><span>{{ app_name }} · 선생님 관리</span><span>{{ kinder.name }}</span></div>
 </div>
 
-<script>
+<script nonce="{{ nonce }}">
 document.querySelectorAll("[data-copy]").forEach(function(b){
   b.onclick = function(){
     var t = b.dataset.copy;

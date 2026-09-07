@@ -43,7 +43,7 @@
         <input type="hidden" name="_csrf" value="{{ csrf }}">
         <input type="hidden" name="weekday" value="{{ wd }}">
         <b class="plan-lbl">{{ weekdays[wd] }}</b>
-        <select class="field" name="how" onchange="this.form.requestSubmit()">
+        <select class="field" name="how" data-autosubmit>
           <option value="">정규 후 귀가 (명단 없음)</option>
           {% for r in rounds %}
           <option value="r:{{ r.id }}"

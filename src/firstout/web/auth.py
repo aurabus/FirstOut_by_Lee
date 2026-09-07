@@ -34,6 +34,7 @@ from ..security import (
     verify_password,
 )
 from ..seed import fill_new_kinder
+from . import clip
 
 router = APIRouter()
 
@@ -155,9 +156,9 @@ def signup(
     db: Session = Depends(get_db),
 ):
     """원장이 유치원과 자기 계정을 함께 신청한다."""
-    kinder_name = kinder_name.strip()
+    kinder_name = clip(kinder_name, 60)
     login_id = login_id.strip().lower()
-    name = name.strip()
+    name = clip(name, 40)
 
     def back(msg: str) -> RedirectResponse:
         return RedirectResponse(f"/signup?error={msg}", status_code=303)

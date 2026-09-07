@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from .. import flash, service
 from ..db import get_db
 from ..models import Academy, Bus, Child, ClassRoom, Kindergarten, PlanEntry, Round
+from . import clip
 
 router = APIRouter()
 
@@ -79,7 +80,7 @@ def class_add(request: Request, name: str = Form(""), db: Session = Depends(get_
     if redirect:
         return redirect
     n = db.scalar(select(func.count(ClassRoom.id)).where(ClassRoom.kinder_id == me.kinder_id))
-    name = name.strip() or f"새 반 {n + 1}"
+    name = clip(name, 20) or f"새 반 {n + 1}"
     if db.scalar(
         select(ClassRoom).where(ClassRoom.kinder_id == me.kinder_id, ClassRoom.name == name)
     ):
@@ -98,7 +99,7 @@ def class_rename(cid: int, request: Request, name: str = Form(""), db: Session =
         return redirect
     c = _own(db, ClassRoom, cid, me)
     if c and name.strip():
-        c.name = name.strip()
+        c.name = clip(name, 20)
         db.commit()
     return _back("반 이름 변경")
 
@@ -155,7 +156,7 @@ def bus_rename(bid: int, request: Request, name: str = Form(""), db: Session = D
         return redirect
     b = _own(db, Bus, bid, me)
     if b and name.strip():
-        b.name = name.strip()
+        b.name = clip(name, 20)
         db.commit()
     return _back("차량 이름 변경")
 
@@ -193,7 +194,7 @@ def round_save(
     r = _own(db, Round, rid, me)
     if r:
         r.at_time = at_time.strip() or r.at_time
-        r.note = note.strip()
+        r.note = clip(note, 60)
         db.commit()
     return _back("차수 시각 변경")
 
@@ -218,7 +219,7 @@ def academy_add(request: Request, name: str = Form(""), db: Session = Depends(ge
     me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    name = name.strip()
+    name = clip(name, 20)
     if not name:
         return _back("학원 이름을 입력해 주세요")
     if db.scalar(select(Academy).where(Academy.kinder_id == me.kinder_id, Academy.name == name)):
@@ -258,6 +259,6 @@ def kinder_save(
         return redirect
     k = db.get(Kindergarten, me.kinder_id)
     k.name = kinder_name.strip() or k.name
-    k.route_note = route_note.strip()
+    k.route_note = clip(route_note, 120)
     db.commit()
     return _back("유치원 정보 저장")

@@ -37,7 +37,7 @@
       {% if checked == rows | length and rows %}오늘 출결을 모두 확인했습니다
       {% else %}확인함 {{ checked }} / {{ rows | length }}명{% endif %}
     </span>
-    <button class="pick" style="margin-left:auto" onclick="window.print()">출결부 인쇄 / PDF</button>
+    <button class="pick" style="margin-left:auto" data-print>출결부 인쇄 / PDF</button>
   </div>
 
   <div class="sec" style="padding-top:.1rem">

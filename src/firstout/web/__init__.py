@@ -24,3 +24,12 @@ def xlsx(data: bytes, korean_name: str, ascii_name: str) -> Response:
                 f"filename*=UTF-8''{quote(korean_name)}"
         },
     )
+
+
+def clip(text: str, limit: int) -> str:
+    """저장 전에 길이를 자른다.
+
+    모델에 String(40) 이라고 적어두어도 **SQLite 는 그 길이를 강제하지 않는다.**
+    화면에서 막아도 폼은 얼마든지 직접 보낼 수 있으므로 서버에서 자른다.
+    """
+    return text.strip()[:limit]

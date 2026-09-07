@@ -51,7 +51,17 @@
 {% if me %}
 <script src="/static/app.js" defer></script>
 {% endif %}
-<script>
+<script nonce="{{ nonce }}">
+  /* 인쇄 단추와 자동 저장 — 화면마다 두면 CSP 에 걸리므로 여기서 한 번에 맡는다.
+     (인라인 onclick 은 nonce 를 달 수 없어 브라우저가 실행하지 않는다) */
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-print]")) { e.preventDefault(); window.print(); }
+  });
+  document.addEventListener("change", function (e) {
+    var el = e.target.closest("[data-autosubmit]");
+    if (el && el.form) { el.form.requestSubmit(); }
+  });
+
   /* 홈 화면에 앱으로 담을 수 있게 한다. 저장은 하지 않는다 (sw.js 참고) */
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     window.addEventListener("load", function () {

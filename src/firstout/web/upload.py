@@ -63,8 +63,8 @@ def upload_view(request: Request, db: Session = Depends(get_db), token: str = ""
     _sweep()
 
     parsed = None
-    if token and _path(token).exists():
-        parsed = excel.parse(_path(token).read_bytes(), db, me.kinder_id)
+    if token and _path(token, me.kinder_id).exists():
+        parsed = excel.parse(_path(token, me.kinder_id).read_bytes(), db, me.kinder_id)
 
     have = db.scalar(
         select(func.count(Child.id)).where(Child.kinder_id == me.kinder_id, Child.active.is_(True))
@@ -84,9 +84,13 @@ def template(request: Request, db: Session = Depends(get_db)):
     return xlsx(data, f"원아명부_양식_{today}.xlsx", f"majung_template_{today}.xlsx")
 
 
-def _path(token: str):
+def _path(token: str, kinder_id: int):
+    """올린 파일은 그 유치원 것으로만 열린다.
+
+    번호를 파일 이름에 함께 넣어, 다른 유치원의 표를 자기 명부로 가져가는 길을 막는다.
+    """
     safe = "".join(c for c in token if c.isalnum())[:32]
-    return UPLOAD_DIR / f"{safe}.xlsx"
+    return UPLOAD_DIR / f"k{int(kinder_id)}-{safe}.xlsx"
 
 
 @router.post("/upload")
@@ -110,7 +114,7 @@ async def upload_file(
 
     _sweep()
     token = secrets.token_hex(12)
-    _path(token).write_bytes(data)
+    _path(token, me.kinder_id).write_bytes(data)
     return RedirectResponse(f"/upload?token={token}", status_code=303)
 
 
@@ -126,7 +130,7 @@ def upload_apply(
     if redirect:
         return redirect
 
-    f = _path(token)
+    f = _path(token, me.kinder_id)
     if not token or not f.exists():
         return _back("올린 파일을 찾을 수 없습니다 — 다시 올려주세요")
 
@@ -150,7 +154,7 @@ def upload_cancel(request: Request, token: str = Form(""), db: Session = Depends
     me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    f = _path(token)
+    f = _path(token, me.kinder_id)
     if f.exists():
         try:
             f.unlink()

@@ -17,6 +17,7 @@ from .. import flash, invites, net, reauth, service
 from ..db import get_db
 from ..models import ROLE_OWNER, ROLE_TEACHER, User
 from ..security import hash_password
+from . import clip
 
 router = APIRouter()
 
@@ -84,8 +85,8 @@ def user_add(
     if redirect:
         return redirect
 
-    name = name.strip()
-    login_id = login_id.strip().lower()
+    name = clip(name, 40)
+    login_id = login_id.strip().lower()[:30]
     if not name or not login_id:
         return _back("이름과 아이디를 입력해 주세요")
     if len(login_id) < 4 or not login_id.replace("_", "").isalnum():
@@ -101,7 +102,7 @@ def user_add(
         password_hash=hash_password(secrets.token_urlsafe(32)),
         name=name,
         role=ROLE_OWNER if role == ROLE_OWNER else ROLE_TEACHER,
-        title=title.strip(),
+        title=clip(title, 20),
         class_id=int(class_id) if class_id.isdigit() else None,
         must_change_pw=True,   # 첫 로그인 때 본인이 정하게 한다
     )
@@ -175,8 +176,8 @@ def user_save(
     if u is None or u.kinder_id != me.kinder_id:
         return _back()
     if name.strip():
-        u.name = name.strip()
-    u.title = title.strip()
+        u.name = clip(name, 40)
+    u.title = clip(title, 20)
     u.class_id = int(class_id) if class_id.isdigit() else None
     db.commit()
     return _back(f"{u.name} 선생님 정보 저장")
@@ -191,6 +192,9 @@ def user_reset(uid: int, request: Request, db: Session = Depends(get_db)):
     u = db.get(User, uid)
     if u is None or u.kinder_id != me.kinder_id:
         return _back()
+    if u.id == me.id:
+        # 스스로 발급하면 그 자리에서 로그인이 끊긴다. 본인은 비밀번호 화면에서 바꾼다.
+        return _back("본인 비밀번호는 위쪽 「비밀번호」 에서 바꿔주세요")
 
     pw = temp_password()
     u.password_hash = hash_password(pw)

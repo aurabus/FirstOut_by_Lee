@@ -10,10 +10,15 @@ from __future__ import annotations
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from starlette.responses import Response
 
-from .config import SECRET_KEY
+from .config import PUBLIC_URL, SECRET_KEY
 
 COOKIE = "majung_flash"
 MAX_AGE = 60   # 곧바로 다음 화면에서 쓰고 버린다
+
+# 이 쿠키에는 임시 비밀번호와 초대 토큰이 담긴다. HTTPS 로 서비스하는 중이라면
+# 반드시 Secure 를 걸어야 한다 — 걸지 않으면 평문 요청 한 번으로 새어 나간다.
+# 요청마다 판단하는 세션 쿠키와 달리 여기는 request 가 없으므로 설정을 본다.
+SECURE = PUBLIC_URL.startswith("https://")
 
 _ser = URLSafeTimedSerializer(SECRET_KEY, salt="majung-flash")
 
@@ -28,7 +33,7 @@ def put(res: Response, msg: str = "", secret: str = "") -> Response:
         max_age=MAX_AGE,
         httponly=True,
         samesite="lax",
-        secure=False,   # 실제 값은 아래 main.page 에서 요청에 맞춰 다시 심는다
+        secure=SECURE,
     )
     return res
 

@@ -22,7 +22,7 @@
     <a class="pick {% if r.id == rnd.id %}on{% endif %}" href="/list/{{ r.key }}{% if d %}?d={{ d }}{% endif %}">
       {{ r.name }}{% if r.needs_sign %} ✎{% endif %}<span class="sub">{{ r.at_time }}</span></a>
     {% endfor %}
-    <button class="pick" style="margin-left:auto" onclick="window.print()">인쇄 / PDF</button>
+    <button class="pick" style="margin-left:auto" data-print>인쇄 / PDF</button>
   </div>
 
   {% if not weekend %}
@@ -195,7 +195,7 @@
   </form>
 </dialog>
 
-<script>
+<script nonce="{{ nonce }}">
 (function(){
   var KEY = {{ rnd.key | tojson }};
   var dlg = document.getElementById("dlg"), f = document.getElementById("signForm");

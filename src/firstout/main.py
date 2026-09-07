@@ -28,7 +28,12 @@ from .config import (
     WEEKDAYS,
     ensure_dirs,
 )
-from .csrf import AuditMiddleware, CSRFMiddleware
+from .csrf import (
+    AuditMiddleware,
+    CSRFMiddleware,
+    ForcePasswordChange,
+    SecurityHeaders,
+)
 from .db import SessionLocal, get_db, init_db
 from .models import User
 from .security import CSRF_COOKIE, new_csrf, pw_stamp, read_token
@@ -38,8 +43,12 @@ mimetypes.add_type("font/woff2", ".woff2")
 
 app = FastAPI(title=APP_NAME, docs_url=None, redoc_url=None)
 # 감사 로그가 바깥에 있어야 차단된 요청까지 남는다
+# 나중에 더한 것이 바깥이다. 바깥부터 안쪽으로:
+#   보안 헤더 → 감사 로그 → 첫 비밀번호 강제 → CSRF → 화면
 app.add_middleware(CSRFMiddleware)
+app.add_middleware(ForcePasswordChange)
 app.add_middleware(AuditMiddleware)
+app.add_middleware(SecurityHeaders)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
@@ -119,6 +128,8 @@ def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
         "rounds": service.rounds(db, teacher.kinder_id) if teacher and teacher.kinder_id else [],
         "now": now(),
         "csrf": request.cookies.get(CSRF_COOKIE) or new_csrf(),
+        # 이 값을 달고 있는 <script> 만 브라우저가 실행한다 (csrf.SecurityHeaders)
+        "nonce": request.scope.get("state", {}).get("csp_nonce", ""),
     }
     # 처리 결과 안내는 주소가 아니라 쿠키로 온다 (원아 이름이 로그에 남지 않게)
     fmsg, fsecret = flash.take(request)

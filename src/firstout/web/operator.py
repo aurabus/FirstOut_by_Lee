@@ -22,6 +22,7 @@ from ..models import (
     Kindergarten,
     User,
 )
+from . import clip
 
 router = APIRouter()
 
@@ -117,6 +118,6 @@ def memo(kid: int, request: Request, memo: str = Form(""), db: Session = Depends
         return redirect
     k = db.get(Kindergarten, kid)
     if k:
-        k.memo = memo.strip()
+        k.memo = clip(memo, 200)
         db.commit()
     return _back("메모 저장")

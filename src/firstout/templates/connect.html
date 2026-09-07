@@ -95,11 +95,11 @@
   <p style="text-align:center;padding:1.5rem 0">
     {% if me %}<a class="btn" href="/board">현황으로 돌아가기</a>
     {% else %}<a class="btn" href="/pick">유치원 선택으로</a>{% endif %}
-    <button class="btn" onclick="window.print()">인쇄 / PDF</button>
+    <button class="btn" data-print>인쇄 / PDF</button>
   </p>
 </div>
 
-<script>
+<script nonce="{{ nonce }}">
 (function(){
   var done = document.getElementById("done");
   function flash(t){ done.textContent = t; done.hidden = false; setTimeout(function(){ done.hidden = true; }, 2600); }
