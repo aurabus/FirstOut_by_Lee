@@ -289,3 +289,65 @@ def test_출결을_되돌리면_명단에_다시_들어온다(db):
     db.commit()
     back = service.rows_for_round(service.day_rows(db, KID, MON), i1)
     assert [r.child.name for r in back] == ["서아"]
+
+
+def test_오늘만_다른_차수로_옮기면_그쪽_명단에만_나온다(db):
+    """「오늘은 할머니가 데리러 오신대요」 — 주간 계획은 건드리지 않는다."""
+    from firstout.models import Departure
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    care = service.round_by_key(db, KID, "care")
+    c = make_child(db, "하윤", room, i1)
+    db.add(Departure(child_id=c.id, on_date=MON, round_id=care.id, status="대기"))
+    db.commit()
+
+    rows = service.day_rows(db, KID, MON)
+    assert service.rows_for_round(rows, i1) == []
+    moved = service.rows_for_round(rows, care)
+    assert [r.child.name for r in moved] == ["하윤"]
+    assert moved[0].added_today          # 명단에 「오늘만」으로 표시된다
+    assert c.plan[0].round_id == i1.id   # 다음 주 월요일은 그대로 1차 개별
+
+
+def test_계획대로_나가면_오늘만_표시가_붙지_않는다(db):
+    from firstout.models import Departure
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    c = make_child(db, "지호", room, i1)
+    db.add(Departure(child_id=c.id, on_date=MON, round_id=i1.id, status="대기"))
+    db.commit()
+
+    got = service.rows_for_round(service.day_rows(db, KID, MON), i1)
+    assert [r.child.name for r in got] == ["지호"]
+    assert not got[0].added_today
+
+
+def test_오늘만_넣어도_결석이면_명단에_나오지_않는다(db):
+    """실수로 넣었더라도 안 온 아이가 명단에 남으면 안 된다."""
+    from firstout.models import Attendance, Departure
+
+    room = service.classes(db, KID)[0]
+    care = service.round_by_key(db, KID, "care")
+    c = make_child(db, "은우", room, service.round_by_key(db, KID, "i1"))
+    db.add(Departure(child_id=c.id, on_date=MON, round_id=care.id, status="대기"))
+    db.add(Attendance(child_id=c.id, on_date=MON, status=ATT_ABSENT, reason="질병"))
+    db.commit()
+
+    rows = service.day_rows(db, KID, MON)
+    assert service.rows_for_round(rows, care) == []
+    assert [r.child.name for r in service.excluded_for_round(rows, care)] == ["은우"]
+
+
+def test_승인된_유치원만_목록에_나온다(db):
+    """승인대기·정지 상태가 첫 화면에 보이면 안 된다.
+
+    서버를 켤 때도 이 함수를 쓰기 때문에, 여기가 깨지면 아예 뜨지 않는다.
+    """
+    db.add_all([
+        Kindergarten(name="대기유치원", status="승인대기"),
+        Kindergarten(name="정지유치원", status="정지"),
+    ])
+    db.commit()
+    assert [k.name for k in service.kindergartens(db)] == ["시험유치원"]

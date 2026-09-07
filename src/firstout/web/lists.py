@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from .. import flash, service
 from ..db import get_db
-from ..models import DEP_CALLED, DEP_DONE, DEP_WAITING, Child, Departure
+from ..models import DEP_CALLED, DEP_DONE, DEP_WAITING, Child, Departure, Guardian
 
 router = APIRouter()
 
@@ -62,6 +62,16 @@ def show(request: Request, key: str, db: Session = Depends(get_db), d: str = "")
     rows = service.day_rows(db, me.kinder_id, day)
     target = service.rows_for_round(rows, rnd)
 
+    # 「오늘만 추가」 고를 수 있는 아이 — 반별로 묶어 둔다.
+    # 이미 이 명단에 있거나, 결석·조퇴했거나, 벌써 귀가한 아이는 뺀다.
+    here = {r.child.id for r in target}
+    pickable: dict[str, list] = {}
+    for r in rows:
+        if r.child.id in here or r.excluded or r.done:
+            continue
+        room = r.child.classroom.name if r.child.classroom else "반 없음"
+        pickable.setdefault(room, []).append(r.child)
+
     return page(
         request, "list.html", db, me,
         day=day, d=d,
@@ -72,6 +82,7 @@ def show(request: Request, key: str, db: Session = Depends(get_db), d: str = "")
         sign_any=any(r.needs_sign for r in target),
         sign_all=bool(target) and all(r.needs_sign for r in target),
         skipped=service.excluded_for_round(rows, rnd),
+        pickable=pickable,
         weekend=service.weekday_index(day) is None,
     )
 
@@ -116,12 +127,18 @@ def sign(
     cid: int,
     request: Request,
     receiver: str = Form(""),
+    receiver_name: str = Form(""),
+    receiver_rel: str = Form(""),
+    save_guardian: str = Form(""),
     signature: str = Form(""),
     memo: str = Form(""),
     d: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """사람에게 건네는 경우 — 인계자와 서명을 남긴다.
+
+    등록되지 않은 분이 오시는 일이 잦아, 그 자리에서 이름·관계를 적을 수 있다.
+    자주 오시는 분이면 「인계자로 저장」을 켜 다음부터 목록에 나오게 한다.
 
     서명이 없으면 처리하지 않는다. 나중에 "누가 데려갔나"를 확인할 근거이기 때문이다.
     """
@@ -140,6 +157,21 @@ def sign(
     if len(signature) > 400_000:   # 손글씨 서명은 이보다 훨씬 작다
         return _back(key, "서명이 너무 큽니다 — 다시 시도해 주세요", d)
 
+    # 그 자리에서 적은 분이 있으면 그쪽을 쓴다
+    typed = receiver_name.strip()
+    if typed:
+        rel = receiver_rel.strip() or "보호자"
+        receiver = f"{typed} · {rel}"
+        if save_guardian:
+            db.add(
+                Guardian(
+                    child_id=child.id, name=typed[:40], relation=rel[:20],
+                    seq=len(child.guardians),
+                )
+            )
+    if not receiver.strip():
+        return _back(key, "인계받는 분을 확인해 주세요", d)
+
     dep = _dep(db, cid, pick_date(d), rnd.id)
     dep.status = DEP_DONE
     dep.done_at = now()
@@ -150,7 +182,8 @@ def sign(
     dep.memo = memo.strip()
     dep.round_id = rnd.id
     db.commit()
-    return _back(key, f"{child.name} 인계 완료 · 서명 받음", d)
+    tail = " · 인계자로 저장" if (typed and save_guardian) else ""
+    return _back(key, f"{child.name} 인계 완료 · 서명 받음{tail}", d)
 
 
 @router.post("/list/{key}/{cid}/call")
@@ -230,3 +263,38 @@ def memo(
     dep.memo = memo.strip()[:200]
     db.commit()
     return _back(key, "특이사항 저장", d)
+
+
+@router.post("/list/{key}/add")
+def add_today(
+    key: str,
+    request: Request,
+    cid: str = Form(""),
+    d: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """오늘만 이 명단에 넣는다.
+
+    "오늘은 할머니가 데리러 오신대요" 같은 일이 매일 생긴다. 주간 계획을 고치면
+    다음 주까지 바뀌므로, 그날 하루만 이 차수로 배정한다.
+    """
+    from ..main import current_user, pick_date
+
+    me = current_user(request, db)
+    if me is None:
+        return RedirectResponse("/signin", status_code=303)
+
+    rnd = service.round_by_key(db, me.kinder_id, key)
+    child = db.get(Child, int(cid)) if cid.isdigit() else None
+    if rnd is None or child is None or child.kinder_id != me.kinder_id:
+        return _back(key, "아이를 골라주세요", d)
+
+    day = pick_date(d)
+    dep = _dep(db, child.id, day, rnd.id)
+    if dep.status == DEP_DONE:
+        return _back(key, f"{child.name} 은(는) 이미 귀가 처리되었습니다", d)
+
+    dep.round_id = rnd.id      # 오늘은 이 명단으로
+    dep.status = DEP_WAITING
+    db.commit()
+    return _back(key, f"{child.name} — 오늘 {rnd.name} 명단에 넣었습니다", d)

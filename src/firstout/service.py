@@ -18,6 +18,7 @@ from .models import (
     ATT_EARLY,
     DEP_CALLED,
     DEP_DONE,
+    KG_ACTIVE,
     Attendance,
     Child,
     ClassRoom,
@@ -33,11 +34,11 @@ LATE_MINUTES = 5  # 호출 후 이만큼 지나면 붉게 표시
 # ── 조회 도우미 ─────────────────────────────────────────
 
 def kindergartens(db: Session) -> list[Kindergarten]:
-    """첫 화면에 늘어놓을 유치원 목록."""
+    """실제로 쓸 수 있는 유치원 목록. 승인대기·정지는 빼고 보여준다."""
     return list(
         db.scalars(
             select(Kindergarten)
-            .where(Kindergarten.active.is_(True))
+            .where(Kindergarten.status == KG_ACTIVE)
             .order_by(Kindergarten.seq, Kindergarten.id)
         )
     )
@@ -131,6 +132,14 @@ class Row:
             return f"학원차 {self.academy}"
         return self.plan.round.name
 
+    @property
+    def added_today(self) -> bool:
+        """주간 계획과 다르게 오늘만 이 차수에 들어온 아이."""
+        if not self.dep or not self.dep.round_id:
+            return False
+        planned = self.plan.round_id if self.plan else None
+        return planned != self.dep.round_id
+
     def waited_seconds(self, now: dt.datetime) -> int:
         if not self.dep or not self.dep.called_at:
             return 0
@@ -195,17 +204,37 @@ def day_rows(
 # ── 차수별 명단 ─────────────────────────────────────────
 
 def rows_for_round(rows: list[Row], rnd: Round) -> list[Row]:
-    """오늘 이 차수로 나가는 아이들. 결석·조퇴는 제외한다."""
-    return [
-        r
-        for r in rows
-        if not r.excluded and r.plan and r.plan.round_id == rnd.id
-    ]
+    """오늘 이 차수로 나가는 아이들. 결석·조퇴는 제외한다.
+
+    그날의 배정(Departure.round_id)이 있으면 주간 계획보다 우선한다.
+    "오늘만 할머니가 데리러 오신대요" 같은 일이 매일 생기는데,
+    그때마다 주간 계획을 고치면 다음 주까지 바뀌어 버리기 때문이다.
+    """
+    out = []
+    for r in rows:
+        if r.excluded:
+            continue
+        if r.dep and r.dep.round_id:
+            if r.dep.round_id == rnd.id:
+                out.append(r)
+            continue                      # 오늘은 다른 차수로 옮겨졌다
+        if r.plan and r.plan.round_id == rnd.id:
+            out.append(r)
+    return out
 
 
 def excluded_for_round(rows: list[Row], rnd: Round) -> list[Row]:
     """이 차수 대상이었지만 결석·조퇴로 빠진 아이 — 명단 아래에 표시한다."""
-    return [r for r in rows if r.excluded and r.plan and r.plan.round_id == rnd.id]
+    out = []
+    for r in rows:
+        if not r.excluded:
+            continue
+        here = (r.dep.round_id == rnd.id) if (r.dep and r.dep.round_id) else (
+            bool(r.plan) and r.plan.round_id == rnd.id
+        )
+        if here:
+            out.append(r)
+    return out
 
 
 def group_by_class(rows: list[Row]) -> list[tuple[ClassRoom, list[Row]]]:

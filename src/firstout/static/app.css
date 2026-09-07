@@ -400,3 +400,20 @@ tr.is-change{background:var(--gold-soft)}
 .nocall{font-size:.76rem;color:var(--clay);font-weight:500;align-self:center;margin-left:.3rem}
 .att-row .seg{border:0;padding:.15rem;margin:0}
 .att-meta b{font-weight:700}
+
+/* ── 오늘만 추가 · 인계자 직접 입력 ── */
+.addbox{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
+  background:var(--card);border:1px dashed var(--rule);border-radius:3px;
+  padding:.6rem .8rem;margin:.9rem 0 .2rem}
+.addbox b{font-size:.84rem;color:var(--ink-2);font-weight:700;margin-right:.2rem}
+.addnote{font-size:.76rem;color:var(--ink-3);margin-left:auto}
+.addnote strong{color:var(--ink-2);font-weight:700}
+.today{font-style:normal;font-size:.68rem;font-weight:700;color:var(--gold);
+  background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:2px;
+  padding:.05rem .3rem;margin-left:.34rem;vertical-align:.06rem}
+.gitem--temp{border-style:dashed}
+.newg{display:flex;flex-direction:column;gap:.5rem;border:1px solid var(--plum-line);
+  background:var(--plum-soft);border-radius:3px;padding:.7rem .78rem}
+.newg-in{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+.newg-save{display:flex;align-items:center;gap:.45rem;font-size:.77rem;color:var(--ink-2)}
+.newg-save input{width:1.05rem;height:1.05rem;accent-color:var(--pine)}

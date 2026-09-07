@@ -76,7 +76,7 @@
               data-def="{{ r.child.guardians.index(g) if g else 0 }}"
               data-memo="{{ r.dep.memo if r.dep else '' }}">
               <span class="gl-chk">✓</span>
-              <span><span class="gl-name">{{ r.child.name }}</span><i class="sg-need">✎</i>
+              <span><span class="gl-name">{{ r.child.name }}</span><i class="sg-need">✎</i>{% if r.added_today %}<i class="today">오늘만</i>{% endif %}
                 <span class="gl-sub">{% if g %}{{ g.name }} · {{ g.relation }}{% endif %}{% if r.at_time and r.at_time != rnd.at_time %} · {{ r.at_time }}{% endif %}{% if r.called %} · 인계대기{% endif %}</span></span>
             </button>
           {% else %}
@@ -86,7 +86,7 @@
               <input type="hidden" name="d" value="{{ d }}">
               <button class="gl-row">
                 <span class="gl-chk">✓</span>
-                <span><span class="gl-name">{{ r.child.name }}</span>
+                <span><span class="gl-name">{{ r.child.name }}</span>{% if r.added_today %}<i class="today">오늘만</i>{% endif %}
                   <span class="gl-sub">{% if r.is_academy %}학원차 {{ r.academy }}{% else %}{{ rnd.name }}{% endif %}</span></span>
               </button>
             </form>
@@ -112,6 +112,24 @@
       </div>
     {% endif %}
 
+    {% if pickable %}
+    <form method="post" action="/list/{{ rnd.key }}/add" class="addbox no-print">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="d" value="{{ d }}">
+      <b>오늘만 추가</b>
+      <select class="field" id="addCls" style="max-width:9rem">
+        {% for room in pickable %}<option value="{{ room }}">{{ room }}</option>{% endfor %}
+      </select>
+      <select class="field" name="cid" id="addKid" style="max-width:10rem" required>
+        {% for room, kids in pickable.items() %}{% for k in kids %}
+        <option value="{{ k.id }}" data-room="{{ room }}">{{ k.name }}</option>
+        {% endfor %}{% endfor %}
+      </select>
+      <button class="btn">이 명단에 넣기</button>
+      <span class="addnote">주간 계획은 그대로 두고 <strong>오늘 하루만</strong> 이 명단에 넣습니다</span>
+    </form>
+    {% endif %}
+
     <div class="sign-row">
       <span>완료 {{ done }} / {{ target | length }}명</span>
       <span>{% if sign_any %}인계 서명은 기록에 저장됩니다{% else %}담당교사 확인 ______________{% endif %}</span>
@@ -134,6 +152,17 @@
       <button type="button" class="btn sm" id="d-other">다른 분</button>
     </div>
     <div id="d-picklist" class="glist" hidden></div>
+    <div id="d-new" class="newg" hidden>
+      <p class="dlg-who">오시는 분을 적어주세요</p>
+      <div class="newg-in">
+        <input class="field" name="receiver_name" id="d-nn" placeholder="성함" style="min-width:0">
+        <input class="field" name="receiver_rel" id="d-nr" placeholder="관계 (이모·조모…)" style="min-width:0">
+      </div>
+      <label class="newg-save">
+        <input type="checkbox" name="save_guardian" value="1">
+        <span>이 아이의 인계자로 저장 — 다음부터 목록에 나옵니다</span>
+      </label>
+    </div>
 
     <label class="login-lbl" for="d-memo">특이사항 (선택)</label>
     <input class="field" id="d-memo" name="memo" placeholder="예: 오늘 이모가 오심 · 약 전달" style="width:100%">
@@ -207,11 +236,26 @@
     box.hidden = !box.hidden;
     box.innerHTML = names.map(function(n,i){
       return '<button type="button" class="gitem" data-i="'+i+'"><b>'+n+'</b><span>'+(rels[i]||"")+'</span></button>';
-    }).join("");
+    }).join("") +
+      '<button type="button" class="gitem gitem--temp" data-i="-1"><b>직접 입력</b><span>등록되지 않은 분</span></button>';
   };
   document.getElementById("d-picklist").onclick = function(e){
     var b = e.target.closest("[data-i]"); if(!b) return;
-    setWho(+b.dataset.i); this.hidden = true;
+    var i = +b.dataset.i;
+    this.hidden = true;
+    var box = document.getElementById("d-new");
+    if(i < 0){
+      box.hidden = false;
+      document.getElementById("d-gn").textContent = "직접 입력";
+      document.getElementById("d-gr").textContent = "아래에 적어주세요";
+      document.getElementById("d-recv").value = "";
+      document.getElementById("d-nn").focus();
+    } else {
+      box.hidden = true;
+      document.getElementById("d-nn").value = "";
+      document.getElementById("d-nr").value = "";
+      setWho(i);
+    }
   };
 
   document.querySelectorAll("[data-sign]").forEach(function(btn){
@@ -225,6 +269,9 @@
         btn.dataset.name + " · " + btn.dataset.cls + " · " + btn.dataset.label;
       document.getElementById("d-memo").value = btn.dataset.memo || "";
       document.getElementById("d-picklist").hidden = true;
+      document.getElementById("d-new").hidden = true;
+      document.getElementById("d-nn").value = "";
+      document.getElementById("d-nr").value = "";
       document.getElementById("d-sig").value = "";
       dlg.showModal();
       requestAnimationFrame(function(){ fitCanvas(); setWho(+(btn.dataset.def || 0)); });
@@ -232,9 +279,29 @@
   });
 
   f.addEventListener("submit", function(e){
+    var typed = document.getElementById("d-nn").value.trim();
+    if(!document.getElementById("d-new").hidden && !typed){
+      e.preventDefault(); alert("오시는 분의 성함을 적어주세요."); return;
+    }
     if(!drawn){ e.preventDefault(); alert("보호자 서명을 받아주세요."); return; }
     document.getElementById("d-sig").value = cv.toDataURL("image/png");
   });
+
+  /* 오늘만 추가 — 반을 고르면 그 반 아이만 남긴다 */
+  var ac = document.getElementById("addCls"), ak = document.getElementById("addKid");
+  if(ac && ak){
+    var filterKids = function(){
+      var room = ac.value, first = null;
+      Array.prototype.forEach.call(ak.options, function(o){
+        var on = o.dataset.room === room;
+        o.hidden = !on; o.disabled = !on;
+        if(on && !first) first = o;
+      });
+      if(first) ak.value = first.value;
+    };
+    ac.onchange = filterKids;
+    filterKids();
+  }
 
   /* 특이사항 */
   var mdlg = document.getElementById("mdlg"), mf = document.getElementById("memoForm");
