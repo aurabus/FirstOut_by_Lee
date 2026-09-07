@@ -37,20 +37,21 @@
     </div>
 
     {% if rows %}
-    <div class="tw"><table style="min-width:44rem">
+    <div class="tw"><table style="min-width:38rem">
       <thead><tr>
         <th class="tx">시각</th><th class="tx">사용자</th><th class="tx">한 일</th>
-        <th class="tx">주소</th><th>결과</th><th class="tx">접속지</th>
+        <th class="tx">결과</th><th class="tx">접속지</th>
       </tr></thead>
       <tbody>
         {% for r in rows %}
+        {% set said = r.said %}
         <tr class="{% if r.changed %}is-change{% endif %}">
           <td class="tx n-f">{{ r.at.strftime('%H:%M:%S') }}</td>
           <td class="tx">{% if r.user_name %}<b>{{ r.user_name }}</b>{% else %}<span class="z">로그인 전</span>{% endif %}</td>
           <td class="tx">
-            {% if r.changed %}<span class="chg">변경</span>{% endif %}{{ r.action }}</td>
-          <td class="tx"><span class="pathv">{{ r.path }}</span></td>
-          <td class="n-f {% if r.status >= 400 %}v-abs{% elif r.status >= 300 %}v-early{% else %}v-home{% endif %}">{{ r.status }}</td>
+            {% if r.changed %}<span class="chg">변경</span>{% else %}<span class="vw">접속</span>{% endif %}
+            {{ r.action }}</td>
+          <td class="tx"><span class="res {{ said[1] }}">{{ said[0] }}</span></td>
           <td class="tx n-f" style="font-size:.75rem;color:var(--ink-3)">{{ r.ip }}</td>
         </tr>
         {% endfor %}
@@ -72,8 +73,9 @@
     {% endif %}
 
     <p class="empty no-print">
-      화면을 연 것까지 모두 남습니다. 개인정보는 담지 않으며, 주소에 보이는 숫자는
-      원아·계정의 번호입니다. <strong>{{ keep_days }}일이 지난 기록은 자동으로 지워집니다.</strong>
+      <span class="vw">접속</span> 은 화면을 연 것이고 <span class="chg">변경</span> 은
+      무언가를 바꾼 것입니다. 개인정보는 담지 않습니다.
+      <strong>{{ keep_days }}일이 지난 기록은 자동으로 지워집니다.</strong>
     </p>
   </div>
 

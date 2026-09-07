@@ -730,3 +730,11 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
 .uwho em{font-style:normal;font-size:.78rem;color:var(--ink-3)}
 .uedit{display:flex;gap:.3rem;flex-wrap:wrap}
 .uedit[hidden]{display:none}
+
+/* 감사 로그 — 접속과 변경을 눈으로 가른다 */
+.vw{font-size:.7rem;border:1px solid var(--rule);color:var(--ink-3);
+  border-radius:2px;padding:.02rem .3rem;margin-right:.35rem;white-space:nowrap}
+.res{font-size:.78rem;font-weight:500;white-space:nowrap}
+.res.ok{color:var(--pine);font-weight:700}
+.res.bad{color:var(--clay);font-weight:700}
+.res.plain{color:var(--ink-3)}

@@ -22,7 +22,7 @@ from .security import read_token
 KEEP_DAYS = 30
 
 # 기록하지 않는 것 — 남겨봐야 의미가 없고 양만 늘린다
-SKIP_EXACT = {"/health", "/favicon.ico"}
+SKIP_EXACT = {"/health", "/favicon.ico", "/sw.js"}
 SKIP_PREFIX = ("/static/",)
 
 # 주소를 사람이 읽을 수 있는 말로 바꾼다
@@ -32,6 +32,9 @@ ACTIONS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^/signup"), "가입 신청"),
     (re.compile(r"^/me/password$"), "비밀번호 변경"),
     (re.compile(r"^/board"), "오늘 현황"),
+    (re.compile(r"^/attend/all/\d+$"), "출결 · 전체 출석 처리"),
+    (re.compile(r"^/attend/\d+$"), "출결 · 출석 상태 변경"),
+    (re.compile(r"^/attend"), "출결 등록"),
     (re.compile(r"^/roster/export$"), "원아 명부 엑셀 내려받기"),
     (re.compile(r"^/roster/add$"), "원아 등록"),
     (re.compile(r"^/child/\d+/plan$"), "원아 · 주간 계획 수정"),
@@ -66,6 +69,8 @@ ACTIONS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^/audit"), "감사 로그"),
     (re.compile(r"^/connect"), "접속 안내"),
     (re.compile(r"^/help"), "사용 안내"),
+    (re.compile(r"^/$"), "첫 화면"),
+    (re.compile(r"^/(login|pick)$"), "옛 주소"),
     (re.compile(r"^/join/"), "초대로 첫 로그인"),
     (re.compile(r"^/reauth"), "본인 확인"),
 ]
@@ -82,11 +87,19 @@ def mask(path: str) -> str:
     return path
 
 
+UNKNOWN = "그 밖의 화면"
+
+
 def describe(path: str) -> str:
+    """주소를 사람이 읽는 말로. 영문 주소를 그대로 보여주지 않는다.
+
+    선생님이 「/attend」 를 보고 무슨 일인지 알 수는 없다. 새 화면이 늘어나면
+    여기에 함께 적어야 하고, 빠뜨리지 않도록 시험으로 묶어 두었다.
+    """
     for pat, label in ACTIONS:
         if pat.match(path):
             return label
-    return path
+    return UNKNOWN
 
 
 def should_log(path: str) -> bool:
@@ -136,3 +149,21 @@ def purge_old(db: Session, keep_days: int = KEEP_DAYS) -> int:
         db.execute(delete(AuditLog).where(AuditLog.at < cutoff))
         db.commit()
     return n
+
+
+# ── 결과를 사람 말로 ────────────────────────────────────
+
+def outcome(method: str, status: int, has_user: bool, path: str = "") -> tuple[str, str]:
+    """(보여줄 말, 색 이름). 숫자만 보고 무슨 일인지 알 수는 없다."""
+    if status >= 500:
+        return ("서버 오류", "bad")
+    if status >= 400:
+        return ("막힘", "bad")
+    if method == "POST" and path.startswith("/signin") and not has_user:
+        # 로그인은 되든 안 되든 303 이라 숫자로는 구분되지 않는다.
+        # 성공한 로그인에는 그 사람이 붙으므로, 붙지 않았으면 실패다.
+        return ("로그인 실패", "bad")
+    if status >= 300:
+        # 화면을 열었는데 다른 곳으로 갔다면 처리한 것이 아니라 넘어간 것이다
+        return ("처리됨", "ok") if method == "POST" else ("넘어감", "plain")
+    return ("열어봄", "plain")

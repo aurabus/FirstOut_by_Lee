@@ -13,7 +13,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import reauth
+from .. import audit, reauth
 from ..audit import KEEP_DAYS
 from ..db import get_db
 from ..models import AuditLog
@@ -63,6 +63,10 @@ def audit_view(
             .limit(PER_PAGE)
         )
     )
+
+    # 숫자만 보고는 무슨 일인지 알 수 없어, 줄마다 사람 말로 바꿔 붙인다
+    for r in rows:
+        r.said = audit.outcome(r.method, r.status, bool(r.user_name), r.path)
 
     names = [
         n
