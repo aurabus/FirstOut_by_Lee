@@ -23,6 +23,8 @@ from .config import (
     APP_NAME,
     APP_TAGLINE,
     IS_DEV_SECRET,
+    PROXY_HOPS,
+    PUBLIC_URL,
     STATIC_DIR,
     TEMPLATE_DIR,
     WEEKDAYS,
@@ -82,8 +84,13 @@ def is_secure(request: Request) -> bool:
     그대로 판단하면 secure 쿠키가 영영 걸리지 않아, 비밀번호로 지킨 세션이
     평문으로 새어 나갈 수 있다. 프록시가 알려주는 원래 방식을 함께 본다.
     """
-    fwd = request.headers.get("x-forwarded-proto", "")
-    return request.url.scheme == "https" or fwd.split(",")[0].strip() == "https"
+    if request.url.scheme == "https":
+        return True
+    if not PROXY_HOPS:
+        return False        # 앞에 우리 프록시가 없으면 헤더는 아무나 보낸 값이다
+    got = request.headers.get("x-forwarded-proto", "")
+    parts = [x.strip() for x in got.split(",") if x.strip()]
+    return bool(parts) and parts[-min(PROXY_HOPS, len(parts))] == "https"
 
 
 def current_user(request: Request, db: Session) -> User | None:
@@ -282,6 +289,16 @@ def main() -> None:
         say()
         return
 
+    # 프록시 뒤인데 몇 대인지 알려주지 않으면, 모든 접속지가 프록시 주소로 보인다.
+    # 감사 로그의 접속지가 쓸모없어지고 주소별 속도 제한도 한 덩어리가 된다.
+    if PUBLIC_URL.startswith("https://") and not PROXY_HOPS:
+        print()
+        print("  앞에 프록시가 몇 대인지 알려주지 않으셨습니다.")
+        print("  이대로 두면 감사 로그의 접속지가 모두 프록시 주소로 남습니다.")
+        print()
+        print('      $env:MAJUNG_PROXY_HOPS = "1"      # nginx 한 대 뒤라면')
+        print()
+
     if args.reset:
         from .config import DB_PATH
 
@@ -328,7 +345,12 @@ def main() -> None:
         url = f"http://127.0.0.1:{args.port}/connect"
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()
 
-    uvicorn.run("firstout.main:app", host=args.host, port=args.port, reload=args.reload)
+    # uvicorn 도 X-Forwarded-For 를 보고 접속지를 바꿔치기한다. 규칙이 두 곳에 있으면
+    # 어느 쪽이 이겼는지 알 수 없으므로 끄고, 우리 기준(csrf.client_ip)만 쓴다.
+    uvicorn.run(
+        "firstout.main:app", host=args.host, port=args.port, reload=args.reload,
+        proxy_headers=False,
+    )
 
 
 def _demo_users(db, kinder) -> None:

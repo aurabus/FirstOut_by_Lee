@@ -24,6 +24,16 @@ STATIC_DIR = PKG_DIR / "static"
 # 비워두면 원내망 주소(192.168.x.x)를 안내한다 — 시험·시연용이다.
 PUBLIC_URL = os.environ.get("MAJUNG_PUBLIC_URL", "").rstrip("/")
 
+# 앞에 우리가 세운 프록시(nginx 등)가 몇 대인가.
+#     $env:MAJUNG_PROXY_HOPS = "1"
+# X-Forwarded-For 는 **아무나 보낼 수 있는 헤더**다. 그 첫 값을 믿으면 접속지를
+# 마음대로 꾸며낼 수 있어, 속도 제한이 무력해지고 감사 로그의 접속지가 거짓이 된다.
+# 그래서 「우리 프록시가 붙인 자리」만 본다. 0 이면 헤더를 아예 믿지 않는다.
+try:
+    PROXY_HOPS = max(0, int(os.environ.get("MAJUNG_PROXY_HOPS", "0")))
+except ValueError:
+    PROXY_HOPS = 0
+
 APP_NAME = "손잡고 마중"
 APP_TAGLINE = "아이를 안전하게, 집으로"
 

@@ -190,13 +190,21 @@ def _cookie_named(scope, want: str) -> str | None:
 
 
 def client_ip(scope) -> str:
-    """프록시 뒤에서는 진짜 접속지가 헤더에 담겨 온다.
+    """진짜 접속지. 감사 로그와 속도 제한이 같은 값을 봐야 하므로 여기서만 정한다.
 
-    감사 로그와 속도 제한이 **같은 값**을 봐야 셈이 맞으므로 여기 한 곳에서만 정한다.
+    **X-Forwarded-For 의 첫 값을 믿으면 안 된다.** 그 헤더는 아무나 보낼 수 있고,
+    프록시는 받은 값 뒤에 진짜 주소를 덧붙일 뿐이다. 첫 값을 믿으면 헤더 한 줄로
+    접속지를 꾸며내 속도 제한을 넘고 감사 로그에 거짓 주소를 남길 수 있다.
+
+    그래서 **우리 프록시가 붙인 자리**(오른쪽에서 PROXY_HOPS 번째)만 본다.
+    프록시가 없으면(0) 헤더를 아예 보지 않는다.
     """
-    fwd = _header(scope, b"x-forwarded-for")
-    if fwd:
-        return fwd.split(",")[0].strip()
+    from .config import PROXY_HOPS
+
+    if PROXY_HOPS:
+        parts = [p.strip() for p in _header(scope, b"x-forwarded-for").split(",") if p.strip()]
+        if len(parts) >= PROXY_HOPS:
+            return parts[-PROXY_HOPS]
     client = scope.get("client")
     return client[0] if client else ""
 
@@ -261,8 +269,15 @@ class SecurityHeaders:
 
 
 def _is_https(scope) -> bool:
-    fwd = _header(scope, b"x-forwarded-proto")
-    return scope.get("scheme") == "https" or fwd.split(",")[0].strip() == "https"
+    """HSTS 를 붙일지 정한다. 헤더는 프록시가 붙인 자리만 본다 (client_ip 참고)."""
+    from .config import PROXY_HOPS
+
+    if scope.get("scheme") == "https":
+        return True
+    if not PROXY_HOPS:
+        return False
+    parts = [p.strip() for p in _header(scope, b"x-forwarded-proto").split(",") if p.strip()]
+    return bool(parts) and parts[-min(PROXY_HOPS, len(parts))] == "https"
 
 
 # ── 첫 비밀번호는 반드시 바꾸게 한다 ────────────────────

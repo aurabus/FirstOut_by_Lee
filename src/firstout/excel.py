@@ -26,6 +26,11 @@ from .models import Academy, Child, Guardian, PlanEntry
 SHEET = "원아명부"
 GUIDE = "작성안내"
 
+# 한 번에 읽을 수 있는 줄 수. 제일 큰 유치원도 수백 명이라 열 배 넉넉하다.
+# 5MB 파일 하나에 13만 줄이 들어가는데, 그걸 읽는 동안 **서버가 다른 유치원 일을
+# 하지 못한다.** 한 곳의 실수가 모두를 멈추게 두면 안 된다.
+MAX_ROWS = 2000
+
 HEAD = ["반", "유아명", *WEEKDAYS, "보호자1", "관계", "연락처",
         "보호자2", "관계", "연락처", "특이사항"]
 
@@ -262,13 +267,15 @@ def parse(data: bytes, db: Session, kinder_id: int) -> Parsed:
     """엑셀을 읽어 검사만 한다. 저장은 하지 않는다."""
     out = Parsed()
     try:
-        wb = load_workbook(io.BytesIO(data), data_only=True)
+        # read_only 로 열어야 줄 단위로 흘려 읽는다. 통째로 올리면 13만 줄짜리 파일
+        # 하나에 서버가 몇 초씩 붙잡혀, 그동안 다른 유치원이 아무것도 못 한다.
+        wb = load_workbook(io.BytesIO(data), data_only=True, read_only=True)
     except Exception:   # noqa: BLE001 — 엑셀이 아닌 파일도 올라올 수 있다
         out.fatal = "엑셀 파일을 열 수 없습니다. xlsx 파일인지 확인해 주세요."
         return out
 
     ws = wb[SHEET] if SHEET in wb.sheetnames else wb.worksheets[0]
-    head = [_cell(c.value) for c in ws[1]]
+    head = [_cell(v) for v in next(ws.iter_rows(max_row=1, values_only=True), ())]
     if "유아명" not in head or "반" not in head:
         out.fatal = (
             f"머리글이 양식과 다릅니다. 「{SHEET}」 시트 첫 줄에 "
@@ -290,6 +297,12 @@ def parse(data: bytes, db: Session, kinder_id: int) -> Parsed:
     }
 
     for i, raw in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        if len(out.rows) >= MAX_ROWS:
+            out.fatal = (
+                f"한 번에 {MAX_ROWS:,}명까지 올릴 수 있습니다. "
+                "파일에 빈 줄이 많이 딸려 있지 않은지 확인해 주세요."
+            )
+            return out
         vals = [_cell(v) for v in raw] + [""] * len(HEAD)
         cls, name = vals[0], vals[1]
         if not cls and not name:

@@ -57,8 +57,9 @@ def _row(db: Session, child: Child, day) -> Attendance:
 
 
 def _child_of(db: Session, cid: int, me) -> Child | None:
+    """내 유치원의 재원 중인 아이만. 퇴원한 아이의 출결은 남길 곳이 없다."""
     c = db.get(Child, cid)
-    return c if c and c.kinder_id == me.kinder_id else None
+    return c if c and c.kinder_id == me.kinder_id and c.active else None
 
 
 @router.get("/attend")

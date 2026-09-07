@@ -298,6 +298,9 @@ def add_today(
     child = db.get(Child, int(cid)) if cid.isdigit() else None
     if rnd is None or child is None or child.kinder_id != me.kinder_id:
         return _back(key, "아이를 골라주세요", d)
+    if not child.active:
+        # 퇴원한 아이가 명단에 뜨면 선생님이 없는 아이를 찾아다니게 된다
+        return _back(key, f"{child.name} 은(는) 퇴원 처리된 아이입니다", d)
 
     day = pick_date(d)
     dep = _dep(db, child.id, day, rnd.id)

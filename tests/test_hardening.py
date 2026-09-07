@@ -103,3 +103,55 @@ def test_안내_쿠키는_https_에서_secure_가_걸린다(monkeypatch):
     monkeypatch.setattr(config, "PUBLIC_URL", "")
     importlib.reload(flash)
     assert flash.SECURE is False
+
+
+# ── 접속지를 꾸며낼 수 없는가 ───────────────────────────
+
+class _Scope(dict):
+    """ASGI scope 흉내."""
+
+    def __init__(self, xff="", client="198.51.100.1"):
+        super().__init__(
+            type="http",
+            client=(client, 12345),
+            headers=[(b"x-forwarded-for", xff.encode())] if xff else [],
+        )
+
+
+def test_프록시가_없으면_보내온_주소를_믿지_않는다(monkeypatch):
+    """X-Forwarded-For 는 아무나 보낼 수 있는 헤더다.
+
+    첫 값을 믿으면 헤더 한 줄로 속도 제한을 넘고 감사 로그에 거짓 주소를 남길 수 있다.
+    실제로 그렇게 여덟 번 연속 가입 신청이 통과했다.
+    """
+    import firstout.config as config
+    from firstout.csrf import client_ip
+
+    monkeypatch.setattr(config, "PROXY_HOPS", 0)
+    assert client_ip(_Scope(xff="9.9.9.9")) == "198.51.100.1"
+    assert client_ip(_Scope(xff="9.9.9.9, 8.8.8.8")) == "198.51.100.1"
+    assert client_ip(_Scope()) == "198.51.100.1"
+
+
+def test_프록시가_있으면_그것이_붙인_자리만_본다(monkeypatch):
+    """프록시는 받은 값 뒤에 진짜 주소를 덧붙인다. 앞의 값은 손님이 꾸민 것이다."""
+    import firstout.config as config
+    from firstout.csrf import client_ip
+
+    monkeypatch.setattr(config, "PROXY_HOPS", 1)
+    assert client_ip(_Scope(xff="9.9.9.9, 203.0.113.7")) == "203.0.113.7"
+    assert client_ip(_Scope(xff="203.0.113.7")) == "203.0.113.7"
+    # 헤더가 아예 없으면 붙여준 사람이 없다는 뜻이라 접속한 자리를 쓴다
+    assert client_ip(_Scope()) == "198.51.100.1"
+
+    monkeypatch.setattr(config, "PROXY_HOPS", 2)
+    assert client_ip(_Scope(xff="9.9.9.9, 203.0.113.7, 10.0.0.1")) == "203.0.113.7"
+
+
+# ── 한 곳의 큰 파일이 모두를 멈추게 하지 않는가 ─────────
+
+def test_아주_큰_명부는_읽지_않는다():
+    """5MB 파일 하나에 13만 줄이 들어간다. 그걸 읽는 동안 다른 유치원이 멈춘다."""
+    from firstout.excel import MAX_ROWS
+
+    assert 500 <= MAX_ROWS <= 5000       # 제일 큰 유치원의 열 배쯤
