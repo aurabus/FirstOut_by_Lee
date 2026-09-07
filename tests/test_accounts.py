@@ -52,11 +52,19 @@ def test_세션_토큰은_위조되지_않는다():
     stored = hash_password("majung1234")
     t = make_token(7, stored)
     assert read_token(t) == (7, pw_stamp(stored))
-    # 마지막 글자 하나만 바꿔도 무효. 원래 글자와 반드시 다른 값을 넣는다
-    # (「xx 로 바꾼다」로 두면 토큰이 우연히 xx 로 끝나는 날 시험이 통과해 버린다)
-    other = "a" if t[-1] != "a" else "b"
-    assert read_token(t[:-1] + other) is None
+    # 값을 바꿔치기하면 무효 — 서명이 값 전체를 덮는다
+    body, _, signed = t.partition(".")
+    other_body = make_token(9, stored).partition(".")[0]      # 남의 계정 번호
+    assert other_body != body
+    assert read_token(other_body + "." + signed) is None
+
+    # 서명을 건드려도 무효
+    assert read_token(t[:-6]) is None
+    assert read_token(t.replace(".", "x", 1)) is None
     assert read_token(None) is None
+
+    # 참고: 「마지막 글자 하나만 바꾼다」로 시험하면 안 된다. 서명은 base64 라
+    # 마지막 글자의 하위 비트가 디코딩에서 버려져, 바꿔도 같은 서명이 되는 날이 있다.
 
 
 def test_csrf_는_같은_값일_때만_통과한다():
