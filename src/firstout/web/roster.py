@@ -32,7 +32,7 @@ def roster(
 
     stmt = (
         select(Child)
-        .where(Child.active.is_(True))
+        .where(Child.active.is_(True), Child.kinder_id == me.kinder_id)
         .options(
             selectinload(Child.classroom),
             selectinload(Child.guardians),
@@ -47,7 +47,7 @@ def roster(
     if q:
         kids = [k for k in kids if q in k.name or q in k.classroom.name]
 
-    order = {c.id: c.seq for c in service.classes(db)}
+    order = {c.id: c.seq for c in service.classes(db, me.kinder_id)}
     kids.sort(key=lambda k: (order.get(k.class_id, 99), k.name))
 
     # 요일별 계획을 화면에서 바로 꺼내 쓰도록 표로 만든다

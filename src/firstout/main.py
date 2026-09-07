@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import mimetypes
-import socket
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse
@@ -53,6 +52,9 @@ def now() -> dt.datetime:
     return dt.datetime.now()
 
 
+RUN_PORT: int = 0   # 실행 포트 — 접속 안내 화면이 쓴다
+
+
 def current_teacher(request: Request, db: Session) -> Teacher | None:
     tid = read_token(request.cookies.get("majung"))
     return db.get(Teacher, tid) if tid else None
@@ -65,8 +67,8 @@ def page(request: Request, name: str, db: Session, teacher: Teacher | None, **ct
         "request": request,
         "app_name": APP_NAME,
         "tagline": APP_TAGLINE,
-        "setting": service.setting(db),
         "me": teacher,
+        "kinder": teacher.kinder if teacher else ctx.get("kinder"),
         "today": d,
         "day": d,
         "day_ko": f"{d.month}월 {d.day}일 ({DAY_KO[d.weekday()]})",
@@ -75,8 +77,8 @@ def page(request: Request, name: str, db: Session, teacher: Teacher | None, **ct
         "prev_day": (d - dt.timedelta(days=1)).isoformat(),
         "next_day": (d + dt.timedelta(days=1)).isoformat(),
         "weekdays": WEEKDAYS,
-        "classes": service.classes(db),
-        "rounds": service.rounds(db),
+        "classes": service.classes(db, teacher.kinder_id) if teacher else [],
+        "rounds": service.rounds(db, teacher.kinder_id) if teacher else [],
         "now": now(),
     }
     base.update(ctx)
@@ -100,28 +102,14 @@ def health() -> dict[str, str]:
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
     me = current_teacher(request, db)
-    if me is None:
-        return RedirectResponse("/login", status_code=303)
-    return RedirectResponse("/board", status_code=303)
+    return RedirectResponse("/board" if me else "/pick", status_code=303)
 
 
 # 라우터는 아래에서 등록한다 (순환 참조를 피하려고 마지막에 둔다)
-from .web import auth, board, lists, roster, settings_page  # noqa: E402
+from .web import auth, board, connect, lists, roster, settings_page  # noqa: E402
 
-for mod in (auth, board, lists, roster, settings_page):
+for mod in (auth, board, connect, lists, roster, settings_page):
     app.include_router(mod.router)
-
-
-def local_ip() -> str:
-    """선생님들에게 알려줄 접속 주소를 찾는다."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except OSError:
-        return "127.0.0.1"
 
 
 def main() -> None:
@@ -147,38 +135,67 @@ def main() -> None:
                 f.unlink()
         print("자료를 모두 지웠습니다.")
 
+    global RUN_PORT
+    RUN_PORT = args.port
+
     init_db()
     with SessionLocal() as db:
         seed_base(db)
         if args.demo:
             from .seed import seed_demo
 
-            made = seed_demo(db)
-            print(f"시연용 원아 {made}명 생성" if made else "원아가 이미 있어 건너뜀")
+            for k in service.kindergartens(db):
+                made = seed_demo(db, k.id)
+                if made:
+                    print(f"  {k.name}: 시연용 원아 {made}명 생성")
 
-    # 주말에는 주간 계획이 없어 명단이 비므로, 가장 가까운 평일을 함께 알려준다
-    d = today()
-    hint = ""
-    if d.weekday() > 4:
-        weekday = d - dt.timedelta(days=d.weekday() - 4)
-        hint = f"  오늘은 주말입니다 — 화면에서 「어제」를 누르거나 ?d={weekday} 로 평일을 보세요\n"
+        kinders = service.kindergartens(db)
 
-    url = f"http://127.0.0.1:{args.port}"
-    print(f"\n  {APP_NAME} — {APP_TAGLINE}")
-    print(f"  이 PC        {url}")
-    print(f"  선생님 기기   http://{local_ip()}:{args.port}")
-    print("  로그인 PIN    0000  (설정에서 바꾸세요)")
-    if hint:
-        print(hint, end="")
-    print()
+    _print_banner(args.port, kinders)
 
     if args.open:
         import threading
         import webbrowser
 
+        url = f"http://127.0.0.1:{args.port}/connect"
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()
 
     uvicorn.run("firstout.main:app", host=args.host, port=args.port, reload=args.reload)
+
+
+def _print_banner(port: int, kinders: list) -> None:
+    """실행하자마자 접속 주소를 알 수 있어야 한다.
+
+    설치 후 가장 많이 막히는 것이 "선생님들이 어떤 주소로 들어가나요?" 라서
+    주소를 눈에 띄게, 여러 개면 전부 보여준다.
+    """
+    from . import net
+
+    urls = net.all_urls(port)
+    line = "─" * 58
+
+    print(f"\n  {line}")
+    print(f"   {APP_NAME} — {APP_TAGLINE}")
+    print(f"  {line}")
+    print(f"   선생님 기기   {urls[0]}          ← 이 주소를 알려주세요")
+    for u in urls[1:]:
+        print(f"                 {u}")
+    print(f"   이 PC         http://127.0.0.1:{port}")
+    print(f"   접속 안내·QR   http://127.0.0.1:{port}/connect")
+    print(f"  {line}")
+
+    if kinders:
+        names = " · ".join(k.name for k in kinders)
+        print(f"   등록된 유치원  {len(kinders)}곳 — {names}")
+    else:
+        print("   등록된 유치원  없음 — 첫 화면에서 등록해 주세요")
+    print("   로그인 PIN    0000  (설정에서 바꾸세요)")
+
+    d = today()
+    if d.weekday() > 4:
+        weekday = d - dt.timedelta(days=d.weekday() - 4)
+        print(f"   오늘은 주말   화면의 「어제」를 누르거나 {weekday} 로 평일을 보세요")
+    print(f"  {line}\n")
 
 
 if __name__ == "__main__":

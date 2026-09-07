@@ -22,9 +22,9 @@ from .models import (
     Child,
     ClassRoom,
     Departure,
+    Kindergarten,
     PlanEntry,
     Round,
-    Setting,
 )
 
 LATE_MINUTES = 5  # 호출 후 이만큼 지나면 붉게 표시
@@ -32,25 +32,37 @@ LATE_MINUTES = 5  # 호출 후 이만큼 지나면 붉게 표시
 
 # ── 조회 도우미 ─────────────────────────────────────────
 
-def setting(db: Session) -> Setting:
-    s = db.scalar(select(Setting).limit(1))
-    if s is None:
-        s = Setting()
-        db.add(s)
-        db.commit()
-    return s
+def kindergartens(db: Session) -> list[Kindergarten]:
+    """첫 화면에 늘어놓을 유치원 목록."""
+    return list(
+        db.scalars(
+            select(Kindergarten)
+            .where(Kindergarten.active.is_(True))
+            .order_by(Kindergarten.seq, Kindergarten.id)
+        )
+    )
 
 
-def classes(db: Session) -> list[ClassRoom]:
-    return list(db.scalars(select(ClassRoom).order_by(ClassRoom.seq, ClassRoom.id)))
+def classes(db: Session, kinder_id: int) -> list[ClassRoom]:
+    return list(
+        db.scalars(
+            select(ClassRoom)
+            .where(ClassRoom.kinder_id == kinder_id)
+            .order_by(ClassRoom.seq, ClassRoom.id)
+        )
+    )
 
 
-def rounds(db: Session) -> list[Round]:
-    return list(db.scalars(select(Round).order_by(Round.seq, Round.id)))
+def rounds(db: Session, kinder_id: int) -> list[Round]:
+    return list(
+        db.scalars(
+            select(Round).where(Round.kinder_id == kinder_id).order_by(Round.seq, Round.id)
+        )
+    )
 
 
-def round_by_key(db: Session, key: str) -> Round | None:
-    return db.scalar(select(Round).where(Round.key == key))
+def round_by_key(db: Session, kinder_id: int, key: str) -> Round | None:
+    return db.scalar(select(Round).where(Round.kinder_id == kinder_id, Round.key == key))
 
 
 def weekday_index(day: dt.date) -> int | None:
@@ -128,13 +140,15 @@ class Row:
         return self.called and self.waited_seconds(now) >= LATE_MINUTES * 60
 
 
-def day_rows(db: Session, day: dt.date, class_id: int | None = None) -> list[Row]:
-    """그날 재원 중인 아이 전원의 상태를 한 번에 읽는다."""
+def day_rows(
+    db: Session, kinder_id: int, day: dt.date, class_id: int | None = None
+) -> list[Row]:
+    """그날 그 유치원에 재원 중인 아이 전원의 상태를 한 번에 읽는다."""
     wd = weekday_index(day)
 
     q = (
         select(Child)
-        .where(Child.active.is_(True))
+        .where(Child.active.is_(True), Child.kinder_id == kinder_id)
         .options(
             selectinload(Child.classroom),
             selectinload(Child.guardians),
@@ -164,7 +178,7 @@ def day_rows(db: Session, day: dt.date, class_id: int | None = None) -> list[Row
         )
     }
 
-    order = {c.id: (c.seq, c.id) for c in classes(db)}
+    order = {c.id: (c.seq, c.id) for c in classes(db, kinder_id)}
     rows = [
         Row(
             child=k,
@@ -219,8 +233,10 @@ class ClassStat:
     late: bool = False
 
 
-def class_stats(db: Session, rows: list[Row], now: dt.datetime) -> list[ClassStat]:
-    stats = {c.id: ClassStat(room=c) for c in classes(db)}
+def class_stats(
+    db: Session, kinder_id: int, rows: list[Row], now: dt.datetime
+) -> list[ClassStat]:
+    stats = {c.id: ClassStat(room=c) for c in classes(db, kinder_id)}
     for r in rows:
         s = stats.get(r.child.class_id)
         if s is None:
@@ -238,4 +254,4 @@ def class_stats(db: Session, rows: list[Row], now: dt.datetime) -> list[ClassSta
                 s.waiting += 1
                 if r.is_late(now):
                     s.late = True
-    return [stats[c.id] for c in classes(db)]
+    return [stats[c.id] for c in classes(db, kinder_id)]

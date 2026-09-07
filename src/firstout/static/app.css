@@ -324,3 +324,25 @@ tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
 .daybar .spacer{flex:1}
 .past{background:var(--gold-soft);border:1px solid var(--gold-line);color:var(--gold);
   border-radius:2px;padding:.14rem .45rem;font-size:.72rem;white-space:nowrap}
+
+/* ── 접속 안내 ── */
+.conn{display:grid;grid-template-columns:auto 1fr;gap:1.2rem;background:var(--card);
+  border:1px solid var(--rule);border-radius:3px;padding:1.1rem;box-shadow:var(--shadow)}
+.conn-qr{text-align:center}
+.conn-qr svg{display:block;border:1px solid var(--rule);border-radius:3px;background:#fff}
+.conn-cap{font-size:.75rem;color:var(--ink-3);margin-top:.45rem}
+.conn-info{min-width:0;display:flex;flex-direction:column}
+.conn-lbl{font-size:.75rem;color:var(--ink-3);font-weight:500}
+.conn-url{font-size:1.5rem;font-weight:700;color:var(--pine);letter-spacing:-.02em;
+  word-break:break-all;line-height:1.25;margin:.15rem 0 .8rem}
+.conn-acts{display:flex;gap:.4rem;flex-wrap:wrap}
+.conn-note{font-size:.77rem;color:var(--ink-3);margin-top:.5rem}
+.conn-alt{margin:.2rem 0 0;padding-left:1.1rem;font-size:.9rem;color:var(--ink-2)}
+.conn-alt li{padding:.1rem 0}
+.share-box{background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:.85rem 1rem;font-family:inherit;font-size:.9rem;color:var(--ink-2);
+  white-space:pre-wrap;word-break:break-all;margin:0;box-shadow:var(--shadow);line-height:1.7}
+@media (max-width:640px){
+  .conn{grid-template-columns:1fr}
+  .conn-qr svg{margin:0 auto;max-width:100%;height:auto}
+}

@@ -13,7 +13,7 @@
 <div class="bar no-print">
   <div class="bar-in">
     <a class="brand" href="/board"><i>손잡고</i>마중</a>
-    <span class="kname">{{ setting.kinder_name }}</span>
+    <span class="kname">{{ kinder.name if kinder else "" }}</span>
     <span class="clock" id="clock">{{ today_ko }}</span>
     <span class="spacer"></span>
     <span class="who"><i class="dotlive" id="live" title="서버 연결됨"></i>{{ me.name }}{% if me.role %} · {{ me.role }}{% endif %}</span>
@@ -25,6 +25,7 @@
     {% if me.is_admin %}
     <a class="tab {% if nav == 'settings' %}on{% endif %}" href="/settings">설정</a>
     {% endif %}
+    <a class="tab {% if nav == 'connect' %}on{% endif %}" href="/connect">접속 안내</a>
   </div>
 </div>
 {% endif %}

@@ -107,9 +107,9 @@
     <form method="post" action="/settings/kinder">
       <div class="cfg">
         <div class="cfg-row"><span style="flex:0 0 6rem">이름</span>
-          <input class="field" name="kinder_name" value="{{ setting.kinder_name }}" style="flex:1"></div>
+          <input class="field" name="kinder_name" value="{{ kinder.name }}" style="flex:1"></div>
         <div class="cfg-row"><span style="flex:0 0 6rem">동선 안내</span>
-          <input class="field" name="route_note" value="{{ setting.route_note }}" style="flex:1"
+          <input class="field" name="route_note" value="{{ kinder.route_note }}" style="flex:1"
                  placeholder="예: 지혜가득 → 행복가득 → 사랑가득"></div>
         <div class="cfg-row"><button class="btn go">저장</button></div>
         <p class="cfg-note">이 프로그램은 유치원마다 따로 설치해 씁니다. 반·차량·차수·학원을 이 화면에서 맞추면 됩니다.</p>

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from .. import service
 from ..db import get_db
-from ..models import Academy, Bus, Child, ClassRoom, PlanEntry, Round
+from ..models import Academy, Bus, Child, ClassRoom, Kindergarten, PlanEntry, Round
 
 router = APIRouter()
 
@@ -37,10 +37,18 @@ def settings_view(request: Request, db: Session = Depends(get_db), msg: str = ""
         return redirect
 
     counts = dict(
-        db.execute(select(Child.class_id, func.count(Child.id)).group_by(Child.class_id)).all()
+        db.execute(
+            select(Child.class_id, func.count(Child.id))
+            .where(Child.kinder_id == me.kinder_id)
+            .group_by(Child.class_id)
+        ).all()
     )
-    buses = list(db.scalars(select(Bus).order_by(Bus.seq, Bus.id)))
-    academies = list(db.scalars(select(Academy).order_by(Academy.name)))
+    buses = list(
+        db.scalars(select(Bus).where(Bus.kinder_id == me.kinder_id).order_by(Bus.seq, Bus.id))
+    )
+    academies = list(
+        db.scalars(select(Academy).where(Academy.kinder_id == me.kinder_id).order_by(Academy.name))
+    )
     return page(
         request, "settings.html", db, me,
         counts=counts, buses=buses, academies=academies, msg=msg,
@@ -55,14 +63,18 @@ def _back(msg: str = "") -> RedirectResponse:
 
 @router.post("/settings/class/add")
 def class_add(request: Request, name: str = Form(""), db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    name = name.strip() or f"새 반 {db.scalar(select(func.count(ClassRoom.id))) + 1}"
-    if db.scalar(select(ClassRoom).where(ClassRoom.name == name)):
+    n = db.scalar(select(func.count(ClassRoom.id)).where(ClassRoom.kinder_id == me.kinder_id))
+    name = name.strip() or f"새 반 {n + 1}"
+    if db.scalar(
+        select(ClassRoom).where(ClassRoom.kinder_id == me.kinder_id, ClassRoom.name == name)
+    ):
         return _back("같은 이름의 반이 이미 있습니다")
-    seq = (db.scalar(select(func.max(ClassRoom.seq))) or 0) + 1
-    db.add(ClassRoom(name=name, seq=seq))
+    top = db.scalar(select(func.max(ClassRoom.seq)).where(ClassRoom.kinder_id == me.kinder_id))
+    seq = (top or 0) + 1
+    db.add(ClassRoom(kinder_id=me.kinder_id, name=name, seq=seq))
     db.commit()
     return _back(f"{name} 추가")
 
@@ -82,10 +94,10 @@ def class_rename(cid: int, request: Request, name: str = Form(""), db: Session =
 @router.post("/settings/class/{cid}/move")
 def class_move(cid: int, request: Request, dir: int = Form(0), db: Session = Depends(get_db)):
     """동선 순서를 바꾼다 — 모든 명단 정렬이 이 순서를 따른다."""
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    rooms = service.classes(db)
+    rooms = service.classes(db, me.kinder_id)
     idx = next((i for i, r in enumerate(rooms) if r.id == cid), None)
     if idx is not None:
         j = idx + (1 if dir > 0 else -1)
@@ -113,11 +125,11 @@ def class_delete(cid: int, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/settings/bus/add")
 def bus_add(request: Request, db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    n = db.scalar(select(func.count(Bus.id))) + 1
-    db.add(Bus(name=f"차량 {n}호", seq=n))
+    n = db.scalar(select(func.count(Bus.id)).where(Bus.kinder_id == me.kinder_id)) + 1
+    db.add(Bus(kinder_id=me.kinder_id, name=f"차량 {n}호", seq=n))
     db.commit()
     return _back("차량 추가 — 명단이 차량별로 나뉩니다")
 
@@ -136,10 +148,10 @@ def bus_rename(bid: int, request: Request, name: str = Form(""), db: Session = D
 
 @router.post("/settings/bus/{bid}/delete")
 def bus_delete(bid: int, request: Request, db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    if db.scalar(select(func.count(Bus.id))) < 2:
+    if db.scalar(select(func.count(Bus.id)).where(Bus.kinder_id == me.kinder_id)) < 2:
         return _back("차량은 최소 한 대가 필요합니다")
     if db.scalar(select(func.count(Round.id)).where(Round.bus_id == bid)):
         return _back("이 차량을 쓰는 차수가 있어 삭제할 수 없습니다")
@@ -189,15 +201,15 @@ def round_sign(rid: int, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/settings/academy/add")
 def academy_add(request: Request, name: str = Form(""), db: Session = Depends(get_db)):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
     name = name.strip()
     if not name:
         return _back("학원 이름을 입력해 주세요")
-    if db.scalar(select(Academy).where(Academy.name == name)):
+    if db.scalar(select(Academy).where(Academy.kinder_id == me.kinder_id, Academy.name == name)):
         return _back("이미 있는 학원입니다")
-    db.add(Academy(name=name))
+    db.add(Academy(kinder_id=me.kinder_id, name=name))
     db.commit()
     return _back(f"{name} 추가")
 
@@ -225,11 +237,11 @@ def kinder_save(
     route_note: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    _, redirect = _guard(request, db)
+    me, redirect = _guard(request, db)
     if redirect:
         return redirect
-    s = service.setting(db)
-    s.kinder_name = kinder_name.strip() or s.kinder_name
-    s.route_note = route_note.strip()
+    k = db.get(Kindergarten, me.kinder_id)
+    k.name = kinder_name.strip() or k.name
+    k.route_note = route_note.strip()
     db.commit()
     return _back("유치원 정보 저장")

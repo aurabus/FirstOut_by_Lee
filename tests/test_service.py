@@ -20,6 +20,7 @@ from firstout.models import (
     Child,
     ClassRoom,
     Guardian,
+    Kindergarten,
     PlanEntry,
     Round,
 )
@@ -28,28 +29,36 @@ MON = dt.date(2026, 9, 7)   # 월요일
 SAT = dt.date(2026, 9, 5)   # 토요일
 
 
+KID = 1   # 시험용 유치원 id
+
+
 @pytest.fixture()
 def db():
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
     s = sessionmaker(bind=engine)()
 
-    rooms = [ClassRoom(name="지혜1", seq=0), ClassRoom(name="행복1", seq=1)]
-    s.add_all(rooms)
-    rnds = [
-        Round(key="i1", name="1차 개별", kind="개별", seq=0, at_time="15:40", needs_sign=True),
-        Round(key="b1", name="1차 차량", kind="차량", seq=1, at_time="16:00", needs_sign=False),
-        Round(key="care", name="돌봄", kind="돌봄", seq=2, at_time="19:00", needs_sign=True),
-    ]
-    s.add_all(rnds)
-    s.add(Academy(name="태권도"))
+    s.add(Kindergarten(id=KID, name="시험유치원"))
+    s.add_all([
+        ClassRoom(kinder_id=KID, name="지혜1", seq=0),
+        ClassRoom(kinder_id=KID, name="행복1", seq=1),
+    ])
+    s.add_all([
+        Round(kinder_id=KID, key="i1", name="1차 개별", kind="개별", seq=0,
+              at_time="15:40", needs_sign=True),
+        Round(kinder_id=KID, key="b1", name="1차 차량", kind="차량", seq=1,
+              at_time="16:00", needs_sign=False),
+        Round(kinder_id=KID, key="care", name="돌봄", kind="돌봄", seq=2,
+              at_time="19:00", needs_sign=True),
+    ])
+    s.add(Academy(kinder_id=KID, name="태권도"))
     s.commit()
     yield s
     s.close()
 
 
 def make_child(s, name, room, rnd=None, academy=None, weekday=0):
-    c = Child(name=name, class_id=room.id)
+    c = Child(kinder_id=KID, name=name, class_id=room.id)
     s.add(c)
     s.flush()
     s.add(Guardian(child_id=c.id, name="박영희", relation="모", is_default=True, seq=0))
@@ -72,31 +81,31 @@ def test_주말에는_계획이_없다(db):
 
 
 def test_보호자에게_건네면_서명을_받는다(db):
-    room = service.classes(db)[0]
-    i1 = service.round_by_key(db, "i1")
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
     make_child(db, "민준", room, i1)
 
-    row = service.day_rows(db, MON)[0]
+    row = service.day_rows(db, KID, MON)[0]
     assert row.needs_sign is True
 
 
 def test_차에_태우면_체크만_한다(db):
-    room = service.classes(db)[0]
-    b1 = service.round_by_key(db, "b1")
+    room = service.classes(db, KID)[0]
+    b1 = service.round_by_key(db, KID, "b1")
     make_child(db, "서아", room, b1)
 
-    row = service.day_rows(db, MON)[0]
+    row = service.day_rows(db, KID, MON)[0]
     assert row.needs_sign is False
 
 
 def test_학원차는_개별_차수여도_서명하지_않는다(db):
     """학원 기사는 매일 오는 정해진 사람이라 체크로 충분하다."""
-    room = service.classes(db)[0]
-    i1 = service.round_by_key(db, "i1")
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
     aca = db.query(Academy).first()
     make_child(db, "도윤", room, i1, academy=aca)
 
-    row = service.day_rows(db, MON)[0]
+    row = service.day_rows(db, KID, MON)[0]
     assert row.is_academy is True
     assert row.needs_sign is False
     assert "태권도" in row.label
@@ -105,15 +114,15 @@ def test_학원차는_개별_차수여도_서명하지_않는다(db):
 def test_결석하면_명단에서_빠진다(db):
     from firstout.models import Attendance
 
-    room = service.classes(db)[0]
-    i1 = service.round_by_key(db, "i1")
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
     c1 = make_child(db, "하윤", room, i1)
     make_child(db, "지우", room, i1)
 
     db.add(Attendance(child_id=c1.id, on_date=MON, status=ATT_ABSENT, reason="질병"))
     db.commit()
 
-    rows = service.day_rows(db, MON)
+    rows = service.day_rows(db, KID, MON)
     target = service.rows_for_round(rows, i1)
     skipped = service.excluded_for_round(rows, i1)
 
@@ -124,33 +133,33 @@ def test_결석하면_명단에서_빠진다(db):
 def test_조퇴도_명단에서_빠진다(db):
     from firstout.models import Attendance
 
-    room = service.classes(db)[0]
-    care = service.round_by_key(db, "care")
+    room = service.classes(db, KID)[0]
+    care = service.round_by_key(db, KID, "care")
     c = make_child(db, "예준", room, care)
     db.add(Attendance(child_id=c.id, on_date=MON, status=ATT_EARLY, reason="병원"))
     db.commit()
 
-    rows = service.day_rows(db, MON)
+    rows = service.day_rows(db, KID, MON)
     assert service.rows_for_round(rows, care) == []
 
 
 def test_명단은_반_동선_순서를_따른다(db):
     """가나다순이 아니라 아이를 데려오는 순서로 나와야 한다."""
-    jihye, haengbok = service.classes(db)
-    i1 = service.round_by_key(db, "i1")
+    jihye, haengbok = service.classes(db, KID)
+    i1 = service.round_by_key(db, KID, "i1")
     make_child(db, "가나다", haengbok, i1)   # 이름은 앞서지만 반 순서는 뒤
     make_child(db, "하하하", jihye, i1)
 
-    rows = service.day_rows(db, MON)
+    rows = service.day_rows(db, KID, MON)
     groups = service.group_by_class(service.rows_for_round(rows, i1))
     assert [g[0].name for g in groups] == ["지혜1", "행복1"]
 
 
 def test_계획이_없는_요일은_명단에_없다(db):
-    room = service.classes(db)[0]
+    room = service.classes(db, KID)[0]
     make_child(db, "채원", room, rnd=None)   # 정규 후 귀가
 
-    row = service.day_rows(db, MON)[0]
+    row = service.day_rows(db, KID, MON)[0]
     assert row.label == "정규"
     assert row.needs_sign is False
 
@@ -158,16 +167,63 @@ def test_계획이_없는_요일은_명단에_없다(db):
 def test_반별_집계가_총원과_맞는다(db):
     from firstout.models import Attendance
 
-    room = service.classes(db)[0]
-    i1 = service.round_by_key(db, "i1")
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
     c1 = make_child(db, "가", room, i1)
     make_child(db, "나", room, i1)
     make_child(db, "다", room, i1)
     db.add(Attendance(child_id=c1.id, on_date=MON, status=ATT_ABSENT))
     db.commit()
 
-    rows = service.day_rows(db, MON)
-    s = service.class_stats(db, rows, dt.datetime.now())[0]
+    rows = service.day_rows(db, KID, MON)
+    s = service.class_stats(db, KID, rows, dt.datetime.now())[0]
     assert s.total == s.absent + s.early + s.home + s.staying
     assert s.absent == 1
     assert s.staying == 2
+
+
+# ── 유치원 분리 ─────────────────────────────────────────
+# 한 번 설치해 여러 유치원이 쓰므로, 남의 원 아이가 섞이면 가장 큰 사고다.
+
+def test_다른_유치원_아이는_섞이지_않는다(db):
+    other = Kindergarten(id=2, name="다른유치원")
+    db.add(other)
+    db.add(ClassRoom(id=99, kinder_id=2, name="다른반", seq=0))
+    db.commit()
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    make_child(db, "우리아이", room, i1)
+
+    c = Child(kinder_id=2, name="남의아이", class_id=99)
+    db.add(c)
+    db.flush()
+    db.add(PlanEntry(child_id=c.id, weekday=0, round_id=i1.id))
+    db.commit()
+
+    names = [r.child.name for r in service.day_rows(db, KID, MON)]
+    assert names == ["우리아이"]
+    assert [r.child.name for r in service.day_rows(db, 2, MON)] == ["남의아이"]
+
+
+def test_반과_차수도_유치원별로_나뉜다(db):
+    db.add(Kindergarten(id=2, name="다른유치원"))
+    db.add(ClassRoom(kinder_id=2, name="다른반", seq=0))
+    db.add(Round(kinder_id=2, key="i1", name="다른 1차", kind="개별", seq=0, at_time="14:00"))
+    db.commit()
+
+    assert [c.name for c in service.classes(db, KID)] == ["지혜1", "행복1"]
+    assert [c.name for c in service.classes(db, 2)] == ["다른반"]
+    # 같은 key 라도 유치원이 다르면 다른 차수다
+    assert service.round_by_key(db, KID, "i1").at_time == "15:40"
+    assert service.round_by_key(db, 2, "i1").at_time == "14:00"
+
+
+def test_같은_반_이름을_다른_유치원에서_쓸_수_있다(db):
+    db.add(Kindergarten(id=2, name="다른유치원"))
+    db.commit()
+    db.add(ClassRoom(kinder_id=2, name="지혜1", seq=0))
+    db.commit()   # 유치원이 다르므로 이름이 겹쳐도 된다
+
+    assert len(service.classes(db, KID)) == 2
+    assert len(service.classes(db, 2)) == 1

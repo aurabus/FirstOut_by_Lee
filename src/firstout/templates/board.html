@@ -27,7 +27,7 @@
 
   <div class="sec">
     <div class="sec-h"><h2>귀가 차수</h2>
-      {% if setting.route_note %}<span class="hint">{{ setting.route_note }} 순서로 데려옵니다</span>{% endif %}
+      {% if kinder.route_note %}<span class="hint">{{ kinder.route_note }} 순서로 데려옵니다</span>{% endif %}
     </div>
     <div class="rounds">
       {% for p in progress %}
@@ -95,6 +95,6 @@
     </div>
   </div>
 
-  <div class="foot"><span>{{ app_name }} · {{ setting.kinder_name }}</span><span>{{ today_ko }}</span></div>
+  <div class="foot"><span>{{ app_name }} · {{ kinder.name }}</span><span>{{ today_ko }}</span></div>
 </div>
 {% endblock %}

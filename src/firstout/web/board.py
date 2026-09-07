@@ -21,11 +21,11 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
         return RedirectResponse("/login", status_code=303)
 
     day, at = pick_date(d), now()
-    rows = service.day_rows(db, day)
-    stats = service.class_stats(db, rows, at)
+    rows = service.day_rows(db, me.kinder_id, day)
+    stats = service.class_stats(db, me.kinder_id, rows, at)
 
     progress = []
-    for r in service.rounds(db):
+    for r in service.rounds(db, me.kinder_id):
         target = service.rows_for_round(rows, r)
         progress.append(
             {

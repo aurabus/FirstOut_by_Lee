@@ -50,12 +50,12 @@ def show(request: Request, key: str, db: Session = Depends(get_db), msg: str = "
     if me is None:
         return RedirectResponse("/login", status_code=303)
 
-    rnd = service.round_by_key(db, key)
+    rnd = service.round_by_key(db, me.kinder_id, key)
     if rnd is None:
         return RedirectResponse("/board", status_code=303)
 
     day = pick_date(d)
-    rows = service.day_rows(db, day)
+    rows = service.day_rows(db, me.kinder_id, day)
     target = service.rows_for_round(rows, rnd)
 
     return page(
@@ -92,9 +92,9 @@ def check(
     if me is None:
         return RedirectResponse("/login", status_code=303)
 
-    rnd = service.round_by_key(db, key)
+    rnd = service.round_by_key(db, me.kinder_id, key)
     child = db.get(Child, cid)
-    if rnd is None or child is None:
+    if rnd is None or child is None or child.kinder_id != me.kinder_id:
         return _back(key, "", d)
 
     dep = _dep(db, cid, pick_date(d), rnd.id)
@@ -128,9 +128,9 @@ def sign(
     if me is None:
         return RedirectResponse("/login", status_code=303)
 
-    rnd = service.round_by_key(db, key)
+    rnd = service.round_by_key(db, me.kinder_id, key)
     child = db.get(Child, cid)
-    if rnd is None or child is None:
+    if rnd is None or child is None or child.kinder_id != me.kinder_id:
         return _back(key, "", d)
     if not signature.startswith("data:image/"):
         return _back(key, "서명을 받아주세요", d)
@@ -159,9 +159,9 @@ def call(
     if me is None:
         return RedirectResponse("/login", status_code=303)
 
-    rnd = service.round_by_key(db, key)
+    rnd = service.round_by_key(db, me.kinder_id, key)
     child = db.get(Child, cid)
-    if rnd is None or child is None:
+    if rnd is None or child is None or child.kinder_id != me.kinder_id:
         return _back(key, "", d)
 
     dep = _dep(db, cid, pick_date(d), rnd.id)
@@ -212,7 +212,7 @@ def memo(
     if me is None:
         return RedirectResponse("/login", status_code=303)
 
-    rnd = service.round_by_key(db, key)
+    rnd = service.round_by_key(db, me.kinder_id, key)
     dep = _dep(db, cid, pick_date(d), rnd.id if rnd else None)
     dep.memo = memo.strip()
     db.commit()

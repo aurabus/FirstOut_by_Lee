@@ -1,16 +1,17 @@
 {% extends "base.html" %}
-{% block title %}로그인 · {{ app_name }}{% endblock %}
+{% block title %}{{ kinder.name }} 로그인 · {{ app_name }}{% endblock %}
 {% block body %}
 <div class="login">
-  <form class="login-card" method="post" action="/login" id="f">
+  <form class="login-card" method="post" action="/login/{{ kinder.id }}" id="f">
     <div>
       <span class="lb-1">손잡고</span>
       <span class="lb-2">마중</span>
     </div>
     <div class="login-mark"></div>
-    <p class="login-sub">{{ tagline }}<em>{{ setting.kinder_name }} · {{ today_ko }}</em></p>
+    <p class="login-sub">{{ kinder.name }}<em>{{ today_ko }}</em></p>
 
     {% if error %}<p class="login-err">{{ error }}</p>{% endif %}
+    {% if msg %}<p class="msg" style="margin:.2rem 0">{{ msg }}</p>{% endif %}
 
     <p class="login-lbl">선생님을 선택하세요</p>
     <div class="tchs">
@@ -35,6 +36,16 @@
     <input type="hidden" name="pin" id="pin">
   </form>
 </div>
+{% if many %}
+<p style="text-align:center;margin-top:-2rem;padding-bottom:2rem">
+  <a class="btn sm" href="/pick">◀ 다른 유치원 선택</a>
+  <a class="btn sm" href="/connect">접속 안내 · QR</a>
+</p>
+{% else %}
+<p style="text-align:center;margin-top:-2rem;padding-bottom:2rem">
+  <a class="btn sm" href="/connect">선생님 기기 접속 안내 · QR</a>
+</p>
+{% endif %}
 
 <script>
 (function(){
