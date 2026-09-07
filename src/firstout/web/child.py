@@ -8,8 +8,8 @@
 받는 의미가 절반이다. (서명 그림은 한 달 뒤 지워진다 — retention 참고)
 
 누가 무엇을 하는가
-    담임      주간 계획 · 인계자 · 특이사항 — 매일 생기는 일이다
-    원장      원아 추가 · 퇴원 — 정원이 바뀌는 일이다
+    선생님    주간 계획 · 인계자 · 특이사항 — 매일 생기는 일이다
+    총괄 관리자  원아 추가 · 퇴원 — 정원이 바뀌는 일이다
 """
 
 from __future__ import annotations
@@ -139,7 +139,7 @@ def leave(cid: int, request: Request, db: Session = Depends(get_db)):
     if redirect:
         return redirect
     if not me.is_admin:
-        return _back(cid, "정원을 바꾸는 일은 원장님만 하실 수 있습니다")
+        return _back(cid, "정원을 바꾸는 일은 총괄 관리자만 하실 수 있습니다")
     child = _child(db, cid, me)
     if child is None:
         return RedirectResponse("/roster", status_code=303)
@@ -328,7 +328,7 @@ def add(
         return redirect
     if not me.is_admin:
         return flash.put(RedirectResponse("/roster", status_code=303),
-                         "원아 등록은 원장님만 하실 수 있습니다")
+                         "원아 등록은 총괄 관리자만 하실 수 있습니다")
 
     name = name.strip()
     room = next(

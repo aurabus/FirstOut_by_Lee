@@ -9,7 +9,7 @@
       <span class="lb-2">마중</span>
     </div>
     <div class="login-mark"></div>
-    <p class="login-sub">유치원 가입 신청<em>원장님이 신청해 주세요</em></p>
+    <p class="login-sub">유치원 가입 신청<em>원을 총괄하시는 분이 신청해 주세요 — 원장님·원감님·담당 선생님</em></p>
 
     {% if error %}<p class="login-err">{{ error }}</p>{% endif %}
 
@@ -17,8 +17,11 @@
     <input class="field" name="kinder_name" placeholder="유치원 이름" required style="width:100%">
     <input class="field" name="phone" placeholder="유치원 전화번호" style="width:100%">
 
-    <p class="login-lbl" style="margin-top:.6rem">원장님 계정</p>
+    <p class="login-lbl" style="margin-top:.6rem">총괄 관리자 계정</p>
     <input class="field" name="name" placeholder="성함" required style="width:100%">
+    <select class="field" name="title" style="width:100%">
+      {% for t in titles %}<option value="{{ t }}"{% if t == '원장' %} selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select>
     <input class="field" name="login_id" placeholder="아이디 (영문·숫자 4자 이상)"
            autocapitalize="off" autocorrect="off" required style="width:100%">
     <input class="field" name="email" type="email" placeholder="이메일 (연락용)" style="width:100%">
@@ -31,7 +34,7 @@
 
     <p class="login-hint" style="text-align:left">
       신청하시면 저희가 확인 후 승인해 드립니다. 승인되면 바로 이용하실 수 있고,
-      <b>선생님 계정은 원장님이 직접</b> 만드시게 됩니다.
+      <b>선생님 계정은 이 계정으로 직접</b> 만드시게 됩니다.
     </p>
   </form>
 </div>

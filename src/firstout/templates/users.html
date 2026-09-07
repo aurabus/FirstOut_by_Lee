@@ -28,7 +28,15 @@
         <form method="post" action="/users/{{ u.id }}/save" style="flex:1;display:flex;gap:.3rem;flex-wrap:wrap">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input class="field" name="name" value="{{ u.name }}" style="max-width:7rem">
-          <input class="field" name="title" value="{{ u.title }}" placeholder="직함" style="max-width:8rem">
+          <input class="field" name="title" value="{{ u.title }}" placeholder="직함"
+                 list="titlelist" style="max-width:8rem">
+          {% if u.id != me.id %}
+          <select class="field" name="role" style="max-width:8.5rem"
+                  title="권한 — 총괄 관리자는 설정과 계정 관리를 할 수 있습니다">
+            <option value="{{ role_teacher }}" {% if u.role != role_admin %}selected{% endif %}>선생님</option>
+            <option value="{{ role_admin }}" {% if u.role == role_admin %}selected{% endif %}>총괄 관리자</option>
+          </select>
+          {% endif %}
           <select class="field" name="class_id" style="max-width:8rem">
             <option value="">담당 반 없음</option>
             {% for c in classes %}
@@ -39,6 +47,7 @@
         </form>
         <span class="uid">{{ u.login_id }}</span>
         <span class="urole {% if u.role == '원장' %}owner{% endif %}">{{ u.role }}</span>
+        {% if u.role == role_admin %}<span class="rolemark">총괄 관리자</span>{% endif %}
         {% if u.must_change_pw %}<span class="ustate">첫 로그인 대기</span>{% endif %}
         {% if not u.active %}<span class="ustate off">중지</span>{% endif %}
         <form method="post" action="/users/{{ u.id }}/invite">
@@ -71,20 +80,32 @@
           <input class="field" name="name" placeholder="성함" required style="max-width:8rem">
           <input class="field" name="login_id" placeholder="아이디 (영문·숫자)"
                  autocapitalize="off" autocorrect="off" required style="max-width:11rem">
-          <input class="field" name="title" placeholder="직함 (예: 지혜1 담임)" style="max-width:11rem">
+          <select class="field" name="title" id="addTitle" style="max-width:8rem">
+            {% for t in titles %}<option value="{{ t }}"{% if t == '담임' %} selected{% endif %}>{{ t }}</option>{% endfor %}
+            <option value="기타">기타 (직접 입력)</option>
+          </select>
+          <input class="field" name="title_other" id="addTitleOther"
+                 placeholder="직함을 적어주세요" style="max-width:9rem" hidden>
           <select class="field" name="class_id" style="max-width:8rem">
             <option value="">담당 반 없음</option>
             {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
           </select>
-          <select class="field" name="role" style="max-width:7rem">
-            <option value="교사">교사</option>
-            <option value="원장">원장 (설정 권한)</option>
-          </select>
           <button class="btn go">추가</button>
         </div>
-        <p class="cfg-note">추가하면 <strong>임시 비밀번호</strong>가 한 번 표시됩니다.
-          선생님께 전달하시면 첫 로그인 때 본인이 새로 정합니다.
-          <strong>원장</strong> 권한은 설정과 선생님 관리를 할 수 있습니다.</p>
+        <div class="cfg-row">
+          <b style="flex:0 0 4rem;font-size:.8rem;color:var(--ink-3)">권한</b>
+          <label class="dev-opt" style="flex:1;min-width:14rem">
+            <input type="radio" name="role" value="{{ role_teacher }}" checked>
+            <span><b>선생님</b><em>출결·귀가·명부를 봅니다. 매일 쓰는 화면 전부입니다</em></span>
+          </label>
+          <label class="dev-opt" style="flex:1;min-width:14rem">
+            <input type="radio" name="role" value="{{ role_admin }}">
+            <span><b>총괄 관리자</b><em>여기에 더해 설정·계정 관리·명부 내려받기·감사 로그까지</em></span>
+          </label>
+        </div>
+        <p class="cfg-note">추가하면 <strong>초대 QR</strong> 이 뜹니다.
+          화면을 선생님 쪽으로 돌려 휴대폰으로 찍게 하시면 그 자리에서 끝납니다.
+          {{ admin_titles | join(' · ') }} 처럼 원 전체를 맡는 자리라면 <strong>총괄 관리자</strong>로 두세요.</p>
       </div>
     </form>
   </div>
@@ -92,7 +113,25 @@
   <div class="foot"><span>{{ app_name }} · 선생님 관리</span><span>{{ kinder.name }}</span></div>
 </div>
 
+<datalist id="titlelist">
+  {% for t in titles %}<option value="{{ t }}">{% endfor %}
+</datalist>
+
 <script nonce="{{ nonce }}">
+  /* 직함에서 「기타」를 고르면 직접 적는 칸이 열린다 */
+  (function () {
+    var sel = document.getElementById("addTitle");
+    var other = document.getElementById("addTitleOther");
+    if (!sel || !other) return;
+    var sync = function () {
+      other.hidden = sel.value !== "기타";
+      other.required = !other.hidden;
+      if (!other.hidden) other.focus();
+    };
+    sel.addEventListener("change", sync);
+    sync();
+  })();
+
 document.querySelectorAll("[data-copy]").forEach(function(b){
   b.onclick = function(){
     var t = b.dataset.copy;

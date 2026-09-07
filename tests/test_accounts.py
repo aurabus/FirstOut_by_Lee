@@ -52,7 +52,10 @@ def test_세션_토큰은_위조되지_않는다():
     stored = hash_password("majung1234")
     t = make_token(7, stored)
     assert read_token(t) == (7, pw_stamp(stored))
-    assert read_token(t[:-2] + "xx") is None      # 한 글자만 바꿔도 무효
+    # 마지막 글자 하나만 바꿔도 무효. 원래 글자와 반드시 다른 값을 넣는다
+    # (「xx 로 바꾼다」로 두면 토큰이 우연히 xx 로 끝나는 날 시험이 통과해 버린다)
+    other = "a" if t[-1] != "a" else "b"
+    assert read_token(t[:-1] + other) is None
     assert read_token(None) is None
 
 

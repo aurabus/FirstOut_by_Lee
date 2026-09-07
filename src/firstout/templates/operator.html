@@ -25,7 +25,7 @@
       <div class="cfg-row">
         <span style="flex:1">
           <b>{{ k.name }}</b>
-          <em class="sub">{% if o %}{{ o.name }} 원장 · {{ o.login_id }}{% if o.email %} · {{ o.email }}{% endif %}{% endif %}</em>
+          <em class="sub">{% if o %}{{ o.name }} {{ o.title or '총괄 관리자' }} · {{ o.login_id }}{% if o.email %} · {{ o.email }}{% endif %}{% endif %}</em>
           <em class="sub">{% if k.phone %}{{ k.phone }} · {% endif %}{{ k.created_at.strftime('%Y-%m-%d %H:%M') }} 신청</em>
         </span>
         <form method="post" action="/operator/{{ k.id }}/approve">
@@ -47,7 +47,7 @@
     <div class="sec-h"><h2>전체 유치원</h2><span class="n">{{ kinders | length }}곳</span></div>
     <div class="tw"><table style="min-width:40rem">
       <thead><tr>
-        <th class="tx">유치원</th><th class="tx">원장</th><th>계정</th><th>원아</th>
+        <th class="tx">유치원</th><th class="tx">총괄 관리자</th><th>계정</th><th>원아</th>
         <th class="tx">상태</th><th class="tx">메모</th><th class="tx"></th>
       </tr></thead>
       <tbody>

@@ -331,7 +331,7 @@ def main() -> None:
 
 
 def _demo_users(db, kinder) -> None:
-    """시연용 계정 — 원장과 담임 한 명. 실제 운영에서는 가입과 사용자 관리로 만든다."""
+    """시연용 계정 — 총괄 관리자와 담임 한 명. 실제 운영에서는 가입과 사용자 관리로 만든다."""
     from sqlalchemy import select
 
     from .models import ROLE_OWNER, ROLE_TEACHER, ClassRoom, User

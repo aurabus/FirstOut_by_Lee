@@ -1,6 +1,6 @@
 """가입 · 로그인 · 비밀번호.
 
-원장만 가입을 신청하고 운영자가 승인한다. 교사 계정은 원장이 만든다.
+총괄 관리자가 가입을 신청하고 운영자가 승인한다. 선생님 계정은 관리자가 만든다.
 아이디 하나로 어느 유치원 사람인지 정해지므로, 유치원 목록도 선생님 명단도
 로그인 전에는 드러나지 않는다.
 """
@@ -21,7 +21,8 @@ from ..db import get_db
 from ..models import (
     KG_ACTIVE,
     KG_PENDING,
-    ROLE_OWNER,
+    ROLE_ADMIN,
+    TITLES,
     Kindergarten,
     User,
 )
@@ -141,7 +142,7 @@ def signout():
 def signup_form(request: Request, db: Session = Depends(get_db), error: str = "", form: str = ""):
     from ..main import page
 
-    return page(request, "signup.html", db, None, error=error, form=form)
+    return page(request, "signup.html", db, None, error=error, form=form, titles=TITLES)
 
 
 @router.post("/signup")
@@ -150,13 +151,17 @@ def signup(
     kinder_name: str = Form(""),
     phone: str = Form(""),
     name: str = Form(""),
+    title: str = Form("원장"),
     login_id: str = Form(""),
     email: str = Form(""),
     password: str = Form(""),
     password2: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    """원장이 유치원과 자기 계정을 함께 신청한다."""
+    """원을 총괄하는 사람이 유치원과 자기 계정을 함께 신청한다.
+
+    원장일 수도, 원감·주임·담당 선생님일 수도 있다. 직함은 나중에 고칠 수 있다.
+    """
     kinder_name = clip(kinder_name, 60)
     login_id = login_id.strip().lower()
     name = clip(name, 40)
@@ -169,7 +174,7 @@ def signup(
         return back(blocked)
 
     if not (kinder_name and name and login_id):
-        return back("유치원 이름 · 원장님 성함 · 아이디를 모두 입력해 주세요")
+        return back("유치원 이름 · 성함 · 아이디를 모두 입력해 주세요")
     if len(login_id) < 4 or not login_id.replace("_", "").isalnum():
         return back("아이디는 영문·숫자 4자 이상으로 정해주세요")
     if password != password2:
@@ -179,7 +184,7 @@ def signup(
     if db.scalar(select(User).where(User.login_id == login_id)):
         return back("이미 쓰이고 있는 아이디입니다")
     if db.scalar(select(Kindergarten).where(Kindergarten.name == kinder_name)):
-        return back("이미 등록된 유치원입니다 — 원장님께 계정을 요청해 주세요")
+        return back("이미 등록된 유치원입니다 — 총괄 관리자께 계정을 요청해 주세요")
 
     k = Kindergarten(
         name=kinder_name,
@@ -197,8 +202,8 @@ def signup(
             login_id=login_id,
             password_hash=hash_password(password),
             name=name,
-            role=ROLE_OWNER,
-            title="원장",
+            role=ROLE_ADMIN,
+            title=clip(title, 20) or "원장",
             email=email.strip(),
             phone=phone.strip(),
         )
@@ -321,7 +326,7 @@ def reauth_do(
 
 @router.get("/join/{token}")
 def join_form(token: str, request: Request, db: Session = Depends(get_db)):
-    """원장이 띄운 QR 을 선생님이 자기 휴대폰으로 찍으면 여기로 온다."""
+    """관리자가 띄운 QR 을 선생님이 자기 휴대폰으로 찍으면 여기로 온다."""
     from ..main import now, page
 
     inv = invites.find(db, token, now())

@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from .models import AuditLog
 
-# (횟수, 분) — 진짜 원장님이 걸릴 일이 없을 만큼 넉넉하게 둔다.
+# (횟수, 분) — 진짜 신청하는 분이 걸릴 일이 없을 만큼 넉넉하게 둔다.
 # 유치원 하나가 가입하는 일은 평생 한 번이다.
 SIGNUP_IP_HOUR = (3, 60)
 SIGNUP_IP_DAY = (5, 60 * 24)

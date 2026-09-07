@@ -28,9 +28,9 @@ def db():
     s.add(Kindergarten(id=KID, name="시험유치원", status="이용중"))
     s.add_all([
         User(id=1, kinder_id=KID, login_id="wonjang", name="김원장",
-             role="원장", password_hash=hash_password("majung1234")),
+             role="관리자", password_hash=hash_password("majung1234")),
         User(id=2, kinder_id=KID, login_id="teacher1", name="박선생",
-             role="교사", password_hash=hash_password("majung1234")),
+             role="선생님", password_hash=hash_password("majung1234")),
     ])
     s.commit()
     yield s

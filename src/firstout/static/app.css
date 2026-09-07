@@ -606,3 +606,7 @@ tr.is-change{background:var(--gold-soft)}
 /* 시각이 지났는데 남아 있는 차수 */
 .rnd.over{border-color:var(--clay);background:var(--clay-soft)}
 .rnd-over{display:block;font-style:normal;font-size:.72rem;color:var(--clay);font-weight:700}
+
+/* 총괄 관리자 표시 */
+.rolemark{font-size:.68rem;font-weight:700;color:var(--pine);background:var(--pine-soft);
+  border:1px solid var(--pine);border-radius:2px;padding:.05rem .32rem;white-space:nowrap}

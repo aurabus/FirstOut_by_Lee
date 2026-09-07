@@ -1,7 +1,8 @@
-"""선생님 계정 관리 — 원장이 직접 한다.
+"""선생님 계정 관리 — 유치원이 직접 한다.
 
 우리가 계정을 만들어 주면 사람이 바뀔 때마다 연락이 와야 한다.
-원장이 스스로 추가·수정·정지할 수 있어야 서비스가 굴러간다.
+총괄 관리자가 스스로 추가·수정·정지할 수 있어야 서비스가 굴러간다.
+시작하는 사람이 늘 원장인 것은 아니라 권한 이름은 「총괄 관리자」로 둔다.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import flash, invites, net, reauth, service
 from ..db import get_db
-from ..models import ROLE_OWNER, ROLE_TEACHER, User
+from ..models import ADMIN_TITLES, ROLE_ADMIN, ROLE_TEACHER, TITLES, User
 from ..security import hash_password
 from . import clip
 
@@ -68,6 +69,10 @@ def users_view(request: Request, db: Session = Depends(get_db)):
         request, "users.html", db, me,
         users=users,
         classes=service.classes(db, me.kinder_id),
+        titles=TITLES,
+        admin_titles=ADMIN_TITLES,
+        role_admin=ROLE_ADMIN,
+        role_teacher=ROLE_TEACHER,
     )
 
 
@@ -77,6 +82,7 @@ def user_add(
     name: str = Form(""),
     login_id: str = Form(""),
     title: str = Form(""),
+    title_other: str = Form(""),
     class_id: str = Form(""),
     role: str = Form(ROLE_TEACHER),
     db: Session = Depends(get_db),
@@ -94,15 +100,18 @@ def user_add(
     if db.scalar(select(User).where(User.login_id == login_id)):
         return _back("이미 쓰이고 있는 아이디입니다")
 
+    # 직함은 유치원마다 부르는 말이 달라 직접 적을 수도 있다
+    job = clip(title_other, 20) if title == "기타" else clip(title, 20)
+
     # 비밀번호는 아무도 모르는 값으로 둔다. 들어오는 길은 초대 QR 하나뿐이고,
-    # 그것을 못 쓰면 원장이 「비밀번호 재발급」을 누르면 된다.
+    # 그것을 못 쓰면 관리자가 「비밀번호 재발급」을 누르면 된다.
     u = User(
         kinder_id=me.kinder_id,
         login_id=login_id,
         password_hash=hash_password(secrets.token_urlsafe(32)),
         name=name,
-        role=ROLE_OWNER if role == ROLE_OWNER else ROLE_TEACHER,
-        title=clip(title, 20),
+        role=ROLE_ADMIN if role == ROLE_ADMIN else ROLE_TEACHER,
+        title=job,
         class_id=int(class_id) if class_id.isdigit() else None,
         must_change_pw=True,   # 첫 로그인 때 본인이 정하게 한다
     )
@@ -135,7 +144,7 @@ def user_invite(uid: int, request: Request, db: Session = Depends(get_db)):
 
 @router.get("/users/{uid}/invite")
 def user_invite_view(uid: int, request: Request, db: Session = Depends(get_db)):
-    """원장이 화면을 선생님 휴대폰 쪽으로 돌려 보여주는 화면.
+    """관리자가 화면을 선생님 휴대폰 쪽으로 돌려 보여주는 화면.
 
     초대 원문은 방금 만들어 준 쿠키에만 있다. 새로고침하면 사라지므로
     다시 만들도록 안내한다 — 그래야 화면에 오래 떠 있지 않는다.
@@ -167,6 +176,7 @@ def user_save(
     name: str = Form(""),
     title: str = Form(""),
     class_id: str = Form(""),
+    role: str = Form(""),
     db: Session = Depends(get_db),
 ):
     me, redirect = _guard(request, db)
@@ -178,6 +188,11 @@ def user_save(
     if name.strip():
         u.name = clip(name, 40)
     u.title = clip(title, 20)
+    if role in (ROLE_ADMIN, ROLE_TEACHER) and u.id != me.id:
+        # 본인 권한은 못 내린다 — 마지막 관리자가 스스로 문을 잠그면 아무도 못 연다
+        if u.role == ROLE_ADMIN and role == ROLE_TEACHER and _admin_count(db, me.kinder_id) < 2:
+            return _back("관리자가 한 분뿐이라 권한을 내릴 수 없습니다")
+        u.role = role
     u.class_id = int(class_id) if class_id.isdigit() else None
     db.commit()
     return _back(f"{u.name} 선생님 정보 저장")
@@ -185,7 +200,7 @@ def user_save(
 
 @router.post("/users/{uid}/reset")
 def user_reset(uid: int, request: Request, db: Session = Depends(get_db)):
-    """비밀번호를 잊었을 때. 원장도 남의 비밀번호를 볼 수는 없고, 새로 발급만 한다."""
+    """비밀번호를 잊었을 때. 관리자도 남의 비밀번호를 볼 수는 없고, 새로 발급만 한다."""
     me, redirect = _guard(request, db)
     if redirect:
         return redirect
@@ -216,21 +231,21 @@ def user_toggle(uid: int, request: Request, db: Session = Depends(get_db)):
         return _back()
     if u.id == me.id:
         return _back("본인 계정은 멈출 수 없습니다")
-    if u.role == ROLE_OWNER and _owner_count(db, me.kinder_id) < 2:
-        return _back("원장 계정이 하나뿐이라 멈출 수 없습니다")
+    if u.role == ROLE_ADMIN and _admin_count(db, me.kinder_id) < 2:
+        return _back("관리자가 한 분뿐이라 멈출 수 없습니다")
 
     u.active = not u.active
     db.commit()
     return _back(f"{u.name} 선생님 — {'사용' if u.active else '중지'}")
 
 
-def _owner_count(db: Session, kinder_id: int) -> int:
+def _admin_count(db: Session, kinder_id: int) -> int:
     return len(
         list(
             db.scalars(
                 select(User).where(
                     User.kinder_id == kinder_id,
-                    User.role == ROLE_OWNER,
+                    User.role == ROLE_ADMIN,
                     User.active.is_(True),
                 )
             )

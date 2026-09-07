@@ -37,6 +37,26 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 def init_db() -> None:
     Base.metadata.create_all(engine)
+    _rename_roles()
+
+
+def _rename_roles() -> None:
+    """예전 이름을 새 이름으로 옮긴다.
+
+    권한 이름을 「원장 → 관리자」, 「교사 → 선생님」으로 바꿨다. 시작하는 사람이
+    늘 원장인 것은 아니고(원감·주임·담당 선생님일 수 있다), 원장은 권한이 아니라
+    직함이기 때문이다. 이미 쓰던 자료의 원장은 직함에 「원장」을 남겨 준다.
+
+    이미 옮긴 자료에서는 아무 일도 하지 않는다.
+    """
+    from sqlalchemy import text
+
+    with engine.begin() as conn:
+        conn.execute(text(
+            "update user set title = '원장' where role = '원장' and (title is null or title = '')"
+        ))
+        conn.execute(text("update user set role = '관리자' where role = '원장'"))
+        conn.execute(text("update user set role = '선생님' where role = '교사'"))
 
 
 def get_db() -> Iterator[Session]:

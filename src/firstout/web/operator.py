@@ -18,6 +18,7 @@ from ..models import (
     KG_ACTIVE,
     KG_PENDING,
     KG_SUSPENDED,
+    ROLE_ADMIN,
     Academy,
     AuditLog,
     Bus,
@@ -73,7 +74,7 @@ def operator_view(request: Request, db: Session = Depends(get_db)):
     )
     owners = {
         u.kinder_id: u
-        for u in db.scalars(select(User).where(User.role == "원장").order_by(User.id))
+        for u in db.scalars(select(User).where(User.role == ROLE_ADMIN).order_by(User.id))
     }
     last = backup.latest()
     return page(

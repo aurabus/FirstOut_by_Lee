@@ -1,4 +1,4 @@
-"""처음 시작하는 원장에게 무엇부터 하면 되는지 알려준다.
+"""처음 시작하는 관리자에게 무엇부터 하면 되는지 알려준다.
 
 승인 직후 로그인하면 「오늘 현황」이 열리는데, 원아도 선생님도 없으니 빈 화면이다.
 무엇을 해야 하는지 아무도 알려주지 않으면 거기서 멈춘다.
@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from . import service
-from .models import Child, User
+from .models import ROLE_ADMIN, Child, User
 from .seed import DEFAULT_CLASSES, DEFAULT_ROUNDS
 
 
@@ -37,7 +37,7 @@ def steps(db: Session, kinder_id: int) -> list[Step]:
     ) or 0)
     teachers = int(db.scalar(
         select(func.count(User.id)).where(
-            User.kinder_id == kinder_id, User.active.is_(True), User.role != "원장"
+            User.kinder_id == kinder_id, User.active.is_(True), User.role != ROLE_ADMIN
         )
     ) or 0)
 

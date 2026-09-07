@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from firstout import setup_guide
-from firstout.models import Base, Child, Kindergarten, User
+from firstout.models import ROLE_ADMIN, ROLE_TEACHER, Base, Child, Kindergarten, User
 from firstout.security import hash_password
 from firstout.seed import fill_new_kinder
 
@@ -27,7 +27,7 @@ def db():
     s.add(k)
     s.flush()
     fill_new_kinder(s, k)
-    s.add(User(kinder_id=KID, login_id="won", name="원장님", role="원장",
+    s.add(User(kinder_id=KID, login_id="won", name="원장님", role=ROLE_ADMIN,
                password_hash=hash_password("majung1234")))
     s.commit()
     yield s
@@ -66,19 +66,19 @@ def test_원아를_넣으면_명부_단계가_사라진다(db):
 
 
 def test_선생님을_넣으면_초대_단계가_사라진다(db):
-    db.add(User(kinder_id=KID, login_id="t1", name="김선생", role="교사",
+    db.add(User(kinder_id=KID, login_id="t1", name="김선생", role=ROLE_TEACHER,
                 password_hash=hash_password("majung1234")))
     db.commit()
     assert "teacher" not in [s.key for s in setup_guide.remaining(db, KID)]
 
 
-def test_원장만_있는_것은_선생님으로_치지_않는다(db):
-    """원장 혼자서는 반을 맡을 수 없다."""
+def test_관리자만_있는_것은_선생님으로_치지_않는다(db):
+    """총괄 관리자 혼자서는 반을 맡을 수 없다."""
     assert "teacher" in [s.key for s in setup_guide.remaining(db, KID)]
 
 
 def test_그만둔_선생님은_세지_않는다(db):
-    db.add(User(kinder_id=KID, login_id="t1", name="김선생", role="교사",
+    db.add(User(kinder_id=KID, login_id="t1", name="김선생", role=ROLE_TEACHER,
                 active=False, password_hash=hash_password("majung1234")))
     db.commit()
     assert "teacher" in [s.key for s in setup_guide.remaining(db, KID)]
@@ -90,7 +90,7 @@ def test_네_가지를_다_하면_안내가_사라진다(db):
     service.classes(db, KID)[0].name = "햇살1"
     service.rounds(db, KID)[0].at_time = "15:50"
     db.add(Child(kinder_id=KID, name="서아", class_id=service.classes(db, KID)[0].id))
-    db.add(User(kinder_id=KID, login_id="t1", name="김선생", role="교사",
+    db.add(User(kinder_id=KID, login_id="t1", name="김선생", role=ROLE_TEACHER,
                 password_hash=hash_password("majung1234")))
     db.commit()
     assert setup_guide.remaining(db, KID) == []

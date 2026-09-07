@@ -47,7 +47,7 @@ def fill_new_kinder(
     """새 유치원에 바로 쓸 수 있는 기본 자료를 채운다.
 
     승인 직후 빈 화면을 마주하지 않도록 반·차수·학원을 미리 넣어두고,
-    원장이 설정 화면에서 자기 원에 맞게 고치게 한다.
+    관리자가 설정 화면에서 자기 원에 맞게 고치게 한다.
     """
     for i, n in enumerate(class_names or DEFAULT_CLASSES):
         db.add(ClassRoom(kinder_id=k.id, name=n, seq=i))
