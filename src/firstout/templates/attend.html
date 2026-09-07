@@ -52,37 +52,49 @@
       {% for r in rows %}
       {% set st = r.att.status if r.att else '출석' %}
       {% set absent = st == '결석' %}
-      <div class="att-row">
-        <span class="att-name">{{ r.child.name }}</span>
-        <form method="post" action="/attend/{{ r.child.id }}" class="seg no-print">
+      <div class="att-item{% if absent %} is-abs{% elif st == '조퇴' %} is-early{% elif r.att %} is-ok{% endif %}">
+        <div class="att-row">
+          <span class="att-name">{{ r.child.name }}</span>
+
+          <form method="post" action="/attend/{{ r.child.id }}" class="seg no-print">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <input type="hidden" name="cls" value="{{ room.id }}">
+            <input type="hidden" name="d" value="{{ d }}">
+            <button name="status" value="출석"
+                    aria-pressed="{{ 'true' if st == '출석' else 'false' }}">출석</button>
+            <button class="k-a" name="status" value="결석"
+                    aria-pressed="{{ 'true' if absent else 'false' }}">결석</button>
+            <button class="k-e" name="status" value="조퇴"
+                    aria-pressed="{{ 'true' if st == '조퇴' else 'false' }}">조퇴</button>
+          </form>
+
+          <span class="att-meta">
+            {% if absent %}
+              <b class="v-abs">결석</b>{% if r.att.reason %}<span>{{ r.att.reason }}</span>{% endif %}
+            {% elif st == '조퇴' %}
+              <b class="v-early">조퇴</b><span>{{ r.att.left_at }}</span>
+            {% elif r.att %}<b class="v-ok">출석</b>
+            {% else %}<span class="z">미확인</span>{% endif %}
+            <span class="att-plan">{{ r.label }}</span>
+          </span>
+        </div>
+
+        {% if absent %}
+        <form method="post" action="/attend/{{ r.child.id }}" class="reasons no-print">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <input type="hidden" name="cls" value="{{ room.id }}">
           <input type="hidden" name="d" value="{{ d }}">
-          <button name="status" value="출석" aria-pressed="{{ 'true' if st == '출석' else 'false' }}">출석</button>
-          <button class="k-a" name="status" value="결석" aria-pressed="{{ 'true' if absent else 'false' }}">결석</button>
-          <button class="k-e" name="status" value="조퇴" aria-pressed="{{ 'true' if st == '조퇴' else 'false' }}">조퇴</button>
+          <b>사유</b>
+          {% for w in reasons %}
+          <button name="reason" value="{{ w }}"
+                  aria-pressed="{{ 'true' if r.att.reason == w else 'false' }}">{{ w }}</button>
+          {% endfor %}
+          {% if r.att.reason == '연락없음' %}
+          <span class="nocall">보호자에게 확인 전화가 필요합니다</span>
+          {% endif %}
         </form>
-        <span class="att-meta">
-          {% if absent %}<b class="v-abs">결석{% if r.att.reason %} · {{ r.att.reason }}{% endif %}</b>
-          {% elif st == '조퇴' %}<b class="v-early">조퇴 {{ r.att.left_at }}</b>
-          {% elif r.att %}출석{% else %}<span class="z">미확인</span>{% endif %}
-          &nbsp; {{ r.label }}
-        </span>
-      </div>
-      {% if absent %}
-      <form method="post" action="/attend/{{ r.child.id }}" class="reasons no-print">
-        <input type="hidden" name="_csrf" value="{{ csrf }}">
-        <input type="hidden" name="cls" value="{{ room.id }}">
-        <input type="hidden" name="d" value="{{ d }}">
-        {% for w in reasons %}
-        <button name="reason" value="{{ w }}"
-                aria-pressed="{{ 'true' if r.att.reason == w else 'false' }}">{{ w }}</button>
-        {% endfor %}
-        {% if r.att.reason == '연락없음' %}
-        <span class="nocall">보호자에게 확인 전화가 필요합니다</span>
         {% endif %}
-      </form>
-      {% endif %}
+      </div>
       {% endfor %}
     </div>
 

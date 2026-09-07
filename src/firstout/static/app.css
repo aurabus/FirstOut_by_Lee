@@ -395,11 +395,75 @@ tr.is-change{background:var(--gold-soft)}
 .apply-opt input{margin-top:.25rem}
 .apply-acts{display:flex;gap:.4rem;margin-top:.8rem}
 
+/* ── 명단 위 안내줄 ── */
+.note{padding:.55rem .8rem;font-size:.84rem;color:var(--ink-2);margin-bottom:.8rem;
+  border-left:3px solid var(--rule);background:var(--card-2);border-radius:0 3px 3px 0}
+.note b{font-weight:700;margin-right:.2rem}
+.note strong{font-weight:700;color:var(--ink)}
+.note-quick{border-left-color:var(--pine);background:var(--pine-soft)}
+.note-quick b{color:var(--pine)}
+.note-sign{border-left-color:var(--plum);background:var(--plum-soft)}
+.note-sign b{color:var(--plum)}
+
 /* ── 출결 ── */
 .checked{font-size:.8rem;color:var(--ink-3)}
 .nocall{font-size:.76rem;color:var(--clay);font-weight:500;align-self:center;margin-left:.3rem}
-.att-row .seg{border:0;padding:.15rem;margin:0}
+
+.att{background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  box-shadow:var(--shadow);overflow:hidden}
+.att-item{border-bottom:1px solid var(--rule-2)}
+.att-item:last-child{border-bottom:none}
+.att-item.is-abs{background:var(--clay-soft)}
+.att-item.is-early{background:var(--gold-soft)}
+
+.att-row{display:flex;align-items:center;gap:.6rem;padding:.4rem .7rem .4rem 0;flex-wrap:wrap}
+/* 왼쪽 색 띠 — 명단을 훑을 때 결석·조퇴가 한눈에 들어온다 */
+.att-name{flex:0 0 5.5rem;font-size:.95rem;font-weight:500;
+  border-left:3px solid transparent;padding-left:.65rem}
+.att-item.is-ok .att-name{border-left-color:var(--pine)}
+.att-item.is-abs .att-name{border-left-color:var(--clay)}
+.att-item.is-early .att-name{border-left-color:var(--gold-2)}
+
+.att-meta{margin-left:auto;display:flex;align-items:center;gap:.4rem;
+  font-size:.8rem;color:var(--ink-3)}
 .att-meta b{font-weight:700}
+.v-ok{color:var(--pine)}
+.att-plan{font-size:.74rem;color:var(--ink-3);border:1px solid var(--rule-2);
+  border-radius:2px;padding:.05rem .35rem;white-space:nowrap}
+
+/* 출석·결석·조퇴 — 세 칸이 붙은 한 덩어리로 보여야 고르는 것임을 안다 */
+.seg{display:inline-flex;border:0;padding:0;margin:0}
+.seg button{border:1px solid var(--rule);background:var(--card-2);color:var(--ink-2);
+  font-size:.83rem;font-weight:500;min-height:40px;padding:0 .85rem;margin-left:-1px;
+  white-space:nowrap;position:relative}
+.seg button:first-child{border-radius:3px 0 0 3px;margin-left:0}
+.seg button:last-child{border-radius:0 3px 3px 0}
+.seg button:hover{border-color:var(--ink-3);z-index:1}
+.seg button[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);
+  color:#fff;font-weight:700;z-index:2}
+.seg .k-a[aria-pressed="true"]{background:var(--clay);border-color:var(--clay);color:#fff}
+.seg .k-e[aria-pressed="true"]{background:var(--gold-2);border-color:var(--gold-2);color:#2A1F06}
+
+/* 결석 사유 — 이름 아래에 붙여 누구 사유인지 헷갈리지 않게 */
+.reasons{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;border:0;margin:0;
+  padding:0 .7rem .5rem 6.9rem}
+.reasons b{font-size:.75rem;color:var(--ink-3);font-weight:500;margin-right:.15rem}
+.reasons button{border:1px solid var(--rule);background:var(--card);border-radius:99px;
+  font-size:.77rem;color:var(--ink-2);min-height:32px;padding:0 .75rem}
+.reasons button:hover{border-color:var(--ink-3)}
+.reasons button[aria-pressed="true"]{border-color:var(--clay);background:var(--card);
+  color:var(--clay);font-weight:700}
+
+@media (max-width:34rem){
+  .att-name{flex:1 0 100%;padding-bottom:.15rem}
+  .att-row{padding-bottom:.55rem}
+  .att-meta{margin-left:0}
+  .reasons{padding-left:.7rem}
+}
+@media print{
+  .att-item{break-inside:avoid}
+  .att-name{flex:0 0 7rem}
+}
 
 /* ── 오늘만 추가 · 인계자 직접 입력 ── */
 .addbox{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;

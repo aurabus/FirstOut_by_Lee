@@ -26,18 +26,15 @@
   </div>
 
   {% if not weekend %}
-  <div class="{% if sign_all %}note-sign{% elif sign_any %}note-sign{% else %}note-quick{% endif %} no-print"
-       style="border-left:3px solid {% if sign_any %}var(--plum){% else %}var(--pine){% endif %};
-              background:{% if sign_any %}var(--plum-soft){% else %}var(--pine-soft){% endif %};
-              padding:.55rem .8rem;font-size:.84rem;color:var(--ink-2);margin-bottom:.8rem">
+  <div class="note {% if sign_any %}note-sign{% else %}note-quick{% endif %} no-print">
     {% if sign_all %}
-      <b style="color:var(--plum)">서명 인계</b> 이름을 누르면 <strong>기본 인계자</strong>가 미리 잡혀 있고, 서명만 받으면 끝납니다.
+      <b>서명 인계</b> 이름을 누르면 <strong>기본 인계자</strong>가 미리 잡혀 있고, 서명만 받으면 끝납니다.
     {% elif sign_any %}
-      <b style="color:var(--plum)">섞여 있음</b> ✎ 표시된 아이는 보호자에게 인계하므로 <strong>서명</strong>을, 학원차는 <strong>체크만</strong> 합니다.
+      <b>섞여 있음</b> ✎ 표시된 아이는 보호자에게 인계하므로 <strong>서명</strong>을, 학원차는 <strong>체크만</strong> 합니다.
     {% else %}
-      <b style="color:var(--pine)">빠른 확인</b> 이름을 누르면 <strong>바로 체크</strong>됩니다. 차에 태우는 것이라 서명은 받지 않습니다.
+      <b>빠른 확인</b> 이름을 누르면 <strong>바로 체크</strong>됩니다. 차에 태우는 것이라 서명은 받지 않습니다.
     {% endif %}
-    &nbsp;특이사항은 오른쪽 <strong>비고</strong>에 적어두시면 기록에 남습니다.
+    특이사항은 오른쪽 <strong>비고</strong>에 적어두시면 기록에 남습니다.
   </div>
 
   <div class="sec" style="padding-top:.1rem">
