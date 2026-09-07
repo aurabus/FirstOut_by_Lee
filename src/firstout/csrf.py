@@ -89,3 +89,83 @@ class CSRFMiddleware:
             return {"type": "http.disconnect"}
 
         await self.app(scope, replay, send)
+
+
+# ── 감사 로그 ───────────────────────────────────────────
+
+class AuditMiddleware:
+    """모든 요청을 남긴다 — 화면을 연 것까지.
+
+    응답이 끝난 뒤에 적으므로 처리 결과(상태 코드)까지 함께 남고,
+    기록하다 실패해도 서비스는 멈추지 않는다.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        self._last_purge = 0.0
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        path = scope.get("path", "")
+        from . import audit
+
+        if not audit.should_log(path):
+            return await self.app(scope, receive, send)
+
+        status = {"code": 0}
+
+        async def watch(message):
+            if message["type"] == "http.response.start":
+                status["code"] = message["status"]
+            await send(message)
+
+        try:
+            await self.app(scope, receive, watch)
+        finally:
+            self._record(scope, path, status["code"])
+
+    def _record(self, scope, path: str, status: int) -> None:
+        import time
+
+        from . import audit
+        from .db import SessionLocal
+
+        try:
+            with SessionLocal() as db:
+                cookie = _cookie_named(scope, "majung")
+                audit.write(
+                    db,
+                    user=audit.user_from_cookie(db, cookie),
+                    method=scope.get("method", ""),
+                    path=path,
+                    status=status,
+                    ip=_client_ip(scope),
+                    agent=_header(scope, b"user-agent"),
+                )
+                # 한 시간에 한 번만 오래된 기록을 치운다 — 매 요청마다 훑을 일이 아니다
+                if time.time() - self._last_purge > 3600:
+                    self._last_purge = time.time()
+                    audit.purge_old(db)
+        except Exception:   # noqa: BLE001 — 기록 실패가 서비스를 멈추면 안 된다
+            pass
+
+
+def _cookie_named(scope, want: str) -> str | None:
+    for name, value in scope.get("headers", []):
+        if name == b"cookie":
+            for part in value.decode("latin-1").split(";"):
+                k, _, v = part.strip().partition("=")
+                if k == want:
+                    return v
+    return None
+
+
+def _client_ip(scope) -> str:
+    """프록시 뒤에서는 진짜 접속지가 헤더에 담겨 온다."""
+    fwd = _header(scope, b"x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    client = scope.get("client")
+    return client[0] if client else ""

@@ -28,7 +28,7 @@ from .config import (
     WEEKDAYS,
     ensure_dirs,
 )
-from .csrf import CSRFMiddleware
+from .csrf import AuditMiddleware, CSRFMiddleware
 from .db import SessionLocal, get_db, init_db
 from .models import User
 from .security import CSRF_COOKIE, new_csrf, pw_stamp, read_token
@@ -37,7 +37,9 @@ from .security import CSRF_COOKIE, new_csrf, pw_stamp, read_token
 mimetypes.add_type("font/woff2", ".woff2")
 
 app = FastAPI(title=APP_NAME, docs_url=None, redoc_url=None)
+# 감사 로그가 바깥에 있어야 차단된 요청까지 남는다
 app.add_middleware(CSRFMiddleware)
+app.add_middleware(AuditMiddleware)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
@@ -142,6 +144,12 @@ def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
 def _startup() -> None:
     ensure_dirs()
     init_db()
+    with SessionLocal() as db:
+        from . import audit
+
+        gone = audit.purge_old(db)
+        if gone:
+            print(f"  감사 로그 {gone}건 정리 (한 달 지난 기록)")
 
 
 @app.get("/health")
@@ -164,6 +172,7 @@ def home(request: Request, db: Session = Depends(get_db)):
 
 # 라우터는 아래에서 등록한다 (순환 참조를 피하려고 마지막에 둔다)
 from .web import (  # noqa: E402
+    audit_page,
     auth,
     board,
     connect,
@@ -171,10 +180,14 @@ from .web import (  # noqa: E402
     operator,
     roster,
     settings_page,
+    upload,
     users,
 )
 
-for mod in (auth, board, connect, lists, operator, roster, settings_page, users):
+for mod in (
+    audit_page, auth, board, connect, lists,
+    operator, roster, settings_page, upload, users,
+):
     app.include_router(mod.router)
 
 

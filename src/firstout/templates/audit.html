@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% set nav = 'audit' %}
+{% block title %}감사 로그 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+
+  {% set base_url = "/audit" %}
+  {% include "_daybar.html" %}
+
+  <dl class="tiles">
+    <div class="tile key"><dt>이 날 기록</dt><dd>{{ total }}</dd></div>
+    <div class="tile"><dt>사용한 사람</dt><dd>{{ names | length }}</dd></div>
+    <div class="tile pine"><dt>보관 기간</dt><dd style="font-size:1.2rem">{{ keep_days }}일</dd></div>
+    <div class="tile"><dt>범위</dt>
+      <dd style="font-size:1.05rem">{% if me.is_operator %}전체{% else %}{{ kinder.name }}{% endif %}</dd></div>
+  </dl>
+
+  <div class="picks no-print">
+    <a class="pick {% if not only %}on{% endif %}"
+       href="/audit?{% if d %}d={{ d }}&{% endif %}{% if who %}who={{ who }}{% endif %}">전체</a>
+    <a class="pick {% if only == 'change' %}on{% endif %}"
+       href="/audit?only=change{% if d %}&d={{ d }}{% endif %}{% if who %}&who={{ who }}{% endif %}">바꾼 것만</a>
+    <span style="width:1rem"></span>
+    <a class="pick {% if not who %}on{% endif %}"
+       href="/audit?{% if d %}d={{ d }}&{% endif %}{% if only %}only={{ only }}{% endif %}">모든 사람</a>
+    {% for n in names %}
+    <a class="pick {% if who == n %}on{% endif %}"
+       href="/audit?who={{ n }}{% if d %}&d={{ d }}{% endif %}{% if only %}&only={{ only }}{% endif %}">{{ n }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="sec" style="padding-top:.1rem">
+    <div class="print-head"><b>{{ day }} 감사 로그</b>
+      <span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="sec-h no-print"><h2>기록</h2><span class="n">{{ total }}건</span>
+      <span class="hint">{{ keep_days }}일이 지나면 자동으로 지워집니다</span>
+    </div>
+
+    {% if rows %}
+    <div class="tw"><table style="min-width:44rem">
+      <thead><tr>
+        <th class="tx">시각</th><th class="tx">사용자</th><th class="tx">한 일</th>
+        <th class="tx">주소</th><th>결과</th><th class="tx">접속지</th>
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr class="{% if r.changed %}is-change{% endif %}">
+          <td class="tx n-f">{{ r.at.strftime('%H:%M:%S') }}</td>
+          <td class="tx">{% if r.user_name %}<b>{{ r.user_name }}</b>{% else %}<span class="z">로그인 전</span>{% endif %}</td>
+          <td class="tx">
+            {% if r.changed %}<span class="chg">변경</span>{% endif %}{{ r.action }}</td>
+          <td class="tx"><span class="pathv">{{ r.path }}</span></td>
+          <td class="n-f {% if r.status >= 400 %}v-abs{% elif r.status >= 300 %}v-early{% else %}v-home{% endif %}">{{ r.status }}</td>
+          <td class="tx n-f" style="font-size:.75rem;color:var(--ink-3)">{{ r.ip }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+
+    {% if pages > 1 %}
+    <div class="picks no-print" style="margin-top:.7rem">
+      {% for p in range(1, pages + 1) %}
+      {% if p <= 12 or p == pages %}
+      <a class="pick {% if p == page_no %}on{% endif %}"
+         href="/audit?page_no={{ p }}{% if d %}&d={{ d }}{% endif %}{% if who %}&who={{ who }}{% endif %}{% if only %}&only={{ only }}{% endif %}">{{ p }}</a>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="empty">이 날 기록이 없습니다.</p>
+    {% endif %}
+
+    <p class="empty no-print">
+      화면을 연 것까지 모두 남습니다. 개인정보는 담지 않으며, 주소에 보이는 숫자는
+      원아·계정의 번호입니다. <strong>{{ keep_days }}일이 지난 기록은 자동으로 지워집니다.</strong>
+    </p>
+  </div>
+
+  <div class="foot"><span>{{ app_name }} · 감사 로그</span><span>{{ day_ko }}</span></div>
+</div>
+{% endblock %}

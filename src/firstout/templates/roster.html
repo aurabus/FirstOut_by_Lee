@@ -16,6 +16,7 @@
     {% for c in classes %}
     <a class="pick {% if sel_cls == c.id %}on{% endif %}" href="/roster?cls={{ c.id }}">{{ c.name }}</a>
     {% endfor %}
+    {% if me.is_admin %}<a class="btn go" href="/upload">엑셀로 명부 올리기</a>{% endif %}
     <button class="pick" style="margin-left:auto" onclick="window.print()">명부 인쇄 / PDF</button>
   </div>
 
@@ -73,7 +74,8 @@
     <div class="cfg">
       <p class="cfg-note" style="background:var(--card);padding:1.2rem .9rem">
         아직 등록된 원아가 없습니다.<br>
-        시연용 예시 명부를 넣으려면 서버를 <b>python -m firstout.main --demo</b> 로 한 번 실행하세요.
+        {% if me.is_admin %}<a href="/upload">엑셀 양식을 내려받아 명부를 올려주세요.</a>
+        {% else %}원장님께 명부 등록을 요청해 주세요.{% endif %}
       </p>
     </div>
     {% endif %}

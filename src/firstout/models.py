@@ -310,3 +310,34 @@ class Departure(Base):
     child: Mapped[Child] = relationship()
     round: Mapped[Round | None] = relationship()
     teacher: Mapped[User | None] = relationship()
+
+
+# ── 감사 로그 ───────────────────────────────────────────
+
+class AuditLog(Base):
+    """누가 언제 무엇을 했는지.
+
+    개인정보는 담지 않는다. 남는 것은 무엇을 했는지와 대상의 번호뿐이다.
+    한 달이 지나면 자동으로 지운다 (audit.purge_old).
+    """
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[dt.datetime] = mapped_column(DateTime, index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    user_name: Mapped[str] = mapped_column(String(40), default="")   # 그때의 이름
+    kinder_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kindergarten.id"), nullable=True, index=True
+    )
+    method: Mapped[str] = mapped_column(String(8), default="")
+    path: Mapped[str] = mapped_column(String(200), default="")
+    action: Mapped[str] = mapped_column(String(60), default="")      # 사람이 읽는 설명
+    status: Mapped[int] = mapped_column(Integer, default=0)
+    ip: Mapped[str] = mapped_column(String(45), default="")
+    agent: Mapped[str] = mapped_column(String(120), default="")
+
+    @property
+    def changed(self) -> bool:
+        """무언가를 바꾼 요청인지 — 화면을 연 것과 구분한다."""
+        return self.method == "POST"

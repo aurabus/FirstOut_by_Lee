@@ -370,3 +370,27 @@ select.field{min-height:40px}
 .masked{font-size:.75rem;color:var(--ink-3);border-bottom:1px dotted var(--rule);
   margin-left:.35rem;cursor:help;letter-spacing:.02em}
 @media print{.masked{display:none}}
+
+/* ── 감사 로그 ── */
+tr.is-change{background:var(--gold-soft)}
+.chg{font-size:.7rem;border:1px solid var(--gold-line);color:var(--gold);
+  border-radius:2px;padding:.02rem .3rem;margin-right:.35rem}
+.pathv{font-size:.75rem;color:var(--ink-3);word-break:break-all}
+
+/* ── 엑셀 올리기 ── */
+.steps{display:flex;flex-direction:column;gap:.5rem}
+.step{display:grid;grid-template-columns:2rem 1fr;gap:.8rem;background:var(--card);
+  border:1px solid var(--rule);border-radius:3px;padding:.9rem 1rem;box-shadow:var(--shadow)}
+.step-n{width:1.7rem;height:1.7rem;border-radius:50%;background:var(--pine);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem}
+.step b{font-size:.98rem;font-weight:700}
+.step p{font-size:.86rem;color:var(--ink-2);margin:.25rem 0 .6rem}
+.up-form{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.up-form .field{min-height:44px;padding:.5rem}
+.apply-box{background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:1rem;margin-top:1.2rem;box-shadow:var(--shadow)}
+.apply-q{font-size:.9rem;margin-bottom:.5rem}
+.apply-opt{display:flex;gap:.5rem;align-items:flex-start;padding:.45rem .2rem;font-size:.87rem;
+  color:var(--ink-2);cursor:pointer}
+.apply-opt input{margin-top:.25rem}
+.apply-acts{display:flex;gap:.4rem;margin-top:.8rem}
