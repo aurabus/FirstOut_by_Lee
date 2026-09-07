@@ -394,3 +394,9 @@ tr.is-change{background:var(--gold-soft)}
   color:var(--ink-2);cursor:pointer}
 .apply-opt input{margin-top:.25rem}
 .apply-acts{display:flex;gap:.4rem;margin-top:.8rem}
+
+/* ── 출결 ── */
+.checked{font-size:.8rem;color:var(--ink-3)}
+.nocall{font-size:.76rem;color:var(--clay);font-weight:500;align-self:center;margin-left:.3rem}
+.att-row .seg{border:0;padding:.15rem;margin:0}
+.att-meta b{font-weight:700}

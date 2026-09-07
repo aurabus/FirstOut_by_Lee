@@ -27,6 +27,7 @@
     <a class="tab {% if nav == 'audit' %}on{% endif %}" href="/audit">감사 로그</a>
     {% else %}
     <a class="tab {% if nav == 'board' %}on{% endif %}" href="/board">오늘 현황</a>
+    <a class="tab {% if nav == 'attend' %}on{% endif %}" href="/attend">출결 등록</a>
     <a class="tab {% if nav == 'roster' %}on{% endif %}" href="/roster">원아 명부</a>
     {% if me.is_admin %}
     <a class="tab {% if nav == 'users' %}on{% endif %}" href="/users">선생님 관리</a>

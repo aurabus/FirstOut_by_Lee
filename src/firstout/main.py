@@ -172,6 +172,7 @@ def home(request: Request, db: Session = Depends(get_db)):
 
 # 라우터는 아래에서 등록한다 (순환 참조를 피하려고 마지막에 둔다)
 from .web import (  # noqa: E402
+    attend,
     audit_page,
     auth,
     board,
@@ -185,7 +186,7 @@ from .web import (  # noqa: E402
 )
 
 for mod in (
-    audit_page, auth, board, connect, lists,
+    attend, audit_page, auth, board, connect, lists,
     operator, roster, settings_page, upload, users,
 ):
     app.include_router(mod.router)

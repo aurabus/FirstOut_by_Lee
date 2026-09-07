@@ -227,3 +227,65 @@ def test_같은_반_이름을_다른_유치원에서_쓸_수_있다(db):
 
     assert len(service.classes(db, KID)) == 2
     assert len(service.classes(db, 2)) == 1
+
+
+# ── 출결이 명단에 미치는 영향 ───────────────────────────
+# 출결 화면이 하루의 시작점이다. 여기서 잘못되면 안 온 아이를 계속 찾게 된다.
+
+def test_출결을_기록하지_않으면_출석으로_본다(db):
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    make_child(db, "민준", room, i1)
+
+    row = service.day_rows(db, KID, MON)[0]
+    assert row.att is None
+    assert not row.excluded
+    target = service.rows_for_round(service.day_rows(db, KID, MON), i1)
+    assert [r.child.name for r in target] == ["민준"]
+
+
+def test_결석_사유가_명단_아래에_함께_나온다(db):
+    from firstout.models import Attendance
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    c = make_child(db, "하윤", room, i1)
+    db.add(Attendance(child_id=c.id, on_date=MON, status=ATT_ABSENT, reason="연락없음"))
+    db.commit()
+
+    rows = service.day_rows(db, KID, MON)
+    skipped = service.excluded_for_round(rows, i1)
+    assert len(skipped) == 1
+    assert skipped[0].att.reason == "연락없음"
+
+
+def test_조퇴하면_모든_차수에서_빠진다(db):
+    """조퇴는 이미 집에 간 것이므로 어느 명단에도 남으면 안 된다."""
+    from firstout.models import Attendance
+
+    room = service.classes(db, KID)[0]
+    c = make_child(db, "예준", room, service.round_by_key(db, KID, "care"))
+    db.add(Attendance(child_id=c.id, on_date=MON, status=ATT_EARLY, left_at="13:20"))
+    db.commit()
+
+    rows = service.day_rows(db, KID, MON)
+    for r in service.rounds(db, KID):
+        assert service.rows_for_round(rows, r) == []
+
+
+def test_출결을_되돌리면_명단에_다시_들어온다(db):
+    from firstout.models import ATT_PRESENT, Attendance
+
+    room = service.classes(db, KID)[0]
+    i1 = service.round_by_key(db, KID, "i1")
+    c = make_child(db, "서아", room, i1)
+    a = Attendance(child_id=c.id, on_date=MON, status=ATT_ABSENT, reason="질병")
+    db.add(a)
+    db.commit()
+    assert service.rows_for_round(service.day_rows(db, KID, MON), i1) == []
+
+    a.status = ATT_PRESENT
+    a.reason = ""
+    db.commit()
+    back = service.rows_for_round(service.day_rows(db, KID, MON), i1)
+    assert [r.child.name for r in back] == ["서아"]

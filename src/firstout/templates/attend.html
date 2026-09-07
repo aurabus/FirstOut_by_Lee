@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% set nav = 'attend' %}
+{% block title %}출결 등록 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:52rem">
+
+  {% set base_url = "/attend" %}
+  {% include "_daybar.html" %}
+
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
+  {% if not room %}
+  <p class="empty">반이 없습니다. 설정에서 반을 먼저 등록해 주세요.</p>
+  {% else %}
+
+  <dl class="tiles">
+    <div class="tile"><dt>총원</dt><dd>{{ rows | length }}</dd></div>
+    <div class="tile pine"><dt>출석</dt><dd>{{ counted['출석'] }}</dd></div>
+    <div class="tile {% if counted['조퇴'] %}warn{% endif %}"><dt>조퇴</dt><dd>{{ counted['조퇴'] }}</dd></div>
+    <div class="tile {% if counted['결석'] %}alert{% endif %}"><dt>결석</dt><dd>{{ counted['결석'] }}</dd></div>
+  </dl>
+
+  <div class="picks no-print">
+    {% for r in rooms %}
+    <a class="pick {% if r.id == room.id %}on{% endif %}"
+       href="/attend?cls={{ r.id }}{% if d %}&d={{ d }}{% endif %}">{{ r.name }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="picks no-print">
+    <form method="post" action="/attend/all/{{ room.id }}">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="d" value="{{ d }}">
+      <button class="btn go">전체 출석 처리</button>
+    </form>
+    <span class="checked">
+      {% if checked == rows | length and rows %}오늘 출결을 모두 확인했습니다
+      {% else %}확인함 {{ checked }} / {{ rows | length }}명{% endif %}
+    </span>
+    <button class="pick" style="margin-left:auto" onclick="window.print()">출결부 인쇄 / PDF</button>
+  </div>
+
+  <div class="sec" style="padding-top:.1rem">
+    <div class="print-head"><b>{{ day }} {{ room.name }} 출결부</b>
+      <span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="sec-h no-print"><h2>{{ room.name }} 출결</h2><span class="n">{{ rows | length }}명</span>
+      <span class="hint">전체 출석으로 찍고 결석·조퇴만 바꾸면 됩니다</span>
+    </div>
+
+    {% if rows %}
+    <div class="att">
+      {% for r in rows %}
+      {% set st = r.att.status if r.att else '출석' %}
+      {% set absent = st == '결석' %}
+      <div class="att-row">
+        <span class="att-name">{{ r.child.name }}</span>
+        <form method="post" action="/attend/{{ r.child.id }}" class="seg no-print">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="cls" value="{{ room.id }}">
+          <input type="hidden" name="d" value="{{ d }}">
+          <button name="status" value="출석" aria-pressed="{{ 'true' if st == '출석' else 'false' }}">출석</button>
+          <button class="k-a" name="status" value="결석" aria-pressed="{{ 'true' if absent else 'false' }}">결석</button>
+          <button class="k-e" name="status" value="조퇴" aria-pressed="{{ 'true' if st == '조퇴' else 'false' }}">조퇴</button>
+        </form>
+        <span class="att-meta">
+          {% if absent %}<b class="v-abs">결석{% if r.att.reason %} · {{ r.att.reason }}{% endif %}</b>
+          {% elif st == '조퇴' %}<b class="v-early">조퇴 {{ r.att.left_at }}</b>
+          {% elif r.att %}출석{% else %}<span class="z">미확인</span>{% endif %}
+          &nbsp; {{ r.label }}
+        </span>
+      </div>
+      {% if absent %}
+      <form method="post" action="/attend/{{ r.child.id }}" class="reasons no-print">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="cls" value="{{ room.id }}">
+        <input type="hidden" name="d" value="{{ d }}">
+        {% for w in reasons %}
+        <button name="reason" value="{{ w }}"
+                aria-pressed="{{ 'true' if r.att.reason == w else 'false' }}">{{ w }}</button>
+        {% endfor %}
+        {% if r.att.reason == '연락없음' %}
+        <span class="nocall">보호자에게 확인 전화가 필요합니다</span>
+        {% endif %}
+      </form>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="sign-row">
+      <span>출석 {{ counted['출석'] }} · 조퇴 {{ counted['조퇴'] }} · 결석 {{ counted['결석'] }}
+        / 총원 {{ rows | length }}명</span>
+      <span>담임 확인 ______________</span>
+    </div>
+    <p class="empty no-print">
+      결석·조퇴로 바꾸면 <strong>오늘 귀가 명단에서 자동으로 빠집니다.</strong>
+      기록하지 않은 아이는 출석으로 봅니다.
+    </p>
+    {% else %}
+    <p class="empty">이 반에 등록된 원아가 없습니다.
+      {% if me.is_admin %}<a href="/upload">엑셀로 명부를 올려주세요.</a>{% endif %}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="foot"><span>{{ app_name }} · 출결</span><span>{{ day_ko }}</span></div>
+</div>
+{% endblock %}
