@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from .. import flash, service
 from ..db import get_db
-from ..models import DEP_CALLED, DEP_DONE, DEP_WAITING, Child, Departure, Guardian
+from ..models import DEP_DONE, DEP_WAITING, Child, Departure, Guardian
 from . import clip
 
 router = APIRouter()
@@ -200,29 +200,6 @@ def sign(
     return _back(key, f"{child.name} 인계 완료 · 서명 받음{tail}", d, cid)
 
 
-@router.post("/list/{key}/{cid}/call")
-def call(
-    key: str, cid: int, request: Request, d: str = Form(""), db: Session = Depends(get_db)
-):
-    """전화만 받은 상태 — 여기서부터 대기 시간이 흐른다."""
-    from ..main import current_user, now, pick_date
-
-    me = current_user(request, db)
-    if me is None:
-        return RedirectResponse("/signin", status_code=303)
-
-    rnd = service.round_by_key(db, me.kinder_id, key)
-    child = db.get(Child, cid)
-    if rnd is None or child is None or child.kinder_id != me.kinder_id:
-        return _back(key, "", d)
-
-    dep = _dep(db, cid, pick_date(d), rnd.id)
-    dep.status = DEP_CALLED
-    dep.called_at = now()
-    db.commit()
-    return _back(key, f"{child.name} 인계대기 등록", d, cid)
-
-
 @router.post("/list/{key}/{cid}/undo")
 def undo(
     key: str, cid: int, request: Request, d: str = Form(""), db: Session = Depends(get_db)
@@ -244,7 +221,6 @@ def undo(
     if dep:
         dep.status = DEP_WAITING
         dep.done_at = None
-        dep.called_at = None
         dep.signature = ""
         dep.receiver = ""
         dep.how = ""

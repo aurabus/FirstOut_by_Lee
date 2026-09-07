@@ -36,19 +36,4 @@
   ping();
   setInterval(ping, 10000);
 
-  /* 대기 시간 자동 갱신 (data-since 에 ISO 시각) */
-  function elapsed() {
-    var now = Date.now();
-    document.querySelectorAll("[data-since]").forEach(function (el) {
-      var t = Date.parse(el.dataset.since);
-      if (isNaN(t)) return;
-      var s = Math.max(0, Math.round((now - t) / 1000));
-      var p = function (n) { return String(n).padStart(2, "0"); };
-      el.textContent = p(Math.floor(s / 60)) + ":" + p(s % 60);
-      var row = el.closest("[data-late-row]");
-      if (row) row.classList.toggle("late", s >= 300);
-    });
-  }
-  elapsed();
-  setInterval(elapsed, 1000);
 })();

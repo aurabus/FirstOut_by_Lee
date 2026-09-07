@@ -176,7 +176,7 @@ def test_반별_집계가_총원과_맞는다(db):
     db.commit()
 
     rows = service.day_rows(db, KID, MON)
-    s = service.class_stats(db, KID, rows, dt.datetime.now())[0]
+    s = service.class_stats(db, KID, rows)[0]
     assert s.total == s.absent + s.early + s.home + s.staying
     assert s.absent == 1
     assert s.staying == 2

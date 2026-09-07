@@ -26,7 +26,7 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
 
     day, at = pick_date(d), now()
     rows = service.day_rows(db, me.kinder_id, day)
-    stats = service.class_stats(db, me.kinder_id, rows, at)
+    stats = service.class_stats(db, me.kinder_id, rows)
 
     progress = []
     for r in service.rounds(db, me.kinder_id):
@@ -40,7 +40,6 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
             }
         )
 
-    late = [r for r in rows if r.is_late(at)]
 
     # 시각이 지났는데 아무도 손대지 않은 아이 — 호출하고 안 오는 것과는 다른 신호다
     for p in progress:
@@ -51,12 +50,11 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
         "early": sum(s.early for s in stats),
         "home": sum(s.home for s in stats),
         "staying": sum(s.staying for s in stats),
-        "waiting": sum(s.waiting for s in stats),
     }
     return page(
         request, "board.html", db, me,
         day=day, d=d,
-        stats=stats, total=total, progress=progress, late=late,
+        stats=stats, total=total, progress=progress,
         nocall=service.no_contact(rows),
         overdue=[p for p in progress if p["overdue"]],
         todo=setup_guide.remaining(db, me.kinder_id) if me.is_admin else [],

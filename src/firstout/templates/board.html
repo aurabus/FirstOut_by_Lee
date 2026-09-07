@@ -33,7 +33,6 @@
     <div class="tile"><dt>총원</dt><dd>{{ total.total }}</dd></div>
     <div class="tile pine"><dt>귀가</dt><dd>{{ total.home }}</dd></div>
     <div class="tile key"><dt>현원</dt><dd>{{ total.staying }}</dd></div>
-    <div class="tile {% if total.waiting %}warn{% endif %}"><dt>인계대기</dt><dd>{{ total.waiting }}</dd></div>
   </dl>
 
   {% if nocall %}
@@ -53,14 +52,7 @@
   </div>
   {% endfor %}
 
-  {% if late %}
-    {% for r in late %}
-    <div class="alert" data-late-row>
-      <b><span data-since="{{ r.dep.called_at.isoformat() }}">00:00</span> 경과</b>
-      <span><strong>{{ r.child.name }}</strong>({{ r.child.classroom.name }}) — 호출 후 아직 인계되지 않았습니다.</span>
-    </div>
-    {% endfor %}
-  {% elif total.staying == 0 and total.total %}
+  {% if total.staying == 0 and total.total %}
     <p class="ok-bar">남은 아이가 없습니다 — 오늘 귀가 마감 가능합니다.</p>
   {% endif %}
 
@@ -98,20 +90,19 @@
         </tr>
         <tr>
           <th class="grp">결석</th><th>조퇴</th>
-          <th class="grp">귀가</th><th>현원</th><th>인계대기</th>
+          <th class="grp">귀가</th><th>현원</th>
         </tr>
       </thead>
       <tbody>
         {% for s in stats %}
         {% set out = s.absent + s.early %}
-        <tr class="{% if s.late %}is-late{% elif s.waiting %}is-wait{% endif %}">
+        <tr>
           <td class="tx nm">{{ s.room.name }}</td>
           <td class="v-tot">{{ s.total }}</td>
           <td class="grp {% if s.absent %}v-abs{% else %}z{% endif %}">{{ s.absent or '·' }}</td>
           <td class="{% if s.early %}v-early{% else %}z{% endif %}">{{ s.early or '·' }}</td>
           <td class="grp v-home">{{ s.home }}</td>
           <td class="v-left">{{ s.staying }}</td>
-          <td class="{% if s.waiting %}v-wait{% else %}z{% endif %}">{{ s.waiting or '·' }}</td>
           <td class="tx grp">
             {% if s.total %}
             <span class="bar-g" title="귀가 {{ s.home }} · 현원 {{ s.staying }} · 결석조퇴 {{ out }}">
@@ -127,7 +118,7 @@
           <td class="tx nm">합계</td><td class="v-tot">{{ total.total }}</td>
           <td class="grp v-abs">{{ total.absent }}</td><td class="v-early">{{ total.early }}</td>
           <td class="grp v-home">{{ total.home }}</td><td class="v-left">{{ total.staying }}</td>
-          <td class="v-wait">{{ total.waiting }}</td><td class="tx grp"></td>
+          <td class="tx grp"></td>
         </tr>
       </tbody>
     </table></div>

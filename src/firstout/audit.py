@@ -45,7 +45,6 @@ ACTIONS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^/roster"), "원아 명부"),
     (re.compile(r"^/list/[^/]+/\d+/sign$"), "귀가 · 서명 인계"),
     (re.compile(r"^/list/[^/]+/\d+/check$"), "귀가 · 탑승 체크"),
-    (re.compile(r"^/list/[^/]+/\d+/call$"), "귀가 · 인계대기 등록"),
     (re.compile(r"^/list/[^/]+/\d+/undo$"), "귀가 · 처리 취소"),
     (re.compile(r"^/list/[^/]+/\d+/memo$"), "귀가 · 특이사항"),
     (re.compile(r"^/list/"), "귀가 명단"),

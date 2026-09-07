@@ -77,7 +77,7 @@
               data-memo="{{ r.dep.memo if r.dep else '' }}">
               <span class="gl-chk">✓</span>
               <span><span class="gl-name">{{ r.child.name }}</span><i class="sg-need">✎</i>{% if r.added_today %}<i class="today">오늘만</i>{% endif %}
-                <span class="gl-sub">{% if g %}{{ g.name }} · {{ g.relation }}{% endif %}{% if r.at_time and r.at_time != rnd.at_time %} · {{ r.at_time }}{% endif %}{% if r.called %} · 인계대기{% endif %}</span></span>
+                <span class="gl-sub">{% if g %}{{ g.name }} · {{ g.relation }}{% endif %}{% if r.at_time and r.at_time != rnd.at_time %} · {{ r.at_time }}{% endif %}</span></span>
             </button>
           {% else %}
             <form method="post" action="/list/{{ rnd.key }}/{{ r.child.id }}/check" class="gl-form">

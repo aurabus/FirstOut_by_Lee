@@ -79,7 +79,10 @@ form{margin:0}
 .tab.on .cnt{color:var(--pine)}
 
 /* ── 타일 ── */
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:1.05rem 0}
+/* 칸 수를 고정하지 않는다 — 화면마다 타일 개수가 다르고, 빈 칸이 남으면
+   숫자가 한쪽으로 몰려 읽기 어려워진다 */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));
+  gap:.5rem;margin:1.05rem 0}
 .tile{background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--rule);
   border-radius:3px;padding:.6rem .78rem .68rem;box-shadow:var(--shadow)}
 .tile dt{font-size:.74rem;color:var(--ink-3);font-weight:500}
@@ -177,10 +180,7 @@ tbody tr:last-child td{border-bottom:none}
 .board .nm{position:sticky;left:0;background:inherit;font-weight:700;
   border-right:1px solid var(--rule-2);min-width:6.4rem}
 .v-abs{color:var(--clay)} .v-early{color:var(--gold)} .v-home{color:var(--ink-3)}
-.v-left{color:var(--ink);font-weight:700} .v-wait{color:var(--gold);font-weight:700}
-.v-tot{color:var(--ink-2)} .z{color:var(--rule)}
-tr.is-late .nm{box-shadow:inset 3px 0 var(--clay)}
-tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
+.v-left{color:var(--ink);font-weight:700} .v-tot{color:var(--ink-2)} .z{color:var(--rule)}
 
 /* ── 유형 배지 ── */
 .ty{display:inline-block;font-size:.72rem;padding:.06rem .42rem;border-radius:2px;
@@ -300,7 +300,6 @@ tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
   tbody td:first-child{text-align:left;font-weight:700}
   tbody td:last-child{text-align:left}
   .board .nm{position:static;background:transparent!important;border-right:.5pt solid #555}
-  tr.is-late .nm,tr.is-wait .nm{box-shadow:none}
 
   /* 색 딱지는 종이에서 글자로 — 흑백 프린터에서 뭉개지지 않게 */
   .ty{background:transparent!important;border:0!important;color:#000!important;

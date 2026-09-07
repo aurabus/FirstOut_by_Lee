@@ -292,7 +292,6 @@ class Attendance(Base):
 
 
 DEP_WAITING = "대기"
-DEP_CALLED = "호출"
 DEP_DONE = "완료"
 
 
@@ -307,7 +306,6 @@ class Departure(Base):
     on_date: Mapped[dt.date] = mapped_column(Date)
     round_id: Mapped[int | None] = mapped_column(ForeignKey("round.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(10), default=DEP_WAITING)
-    called_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     done_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     handled_by: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
     receiver: Mapped[str] = mapped_column(String(60), default="")   # 인계받은 사람

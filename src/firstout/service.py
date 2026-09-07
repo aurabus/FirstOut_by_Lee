@@ -16,7 +16,6 @@ from sqlalchemy.orm import Session, selectinload
 from .models import (
     ATT_ABSENT,
     ATT_EARLY,
-    DEP_CALLED,
     DEP_DONE,
     KG_ACTIVE,
     Attendance,
@@ -28,7 +27,6 @@ from .models import (
     Round,
 )
 
-LATE_MINUTES = 5  # 호출 후 이만큼 지나면 붉게 표시
 NO_CONTACT = "연락없음"  # 결석 사유 — 보호자에게 확인 전화가 필요하다
 
 
@@ -102,10 +100,6 @@ class Row:
         return bool(self.dep and self.dep.status == DEP_DONE)
 
     @property
-    def called(self) -> bool:
-        return bool(self.dep and self.dep.status == DEP_CALLED)
-
-    @property
     def needs_sign(self) -> bool:
         """사람에게 건네면 서명, 차에 태우면 체크만.
 
@@ -140,14 +134,6 @@ class Row:
             return False
         planned = self.plan.round_id if self.plan else None
         return planned != self.dep.round_id
-
-    def waited_seconds(self, now: dt.datetime) -> int:
-        if not self.dep or not self.dep.called_at:
-            return 0
-        return max(0, int((now - self.dep.called_at).total_seconds()))
-
-    def is_late(self, now: dt.datetime) -> bool:
-        return self.called and self.waited_seconds(now) >= LATE_MINUTES * 60
 
 
 def day_rows(
@@ -259,13 +245,9 @@ class ClassStat:
     early: int = 0
     home: int = 0
     staying: int = 0
-    waiting: int = 0
-    late: bool = False
 
 
-def class_stats(
-    db: Session, kinder_id: int, rows: list[Row], now: dt.datetime
-) -> list[ClassStat]:
+def class_stats(db: Session, kinder_id: int, rows: list[Row]) -> list[ClassStat]:
     stats = {c.id: ClassStat(room=c) for c in classes(db, kinder_id)}
     for r in rows:
         s = stats.get(r.child.class_id)
@@ -280,10 +262,6 @@ def class_stats(
             s.home += 1
         else:
             s.staying += 1
-            if r.called:
-                s.waiting += 1
-                if r.is_late(now):
-                    s.late = True
     return [stats[c.id] for c in classes(db, kinder_id)]
 
 
