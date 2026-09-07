@@ -215,10 +215,15 @@ class RowIn:
     guardians: list[tuple[str, str, str]] = field(default_factory=list)
     note: str = ""
     problems: list[str] = field(default_factory=list)
+    child_id: int | None = None        # 이미 등록된 아이면 그 번호
 
     @property
     def ok(self) -> bool:
         return not self.problems
+
+    @property
+    def known(self) -> bool:
+        return self.child_id is not None
 
 
 @dataclass
@@ -233,6 +238,16 @@ class Parsed:
     @property
     def bad(self) -> list[RowIn]:
         return [r for r in self.rows if not r.ok]
+
+    @property
+    def fresh(self) -> list[RowIn]:
+        """새로 들어오는 아이."""
+        return [r for r in self.good if not r.known]
+
+    @property
+    def known(self) -> list[RowIn]:
+        """이미 명부에 있는 아이. 그냥 더하면 같은 아이가 두 줄이 된다."""
+        return [r for r in self.good if r.known]
 
 
 _ACA = re.compile(r"^\s*학원\s*\(([^)]*)\)\s*(.*)$")
@@ -266,6 +281,14 @@ def parse(data: bytes, db: Session, kinder_id: int) -> Parsed:
     acas = {a.name for a in db.scalars(select(Academy).where(Academy.kinder_id == kinder_id))}
     seen: set[tuple[str, str]] = set()
 
+    # 이미 등록된 아이 — 이름만으로 맞춘다. 반이 바뀌었어도 같은 아이다.
+    already = {
+        c.name: c.id
+        for c in db.scalars(
+            select(Child).where(Child.kinder_id == kinder_id, Child.active.is_(True))
+        )
+    }
+
     for i, raw in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         vals = [_cell(v) for v in raw] + [""] * len(HEAD)
         cls, name = vals[0], vals[1]
@@ -293,6 +316,7 @@ def parse(data: bytes, db: Session, kinder_id: int) -> Parsed:
         seen.add((cls, name))
         if not r.guardians:
             r.problems.append("보호자가 없습니다 — 인계할 때 곤란합니다")
+        r.child_id = already.get(name)
 
         for wi, cell in enumerate(r.days):
             if not cell:
@@ -319,11 +343,21 @@ def _check_day(cell: str, rounds: dict, acas: set[str]) -> str:
     return "이런 귀가 방법이 없습니다"
 
 
-def apply(data: bytes, db: Session, kinder_id: int, replace: bool) -> int:
-    """검사를 통과한 줄만 저장한다. replace 면 기존 명부를 먼저 비운다."""
+def apply(data: bytes, db: Session, kinder_id: int, mode: str = "add") -> tuple[int, int]:
+    """검사를 통과한 줄만 저장한다. (새로 등록, 갱신) 수를 돌려준다.
+
+    mode 는 세 가지다.
+        add      새 아이만 넣는다. 이미 있는 아이는 건드리지 않는다.
+        update   이미 있는 아이는 이번 파일 내용으로 갱신하고, 새 아이는 넣는다.
+        replace  기존 명부를 모두 지우고 이번 파일로 바꾼다.
+
+    **add 가 이미 있는 아이를 건너뛰는 것이 중요하다.** 「한 명 추가하려고 파일을
+    다시 올린다」가 가장 흔한 사용법인데, 그때마다 전원이 두 줄씩 되면
+    귀가 명단에 같은 아이가 두 번 나온다. 한쪽만 서명하고 다른 쪽은 남는다.
+    """
     p = parse(data, db, kinder_id)
     if p.fatal:
-        return 0
+        return (0, 0)
 
     classes = {c.name: c for c in service.classes(db, kinder_id)}
     rounds = {r.name: r for r in service.rounds(db, kinder_id)}
@@ -332,49 +366,66 @@ def apply(data: bytes, db: Session, kinder_id: int, replace: bool) -> int:
         for a in db.scalars(select(Academy).where(Academy.kinder_id == kinder_id))
     }
 
-    if replace:
+    if mode == "replace":
         for old in db.scalars(select(Child).where(Child.kinder_id == kinder_id)):
             db.delete(old)
         db.flush()
 
-    made = 0
+    made = changed = 0
     for r in p.good:
-        child = Child(
-            kinder_id=kinder_id,
-            name=r.name,
-            class_id=classes[r.cls].id,
-            note=r.note[:200],
-        )
-        db.add(child)
-        db.flush()
+        child = None
+        if mode != "replace" and r.known:
+            if mode != "update":
+                continue                      # add — 이미 있는 아이는 그대로 둔다
+            child = db.get(Child, r.child_id)
 
-        for si, (gname, grel, gphone) in enumerate(r.guardians):
-            db.add(
-                Guardian(
-                    child_id=child.id, name=gname[:40], relation=grel[:20],
-                    phone=gphone[:30], is_default=(si == 0), seq=si,
-                )
-            )
+        if child is None:
+            child = Child(kinder_id=kinder_id, name=r.name, class_id=classes[r.cls].id)
+            db.add(child)
+            db.flush()
+            made += 1
+        else:
+            child.class_id = classes[r.cls].id
+            child.guardians.clear()           # 이번 파일이 기준이 된다
+            for old in list(child.plan):
+                db.delete(old)
+            db.flush()
+            changed += 1
 
-        for wi, cell in enumerate(r.days):
-            if not cell:
-                db.add(PlanEntry(child_id=child.id, weekday=wi))
-                continue
-            m = _ACA.match(cell)
-            if m:
-                aca = acas.get(m.group(1).strip())
-                rnd = next((x for x in rounds.values() if x.kind == "개별"), None)
-                db.add(PlanEntry(child_id=child.id, weekday=wi,
-                                 round_id=rnd.id if rnd else None,
-                                 academy_id=aca.id if aca else None))
-                continue
-            tm = _TIME.search(cell)
-            base = _TIME.sub("", cell).strip()
-            rnd = rounds.get(base)
-            db.add(PlanEntry(child_id=child.id, weekday=wi,
-                             round_id=rnd.id if rnd else None,
-                             time_override=tm.group(1) if tm else ""))
-        made += 1
+        child.note = r.note[:200]
+        _write_guardians(db, child, r)
+        _write_plan(db, child, r, rounds, acas)
 
     db.commit()
-    return made
+    return (made, changed)
+
+
+def _write_guardians(db: Session, child: Child, r: RowIn) -> None:
+    for si, (gname, grel, gphone) in enumerate(r.guardians):
+        db.add(
+            Guardian(
+                child_id=child.id, name=gname[:40], relation=grel[:20],
+                phone=gphone[:30], is_default=(si == 0), seq=si,
+            )
+        )
+
+
+def _write_plan(db: Session, child: Child, r: RowIn, rounds: dict, acas: dict) -> None:
+    for wi, cell in enumerate(r.days):
+        if not cell:
+            db.add(PlanEntry(child_id=child.id, weekday=wi))
+            continue
+        m = _ACA.match(cell)
+        if m:
+            aca = acas.get(m.group(1).strip())
+            rnd = next((x for x in rounds.values() if x.kind == "개별"), None)
+            db.add(PlanEntry(child_id=child.id, weekday=wi,
+                             round_id=rnd.id if rnd else None,
+                             academy_id=aca.id if aca else None))
+            continue
+        tm = _TIME.search(cell)
+        base = _TIME.sub("", cell).strip()
+        rnd = rounds.get(base)
+        db.add(PlanEntry(child_id=child.id, weekday=wi,
+                         round_id=rnd.id if rnd else None,
+                         time_override=tm.group(1) if tm else ""))

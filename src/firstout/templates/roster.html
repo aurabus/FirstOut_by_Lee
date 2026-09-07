@@ -40,7 +40,10 @@
   {% endif %}
 
   <div class="sec" style="padding-top:.1rem">
-    <div class="print-head"><b>{{ today }} 원아 주간 귀가 계획</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="print-head">
+      <b>{{ kinder.name }} 원아 주간 귀가 계획</b>
+      <span>{% if sel_cls %}{% for c in classes %}{% if c.id == sel_cls %}{{ c.name }} · {% endif %}{% endfor %}{% endif %}{{ kids | length }}명 · {{ today }} 출력 · {{ me.name }}</span>
+    </div>
     <div class="sec-h no-print">
       <h2>원아 명부 · 주간 귀가 계획</h2><span class="n">{{ kids | length }}명</span>
       <span class="hint">아이 한 명이 한 줄 — 이 표에서 매일 명단이 자동 생성됩니다</span>

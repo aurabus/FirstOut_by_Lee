@@ -250,16 +250,74 @@ tr.is-wait .nm{box-shadow:inset 3px 0 var(--gold-2)}
   color:var(--ink-3);display:flex;gap:.6rem;flex-wrap:wrap;justify-content:space-between}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ── 인쇄물 ──
+   선생님들은 아직 종이를 함께 쓴다. 화면을 그대로 찍어내는 게 아니라
+   **손에 들고 다닐 서류**로 만든다: 머리글이 쪽마다 반복되고, 한 아이가
+   두 쪽에 걸쳐 잘리지 않고, 색이 아니라 선으로 구분된다. */
 @media print{
-  .bar,.foot,.no-print{display:none!important}
-  body{background:#fff;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .wrap{max-width:100%;padding:0}
-  .tw{border:1px solid #000;box-shadow:none}
-  .board .nm{position:static}
-  .tiles,.picks,.search,.sec-h,.legend{display:none!important}
-  .print-head{display:block!important;border-bottom:1.5px solid #000;padding-bottom:.4rem;
-    margin-bottom:.55rem;overflow:hidden}
-  .print-head span{float:right;font-family:var(--mono);font-size:.73rem}
+  @page{size:A4;margin:12mm 10mm}
+  html,body{background:#fff!important;color:#000!important}
+  body{font-size:9.5pt;line-height:1.35;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar,.foot,.no-print,.tiles,.picks,.search,.sec-h,.legend,.addbox,
+  .daybar,.msg,.ok-bar,.note,.empty,.cfg-note,.crumb{display:none!important}
+  .wrap{max-width:100%!important;padding:0!important;margin:0!important}
+  .sec{background:transparent;border:0;box-shadow:none;padding:0;margin:0 0 4mm}
+  a{color:#000;text-decoration:none}
+
+  /* 서류 머리 — 무슨 서류이고 언제 누가 뽑았는지 */
+  .print-head{display:flex!important;align-items:baseline;gap:3mm;
+    border-bottom:1.2pt solid #000;padding-bottom:1.5mm;margin-bottom:2.5mm}
+  .print-head b{font-size:13pt;font-weight:700}
+  .print-head span{margin-left:auto;font-size:8pt;color:#444;font-family:var(--mono)}
+
+  /* 표 — 쪽이 넘어가도 머리글이 따라간다 */
+  .tw{overflow:visible!important;border:0!important;box-shadow:none;border-radius:0}
+  .tw table{min-width:0!important;width:100%!important;border-collapse:collapse}
+  thead{display:table-header-group}
+  tfoot{display:table-footer-group}
+  tr{break-inside:avoid;page-break-inside:avoid}
+  th,td{border:.5pt solid #555!important;padding:1.1mm 1.4mm!important;
+    font-size:8.8pt;vertical-align:middle;white-space:normal}
+  thead th{background:#ECECEC!important;color:#000!important;font-weight:700;
+    text-align:center!important;border-color:#000!important}
+  tbody tr,tbody tr:nth-child(even){background:transparent!important}
+  tbody td{text-align:center}
+  tbody td:first-child{text-align:left;font-weight:700}
+  tbody td:last-child{text-align:left}
+  .board .nm{position:static;background:transparent!important;border-right:.5pt solid #555}
+  tr.is-late .nm,tr.is-wait .nm{box-shadow:none}
+
+  /* 색 딱지는 종이에서 글자로 — 흑백 프린터에서 뭉개지지 않게 */
+  .ty{background:transparent!important;border:0!important;color:#000!important;
+    padding:0!important;font-size:8.6pt;font-weight:400}
+  .z{color:#999!important}
+  .chg{border-color:#666!important;color:#000!important}
+
+  /* 출결부 */
+  .att{border:.8pt solid #000;border-radius:0;box-shadow:none}
+  .att-item{border-bottom:.5pt solid #666;break-inside:avoid;background:transparent!important}
+  .att-item:last-child{border-bottom:none}
+  .att-row{padding:1.3mm 2mm;gap:3mm}
+  .att-name{flex:0 0 26mm;border-left:0!important;padding-left:0;font-size:10pt;font-weight:700}
+  .att-meta{font-size:9pt;color:#000;gap:3mm}
+  .att-plan{border-color:#999!important}
+
+  /* 귀가 명단 */
+  .gl{border:.8pt solid #000;border-radius:0;box-shadow:none;margin-bottom:3mm;
+    break-inside:auto}
+  .gl-h{background:#ECECEC!important;color:#000!important;padding:1.2mm 2mm;
+    border-bottom:.6pt solid #000;font-size:9.5pt}
+  .gl-item{border-bottom:.5pt solid #666;break-inside:avoid;padding:0}
+  .gl-item:last-child{border-bottom:none}
+  .gl-row{padding:1.4mm 2mm;gap:3mm}
+  .gl-chk{border-color:#000!important;background:transparent!important;color:#000!important}
+  .gl-name{font-size:10pt;font-weight:700}
+  .gl-sub,.gl-t{font-size:8.5pt;color:#333!important}
+
+  /* 마무리 서명줄 */
+  .sign-row{border-top:.8pt solid #000;margin-top:3mm;padding-top:2mm;font-size:9pt;
+    display:flex;justify-content:space-between}
 }
 .print-head{display:none}
 
@@ -460,10 +518,6 @@ tr.is-change{background:var(--gold-soft)}
   .att-meta{margin-left:0}
   .reasons{padding-left:.7rem}
 }
-@media print{
-  .att-item{break-inside:avoid}
-  .att-name{flex:0 0 7rem}
-}
 
 /* ── 오늘만 추가 · 인계자 직접 입력 ── */
 .addbox{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
@@ -524,3 +578,8 @@ tr.is-change{background:var(--gold-soft)}
   border:1px solid var(--pine);border-radius:2px;padding:.1rem .3rem;white-space:nowrap}
 .sigshot{height:2.2rem;width:auto;max-width:8rem;background:#fff;border:1px solid var(--rule);
   border-radius:2px;padding:.1rem;vertical-align:middle}
+
+/* 명부 올리기 — 이미 있는 아이 표시 */
+.dupmark{font-size:.66rem;font-weight:700;color:var(--gold);background:var(--gold-soft);
+  border:1px solid var(--gold-line);border-radius:2px;padding:.03rem .28rem;margin-left:.3rem;
+  white-space:nowrap}

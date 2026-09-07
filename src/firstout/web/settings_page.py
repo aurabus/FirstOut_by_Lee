@@ -184,17 +184,22 @@ def round_save(
     rid: int,
     request: Request,
     at_time: str = Form(""),
-    note: str = Form(""),
+    note: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """시각은 매월·매 학기 바뀌므로 여기서 고친다."""
+    """시각은 매월·매 학기 바뀌므로 여기서 고친다.
+
+    비고 칸은 차량 차수에만 있다. 개별·돌봄에서 시각만 고칠 때 빈 값으로 덮어쓰면
+    「저녁·온종일」 같은 안내가 소리 없이 사라진다. 보내오지 않은 값은 두어야 한다.
+    """
     me, redirect = _guard(request, db)
     if redirect:
         return redirect
     r = _own(db, Round, rid, me)
     if r:
         r.at_time = at_time.strip() or r.at_time
-        r.note = clip(note, 60)
+        if note is not None:
+            r.note = clip(note, 60)
         db.commit()
     return _back("차수 시각 변경")
 

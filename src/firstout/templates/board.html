@@ -47,7 +47,10 @@
     <div class="sec-h"><h2>반별 현황</h2><span class="n">{{ stats | length }}개 반</span>
       <span class="hint no-print"><a class="btn sm" href="/attend{% if d %}?d={{ d }}{% endif %}">출결 등록</a></span>
     </div>
-    <div class="print-head"><b>{{ day }} 반별 귀가 현황</b><span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="print-head">
+      <b>{{ kinder.name }} 반별 귀가 현황</b>
+      <span>{{ day_ko }} {{ now.strftime('%H:%M') }} 기준 · {{ me.name }}</span>
+    </div>
     <div class="tw"><table class="board">
       <thead>
         <tr>

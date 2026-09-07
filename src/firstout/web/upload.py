@@ -134,19 +134,24 @@ def upload_apply(
     if not token or not f.exists():
         return _back("올린 파일을 찾을 수 없습니다 — 다시 올려주세요")
 
-    made = excel.apply(f.read_bytes(), db, me.kinder_id, replace=(mode == "replace"))
+    if mode not in ("add", "update", "replace"):
+        mode = "add"
+    made, changed = excel.apply(f.read_bytes(), db, me.kinder_id, mode=mode)
     try:
         f.unlink()   # 원아 정보가 담긴 파일은 바로 지운다
     except OSError:
         pass
 
-    if not made:
-        return _back("등록할 수 있는 줄이 없습니다")
-    return flash.put(
-        RedirectResponse("/roster", status_code=303),
-        f"원아 {made}명을 등록했습니다"
-        + (" (기존 명부는 지웠습니다)" if mode == "replace" else ""),
-    )
+    if not (made or changed):
+        return _back("등록하거나 고칠 줄이 없습니다")
+
+    said = []
+    if made:
+        said.append(f"원아 {made}명 등록")
+    if changed:
+        said.append(f"{changed}명 갱신")
+    tail = " (기존 명부는 지웠습니다)" if mode == "replace" else ""
+    return flash.put(RedirectResponse("/roster", status_code=303), " · ".join(said) + tail)
 
 
 @router.post("/upload/cancel")

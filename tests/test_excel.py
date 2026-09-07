@@ -138,7 +138,7 @@ def test_한_바퀴_돌아도_계획이_그대로다(db):
     data = excel.export_roster(db, KID)
     before = _plans(db)
 
-    assert excel.apply(data, db, KID, replace=True) == 2
+    assert excel.apply(data, db, KID, mode="replace") == (2, 0)
     assert _plans(db) == before
 
 
@@ -147,3 +147,88 @@ def test_원아가_없어도_양식은_나온다(db):
     data = excel.export_roster(db, KID)
     assert data[:2] == b"PK"
     assert excel.parse(data, db, KID).fatal        # 읽을 원아가 없다고 알려준다
+
+
+# ── 다시 올리기 ─────────────────────────────────────────
+
+def test_이미_있는_아이는_두_번_들어가지_않는다(db):
+    """「한 명 추가하려고 파일을 다시 올린다」가 가장 흔한 사용법이다.
+
+    그때마다 전원이 두 줄이 되면 귀가 명단에 같은 아이가 두 번 나오고,
+    한쪽만 서명한 채 다른 쪽이 남는다. 안전 문제다.
+    """
+    _seed(db)
+    data = excel.export_roster(db, KID)
+
+    made, changed = excel.apply(data, db, KID, mode="add")
+    assert (made, changed) == (0, 0)
+    assert len(list(db.scalars(select(Child)))) == 2
+
+
+def test_다시_올릴_때_새_아이만_들어온다(db):
+    _seed(db)
+    rooms = {c.name: c for c in service.classes(db, KID)}
+    p = excel.parse(excel.export_roster(db, KID), db, KID)
+    assert [r.name for r in p.known] == ["서아", "하준"]
+    assert p.fresh == []
+
+    # 파일에 한 명을 더 얹는다
+    c = Child(kinder_id=KID, name="새친구", class_id=rooms["지혜1"].id)
+    db.add(c)
+    db.flush()
+    db.add(Guardian(child_id=c.id, name="새엄마", relation="모", is_default=True, seq=0))
+    db.commit()
+    data = excel.export_roster(db, KID)
+    db.delete(c)
+    db.commit()
+
+    made, changed = excel.apply(data, db, KID, mode="add")
+    assert (made, changed) == (1, 0)
+    names = sorted(x.name for x in db.scalars(select(Child)))
+    assert names == ["새친구", "서아", "하준"]
+
+
+def test_맞추기를_고르면_계획이_갱신된다(db):
+    """「목요일부터 차량이에요」를 엑셀로 고쳐 올리는 경우."""
+    a, _ = _seed(db)
+    rnds = {r.name: r for r in service.rounds(db, KID)}
+    before = {p.weekday: p.round_id for p in a.plan}
+    assert before[3] is None                       # 목요일은 비어 있었다
+
+    data = excel.export_roster(db, KID)
+    for p in a.plan:
+        if p.weekday == 3:
+            p.round_id = rnds["1차 차량"].id       # 서버 쪽만 바꿔두고
+    db.commit()
+
+    made, changed = excel.apply(data, db, KID, mode="update")
+    assert (made, changed) == (0, 2)
+    a2 = db.scalar(select(Child).where(Child.name == "서아"))
+    assert {p.weekday: p.round_id for p in a2.plan}[3] is None   # 파일 기준으로 되돌아온다
+
+
+def test_맞추기는_보호자도_파일_기준으로_바꾼다(db):
+    a, _ = _seed(db)
+    data = excel.export_roster(db, KID)
+    db.add(Guardian(child_id=a.id, name="임시이모", relation="이모", seq=9))
+    db.commit()
+    assert len(a.guardians) == 3
+
+    excel.apply(data, db, KID, mode="update")
+    a2 = db.scalar(select(Child).where(Child.name == "서아"))
+    assert sorted(g.name for g in a2.guardians) == ["김철수", "박영희"]
+
+
+def test_반이_바뀌어도_같은_아이로_본다(db):
+    """진급하면 반이 바뀐다. 그때 두 줄이 되면 안 된다."""
+    a, _ = _seed(db)
+    rooms = service.classes(db, KID)
+    data = excel.export_roster(db, KID)
+    a.class_id = rooms[1].id
+    db.commit()
+
+    p = excel.parse(data, db, KID)
+    assert [r.name for r in p.known] == ["서아", "하준"]
+    made, changed = excel.apply(data, db, KID, mode="update")
+    assert made == 0
+    assert len(list(db.scalars(select(Child)))) == 2

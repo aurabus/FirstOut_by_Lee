@@ -39,8 +39,8 @@
 
   <div class="sec" style="padding-top:.1rem">
     <div class="print-head">
-      <b>{{ day }} {{ rnd.name }} 명단 · {{ rnd.at_time }}{% if rnd.note %} ({{ rnd.note }}){% endif %}</b>
-      <span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span>
+      <b>{{ kinder.name }} {{ rnd.name }} 명단 · {{ rnd.at_time }}{% if rnd.note %} ({{ rnd.note }}){% endif %}</b>
+      <span>{{ day_ko }} · {{ target | length }}명 · {{ me.name }}</span>
     </div>
     <div class="sec-h no-print">
       <h2>{{ rnd.name }} 명단</h2><span class="n">{{ target | length }}명</span>

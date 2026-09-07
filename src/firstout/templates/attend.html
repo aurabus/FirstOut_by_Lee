@@ -41,8 +41,10 @@
   </div>
 
   <div class="sec" style="padding-top:.1rem">
-    <div class="print-head"><b>{{ day }} {{ room.name }} 출결부</b>
-      <span>출력 {{ now.strftime('%H:%M') }} · {{ me.name }}</span></div>
+    <div class="print-head">
+      <b>{{ kinder.name }} {{ room.name }} 출결부</b>
+      <span>{{ day_ko }} · {{ rows | length }}명 · {{ me.name }}</span>
+    </div>
     <div class="sec-h no-print"><h2>{{ room.name }} 출결</h2><span class="n">{{ rows | length }}명</span>
       <span class="hint">전체 출석으로 찍고 결석·조퇴만 바꾸면 됩니다</span>
     </div>
