@@ -214,6 +214,7 @@ from .web import (  # noqa: E402
     board,
     child,
     connect,
+    help_page,
     lists,
     operator,
     roster,
@@ -223,7 +224,7 @@ from .web import (  # noqa: E402
 )
 
 for mod in (
-    attend, audit_page, auth, board, child, connect, lists,
+    attend, audit_page, auth, board, child, connect, help_page, lists,
     operator, roster, settings_page, upload, users,
 ):
     app.include_router(mod.router)

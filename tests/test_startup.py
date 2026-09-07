@@ -80,3 +80,38 @@ def test_안내문이_도착하는_화면은_모두_그것을_보여준다():
         if "{% if msg %}" not in (root / name).read_text(encoding="utf-8")
     ]
     assert missing == [], f"안내문을 보여주지 않는 화면: {missing}"
+
+
+def test_사용_안내가_바깥_자원을_쓰지_않는다():
+    """인터넷이 끊겨도 열려야 한다 — 글꼴도 그림도 서버 안에 있다.
+
+    안내를 밖에서 끌어오게 만들면, 정작 필요한 순간(연결이 이상할 때)에 안 열린다.
+    """
+    from pathlib import Path
+
+    import firstout
+
+    html = (Path(firstout.__file__).parent / "templates" / "help.html").read_text(
+        encoding="utf-8"
+    )
+    for outside in ("fonts.googleapis", "cdnjs", "jsdelivr", "http://", "https://"):
+        assert outside not in html, outside
+
+
+def test_사용_안내의_모든_대목에_갈_수_있다():
+    """화면에서 「? 도움말」을 눌렀을 때 없는 자리로 보내면 안 된다."""
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    root = Path(firstout.__file__).parent / "templates"
+    help_html = (root / "help.html").read_text(encoding="utf-8")
+    have = set(re.findall(r'<section class="hp" id="([^"]+)">', help_html))
+    assert len(have) >= 10
+
+    wanted = set()
+    for f in root.glob("*.html"):
+        wanted |= set(re.findall(r'href="/help#([^"]+)"', f.read_text(encoding="utf-8")))
+    assert wanted, "화면에서 안내로 가는 길이 하나도 없다"
+    assert wanted <= have, f"없는 대목으로 보낸다: {wanted - have}"

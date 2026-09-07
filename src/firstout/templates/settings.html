@@ -7,7 +7,7 @@
   {% if msg %}<p class="msg">{{ msg }}</p>{% endif %}
 
   <div class="sec" style="padding-top:1rem">
-    <div class="sec-h"><h2>반 관리</h2><span class="n">{{ classes | length }}개</span>
+    <div class="sec-h"><h2>반 관리</h2><a class="hp-go no-print" href="/help#h-setup" title="사용 안내 — 처음 시작하기">? 도움말</a><span class="n">{{ classes | length }}개</span>
       <span class="hint">
         <form method="post" action="/settings/class/add" style="display:flex;gap:.3rem">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
