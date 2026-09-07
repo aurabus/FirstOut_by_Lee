@@ -57,6 +57,11 @@
   document.addEventListener("click", function (e) {
     if (e.target.closest("[data-print]")) { e.preventDefault(); window.print(); }
   });
+  /* 되돌릴 수 없는 단추는 한 번 더 묻는다 */
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-confirm]");
+    if (el && !window.confirm(el.dataset.confirm)) { e.preventDefault(); }
+  });
   document.addEventListener("change", function (e) {
     var el = e.target.closest("[data-autosubmit]");
     if (el && el.form) { el.form.requestSubmit(); }

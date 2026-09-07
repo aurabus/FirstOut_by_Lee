@@ -15,7 +15,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import flash, invites, reauth
+from .. import flash, invites, limits, reauth
+from ..csrf import client_ip
 from ..db import get_db
 from ..models import (
     KG_ACTIVE,
@@ -162,6 +163,10 @@ def signup(
 
     def back(msg: str) -> RedirectResponse:
         return RedirectResponse(f"/signup?error={msg}", status_code=303)
+
+    # 신청 한 번에 유치원·반·차수·계정이 스무 줄쯤 만들어진다. 밀려 들어오면 막는다.
+    if blocked := limits.signup_blocked(db, client_ip(request.scope)):
+        return back(blocked)
 
     if not (kinder_name and name and login_id):
         return back("유치원 이름 · 원장님 성함 · 아이디를 모두 입력해 주세요")

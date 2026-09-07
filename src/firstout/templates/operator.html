@@ -32,9 +32,10 @@
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <button class="btn go">승인</button>
         </form>
-        <form method="post" action="/operator/{{ k.id }}/suspend">
+        <form method="post" action="/operator/{{ k.id }}/reject">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="btn sm del">거절</button>
+          <button class="btn sm del"
+                  data-confirm="{{ k.name }} 가입 신청을 지웁니다. 되돌릴 수 없습니다.">거절</button>
         </form>
       </div>
       {% endfor %}

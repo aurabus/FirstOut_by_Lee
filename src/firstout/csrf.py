@@ -149,7 +149,7 @@ class AuditMiddleware:
                     method=scope.get("method", ""),
                     path=path,
                     status=status,
-                    ip=_client_ip(scope),
+                    ip=client_ip(scope),
                     agent=_header(scope, b"user-agent"),
                 )
                 # 한 시간에 한 번만 뒷정리를 한다 — 매 요청마다 훑을 일이 아니다.
@@ -185,8 +185,11 @@ def _cookie_named(scope, want: str) -> str | None:
     return None
 
 
-def _client_ip(scope) -> str:
-    """프록시 뒤에서는 진짜 접속지가 헤더에 담겨 온다."""
+def client_ip(scope) -> str:
+    """프록시 뒤에서는 진짜 접속지가 헤더에 담겨 온다.
+
+    감사 로그와 속도 제한이 **같은 값**을 봐야 셈이 맞으므로 여기 한 곳에서만 정한다.
+    """
     fwd = _header(scope, b"x-forwarded-for")
     if fwd:
         return fwd.split(",")[0].strip()

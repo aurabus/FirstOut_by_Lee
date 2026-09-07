@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from .. import backup, flash
@@ -18,8 +18,14 @@ from ..models import (
     KG_ACTIVE,
     KG_PENDING,
     KG_SUSPENDED,
+    Academy,
+    AuditLog,
+    Bus,
     Child,
+    ClassRoom,
+    Invite,
     Kindergarten,
+    Round,
     User,
 )
 from . import clip
@@ -121,3 +127,45 @@ def memo(kid: int, request: Request, memo: str = Form(""), db: Session = Depends
         k.memo = clip(memo, 200)
         db.commit()
     return _back("메모 저장")
+
+
+@router.post("/operator/{kid}/reject")
+def reject(kid: int, request: Request, db: Session = Depends(get_db)):
+    """가입 신청을 지운다 — 장난 신청이 쌓이면 진짜 신청이 묻힌다.
+
+    안전 장치를 두 겹 둔다. **승인대기 상태이면서 원아가 한 명도 없을 때만** 지운다.
+    쓰고 있는 유치원이 잘못 눌러 사라지는 일은 어떤 경우에도 없어야 한다.
+
+    감사 로그는 남긴다. 「그런 신청이 있었고 우리가 지웠다」가 기록이기 때문이다.
+    """
+    _, redirect = _guard(request, db)
+    if redirect:
+        return redirect
+
+    k = db.get(Kindergarten, kid)
+    if k is None:
+        return _back()
+    if k.status != KG_PENDING:
+        return _back(f"{k.name} 은(는) 승인대기 상태가 아니라 지울 수 없습니다")
+
+    kids = db.scalar(select(func.count(Child.id)).where(Child.kinder_id == k.id))
+    if kids:
+        return _back(f"{k.name} 에 원아 {kids}명이 등록되어 있어 지울 수 없습니다")
+
+    name = k.name
+    users = list(db.scalars(select(User).where(User.kinder_id == k.id)))
+    uids = [u.id for u in users]
+
+    # 기록은 남기되 사라진 것을 가리키지 않게 한다
+    if uids:
+        db.execute(delete(Invite).where(Invite.user_id.in_(uids)))
+        db.execute(
+            update(AuditLog).where(AuditLog.user_id.in_(uids)).values(user_id=None)
+        )
+    db.execute(update(AuditLog).where(AuditLog.kinder_id == k.id).values(kinder_id=None))
+
+    for model in (Round, Academy, Bus, ClassRoom, User):
+        db.execute(delete(model).where(model.kinder_id == k.id))
+    db.delete(k)
+    db.commit()
+    return _back(f"{name} 가입 신청을 지웠습니다")
