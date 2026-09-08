@@ -31,24 +31,38 @@ jobs:
       - name: 이미지 만들기
         run: docker build -t majung:latest .
 
+      # 컨테이너 이름은 영문만 쓴다. 한글로 지으면 도커가 이름을 거절하고
+      # 「exit code 125」만 남기고 끝난다 — 실제로 한 번 그렇게 실패했다.
       - name: 제대로 만들어졌는지 한 번 돌려 본다
         run: |
-          docker run -d --name 시험 \
+          set -x
+          docker run -d --name smoke \
             -e MAJUNG_SECRET=ci-only-not-a-real-secret-value-1234567890 \
             -p 8000:8000 majung:latest
           for i in $(seq 1 40); do
-            if curl -fsS http://127.0.0.1:8000/health > /dev/null; then break; fi
+            if curl -fsS http://127.0.0.1:8000/health > /dev/null 2>&1; then break; fi
             sleep 2
           done
+          set +x
           echo "── /health ──"
           curl -fsS http://127.0.0.1:8000/health
           echo
           echo "── 로그인 화면이 그려지는가 ──"
-          curl -fsS http://127.0.0.1:8000/signin | grep -q "손잡고" \
-            && echo "좋음: 화면이 그려집니다"
+          curl -fsS http://127.0.0.1:8000/signin | grep -q "손잡고"
+          echo "좋음: 화면이 그려집니다"
           echo "── 시각이 한국인가 ──"
-          docker exec 시험 date
-          docker rm -f 시험
+          docker exec smoke date
+
+      # 실패했을 때 까닭을 볼 수 있게 컨테이너가 남긴 말을 찍어 둔다
+      - name: 안 됐으면 로그를 보여준다
+        if: failure()
+        run: |
+          docker ps -a
+          docker logs smoke || true
+
+      - name: 치우기
+        if: always()
+        run: docker rm -f smoke || true
 
       - name: 파일로 내보내기
         run: |

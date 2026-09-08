@@ -357,3 +357,26 @@ def test_NAS_에_올리는_스크립트가_빠뜨린_것을_챙긴다():
                   "docker-compose",          # 옛 DSM 도 받아준다
                   "/health"):                # 살아났는지 실제로 확인한다
         assert 챙길것 in sh, f"nas-up.sh 가 {챙길것} 을 챙기지 않는다"
+
+
+def test_도커_이름은_영문만_쓴다():
+    """컨테이너·이미지 이름에 한글을 쓰면 도커가 거절한다.
+
+    실제로 `--name 시험` 이라고 지었다가 「exit code 125」만 남기고 끝났다.
+    까닭이 로그에도 잘 안 보여서 한참 헤맸다. 도커가 받는 이름은
+    [a-zA-Z0-9][a-zA-Z0-9_.-]* 뿐이다.
+    """
+    import re
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    좋은이름 = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
+    for f in list((뿌리 / ".github" / "workflows").glob("*.yml")) + [
+        뿌리 / "docker-compose.yml"
+    ]:
+        글 = f.read_text(encoding="utf-8")
+        이름들 = set(re.findall(r"--name\s+(\S+)", 글))
+        이름들 |= set(re.findall(r"container_name:\s*(\S+)", 글))
+        이름들 |= set(re.findall(r"^\s*image:\s*(\S+)", 글, re.M))
+        나쁜 = sorted(n for n in 이름들 if not 좋은이름.match(n.split(":")[0]))
+        assert not 나쁜, f"{f.name}: 도커가 거절할 이름 {나쁜}"
