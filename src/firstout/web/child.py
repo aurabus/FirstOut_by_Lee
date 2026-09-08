@@ -90,9 +90,18 @@ def show(cid: int, request: Request, db: Session = Depends(get_db)):
             .limit(RECENT)
         )
     )
+    from .. import retention
+    from ..main import today
+
+    left_in = None
+    if not child.active and child.left_on:
+        left_in = max(0, retention.KEEP_DAYS - (today() - child.left_on).days)
+
     return page(
         request, "child.html", db, me,
         child=child,
+        keep_days=retention.KEEP_DAYS,
+        left_in=left_in,
         academies=_academies(db, me.kinder_id),
         plans=plans,
         history=history,
@@ -135,6 +144,8 @@ def leave(cid: int, request: Request, db: Session = Depends(get_db)):
     지난 귀가 기록의 주인이 사라지면 「그때 누가 데려갔나」를 되짚을 수 없다.
     다시 오는 아이도 있으므로 되돌릴 수 있게 둔다.
     """
+    from ..main import pick_date
+
     me, redirect = _me(request, db)
     if redirect:
         return redirect
@@ -144,11 +155,17 @@ def leave(cid: int, request: Request, db: Session = Depends(get_db)):
     if child is None:
         return RedirectResponse("/roster", status_code=303)
 
+    from .. import retention
+
     child.active = not child.active
+    child.left_on = None if child.active else pick_date("")
     word = "다시 등원" if child.active else "퇴원"
     room = child.classroom.name if child.classroom else ""
     request.state.audit_note = f"{child.name}{' · ' + room if room else ''} {word}"
     db.commit()
+    if not child.active:
+        return _back(cid, f"{child.name} — 퇴원 처리했습니다 "
+                          f"({retention.KEEP_DAYS}일 뒤 자료가 지워집니다)")
     return _back(cid, f"{child.name} — {word} 처리했습니다")
 
 

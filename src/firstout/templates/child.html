@@ -158,16 +158,22 @@
         <span style="flex:1">
           {% if child.active %}
           <b>퇴원 처리하면 오늘부터 명단에 나오지 않습니다.</b>
-          <em class="sub">지난 귀가 기록은 그대로 남습니다 — 「그때 누가 데려갔나」를 되짚을 수 있어야 하니까요.
-            다시 오면 되돌릴 수 있습니다.</em>
+          <em class="sub">{{ keep_days }}일 동안은 지난 귀가 기록을 그대로 되짚을 수 있고,
+            그 뒤에는 이 아이의 자료가 모두 지워집니다 — 다른 기록과 같은 보관 기간입니다.
+            그 전에 다시 오면 되돌릴 수 있습니다.</em>
           {% else %}
           <b>퇴원 처리된 아이입니다.</b>
-          <em class="sub">다시 등원하면 눌러주세요. 예전 계획과 인계자가 그대로 살아납니다.</em>
+          <em class="sub">
+            {% if left_in is not none %}자료는 <strong>{{ left_in }}일 뒤</strong>에 지워집니다.
+            {% endif %}다시 등원하면 눌러주세요 — 예전 계획과 인계자가 그대로 살아나고,
+            지워지는 것도 멈춥니다.</em>
           {% endif %}
         </span>
         <form method="post" action="/child/{{ child.id }}/leave">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="btn sm {% if child.active %}del{% endif %}">
+          <button class="btn sm {% if child.active %}del{% endif %}"
+            {%- if child.active %} data-confirm="{{ child.name }} 을(를) 퇴원 처리합니다.
+{{ keep_days }}일 뒤에는 이 아이의 자료가 모두 지워집니다."{% endif %}>
             {% if child.active %}퇴원 처리{% else %}다시 등원{% endif %}</button>
         </form>
       </div>

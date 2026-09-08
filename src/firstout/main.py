@@ -173,6 +173,10 @@ def _startup() -> None:
         if sigs:
             print(f"  서명 {sigs}건 삭제 (한 달 지난 그림)")
 
+        left = retention.purge_left_children(db)
+        if left:
+            print(f"  퇴원 원아 {left}명 자료 삭제 (한 달 지난 기록)")
+
         try:
             note, dropped = backup.run()
             print(f"  {note}" + (f" · 오래된 사본 {dropped}개 정리" if dropped else ""))

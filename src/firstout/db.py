@@ -49,12 +49,25 @@ def _add_columns() -> None:
     """
     from sqlalchemy import text
 
-    want = {("audit_log", "detail"): "varchar(200) not null default ''"}
+    want = {
+        ("audit_log", "detail"): "varchar(200) not null default ''",
+        ("child", "left_on"): "date",
+    }
     with engine.begin() as conn:
         for (table, column), kind in want.items():
             have = {r[1] for r in conn.execute(text(f"pragma table_info({table})"))}
+            if not have:
+                continue        # 아직 없는 표는 create_all 이 칸까지 만들어 준다
             if column not in have:
                 conn.execute(text(f"alter table {table} add column {column} {kind}"))
+
+        # 이미 퇴원해 있던 아이는 언제 나갔는지 알 수 없다. 오늘부터 센다 —
+        # 모르는 날짜로 지우기보다 낫고, 안 세면 영영 남는다.
+        if {r[1] for r in conn.execute(text("pragma table_info(child)"))}:
+            conn.execute(text(
+                "update child set left_on = date('now', 'localtime') "
+                "where active = 0 and left_on is null"
+            ))
 
 
 def _rename_roles() -> None:

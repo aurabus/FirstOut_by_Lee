@@ -186,6 +186,9 @@ class Child(Base):
     class_id: Mapped[int] = mapped_column(ForeignKey("classroom.id"))
     note: Mapped[str] = mapped_column(String(200), default="")  # 알레르기·투약 등
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 퇴원한 날. 여기서부터 보관 기간을 센다 (retention.purge_left_children).
+    # 다시 등원하면 비운다 — 세던 것을 멈춰야 한다.
+    left_on: Mapped[dt.date | None] = mapped_column(Date, nullable=True)
 
     classroom: Mapped[ClassRoom] = relationship(back_populates="children")
     guardians: Mapped[list[Guardian]] = relationship(

@@ -164,6 +164,7 @@ class AuditMiddleware:
 
                     audit.purge_old(db)
                     retention.purge_signatures(db)
+                    retention.purge_left_children(db)
                     invites.sweep(db)
                     backup.run()          # 오늘 사본이 이미 있으면 아무것도 하지 않는다
         except Exception:   # noqa: BLE001 — 기록 실패가 서비스를 멈추면 안 된다
