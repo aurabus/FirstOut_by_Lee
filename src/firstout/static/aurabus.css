@@ -165,7 +165,8 @@ form{margin:0}
    칸 수를 고정하지 않는다 — 화면마다 개수가 다르고, 빈 칸이 남으면
    숫자가 한쪽으로 몰려 읽기 어려워진다 */
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));
-  gap:var(--gap);margin:1.05rem 0}
+  gap:var(--gap);margin:1.05rem 0;max-width:46rem}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
 .tile{background:var(--card);border:var(--bw) solid var(--rule);
   border-radius:var(--r);padding:.7rem .9rem .75rem;box-shadow:var(--sh)}
 .tile dt{font-size:var(--t-xs);color:var(--ink-3);font-weight:500}
@@ -272,6 +273,8 @@ tbody td{padding:.48rem .7rem;border-bottom:1px solid var(--rule-2);text-align:r
   font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:none}
 .tx{text-align:left!important}
+thead th.tx,tbody td.tx{text-align:left}
+thead th:first-child,thead th.tx{text-align:left}
 
 /* ── 대화상자 ──────────────────────────────────────────────────── */
 .dlg{border:none;padding:0;border-radius:var(--r);background:var(--card);

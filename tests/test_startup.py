@@ -141,3 +141,38 @@ def test_화면이_쓰는_모든_class_가_CSS_에_있다():
             used |= {n for n in m.split() if n and n[0].isascii() and n[0].isalpha()}
 
     assert used <= defined, f"CSS 에 없는 class: {sorted(used - defined)}"
+
+
+def test_CSS_중괄호가_맞는다():
+    """닫는 중괄호 하나가 모자라면 그 뒤 규칙이 통째로 먹히지 않는다.
+
+    CSS 를 두 파일로 나누다가 여러 줄짜리 규칙을 첫 줄에서 잘라, 닫는 중괄호 여섯 개가
+    사라진 적이 있다. 화면이 통째로 깨졌는데 아무 오류도 나지 않았다 —
+    브라우저는 잘못된 CSS 를 조용히 건너뛰기 때문이다.
+    """
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    static = Path(firstout.__file__).parent / "static"
+    for name in ("aurabus.css", "app.css"):
+        text = re.sub(r"/\*.*?\*/", "", (static / name).read_text(encoding="utf-8"),
+                      flags=re.S)
+        opened, closed = text.count("{"), text.count("}")
+        assert opened == closed, f"{name}: 여는 {opened} · 닫는 {closed}"
+
+
+def test_화면용_규칙이_인쇄_안에_갇히지_않는다():
+    """@media print 안에만 있는 규칙은 화면에서 아무 일도 하지 않는다."""
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    static = Path(firstout.__file__).parent / "static"
+    css = " ".join((static / n).read_text(encoding="utf-8")
+                   for n in ("aurabus.css", "app.css"))
+    outside = re.sub(r"@media print\{(?:[^{}]|\{[^{}]*\})*\}", "", css, flags=re.S)
+    for sel in (".gl", ".gl-item", ".att", ".att-item", ".board", ".tiles", ".btn"):
+        assert re.search(re.escape(sel) + r"\{", outside), f"{sel} 이 인쇄 안에만 있다"
