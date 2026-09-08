@@ -122,19 +122,19 @@
     <div class="tw">
       <table class="board">
         <thead><tr>
-          <th class="nm">날짜</th><th class="tx">방법</th><th class="tx">인계받은 분</th>
-          <th class="tx">시각</th><th class="tx">처리</th><th class="tx">서명</th>
+          <th class="nm">날짜</th><th>방법</th><th>인계받은 분</th>
+          <th>시각</th><th>처리</th><th>서명</th>
         </tr></thead>
         <tbody>
           {% for h in history %}
           <tr>
             <td class="nm">{{ h.on_date }}</td>
-            <td class="tx">{{ h.round.name if h.round else "—" }}</td>
-            <td class="tx">{{ h.receiver or h.how or "—" }}
+            <td>{{ h.round.name if h.round else "—" }}</td>
+            <td>{{ h.receiver or h.how or "—" }}
               {% if h.memo %}<em class="sub">{{ h.memo }}</em>{% endif %}</td>
-            <td class="tx">{{ h.done_at.strftime('%H:%M') if h.done_at else "—" }}</td>
-            <td class="tx">{{ h.teacher.name if h.teacher else "—" }}</td>
-            <td class="tx">
+            <td>{{ h.done_at.strftime('%H:%M') if h.done_at else "—" }}</td>
+            <td>{{ h.teacher.name if h.teacher else "—" }}</td>
+            <td>
               {% if h.signature %}
               <img class="sigshot" src="{{ h.signature }}" alt="{{ h.on_date }} 서명"
                    loading="lazy">

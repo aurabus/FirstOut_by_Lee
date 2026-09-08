@@ -9,6 +9,9 @@
    공통 표(aurabus.css)는 뼈대만 잡는다. 여기는 이 프로그램의 열과 색이다. */
 .board{min-width:42rem}
 .board thead tr:first-child th{border-bottom:1px solid var(--rule-2);padding-bottom:.26rem}
+/* 두 줄에 걸친 머리글(반·총원·진행)은 아래 줄과 같은 자리에서 끝나야 한다.
+   그러지 않으면 머리글 아래 초록 선이 토막토막 끊겨 보인다. */
+.board thead tr:first-child th[rowspan]{border-bottom:2px solid var(--key-line)}
 .board thead tr:first-child th.gh{font-size:.68rem;letter-spacing:.05em;color:var(--pine);
   text-align:center;font-weight:700}
 .board thead tr:last-child th{padding-top:.26rem}
@@ -651,6 +654,6 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:var(--r-sm);
 .sug-acts{display:flex;gap:.4rem;align-items:center}
 
 /* 운영 화면의 유치원 줄 — 단추가 겹치지 않게 한 줄로 */
-.kacts{display:flex;gap:.3rem;flex-wrap:wrap;align-items:center}
+.kacts{display:flex;gap:.3rem;flex-wrap:wrap;align-items:center;justify-content:center}
 .kacts form{display:inline-flex}
 .kmemo{display:flex;gap:.3rem;align-items:center}

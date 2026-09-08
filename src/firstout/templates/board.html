@@ -86,7 +86,7 @@
           <th rowspan="2">반</th><th rowspan="2">총원</th>
           <th colspan="2" class="gh grp">출결</th>
           <th colspan="2" class="gh grp">귀가 현황</th>
-          <th rowspan="2" class="grp tx">진행</th>
+          <th rowspan="2" class="grp">귀가 진행률</th>
         </tr>
         <tr>
           <th class="grp">결석</th><th>조퇴</th>
@@ -97,13 +97,13 @@
         {% for s in stats %}
         {% set out = s.absent + s.early %}
         <tr>
-          <td class="tx nm">{{ s.room.name }}</td>
+          <td class="nm">{{ s.room.name }}</td>
           <td class="v-tot">{{ s.total }}</td>
           <td class="grp {% if s.absent %}v-abs{% else %}z{% endif %}">{{ s.absent or '·' }}</td>
           <td class="{% if s.early %}v-early{% else %}z{% endif %}">{{ s.early or '·' }}</td>
           <td class="grp v-home">{{ s.home }}</td>
           <td class="v-left">{{ s.staying }}</td>
-          <td class="tx grp">
+          <td class="grp">
             {% if s.total %}
             <span class="bar-g" title="귀가 {{ s.home }} · 현원 {{ s.staying }} · 결석조퇴 {{ out }}">
               <i class="b-home" style="width:{{ (s.home / s.total * 100) | round(1) }}%"></i>
@@ -115,10 +115,10 @@
         </tr>
         {% endfor %}
         <tr class="tot">
-          <td class="tx nm">합계</td><td class="v-tot">{{ total.total }}</td>
+          <td class="nm">합계</td><td class="v-tot">{{ total.total }}</td>
           <td class="grp v-abs">{{ total.absent }}</td><td class="v-early">{{ total.early }}</td>
           <td class="grp v-home">{{ total.home }}</td><td class="v-left">{{ total.staying }}</td>
-          <td class="tx grp"></td>
+          <td class="grp"></td>
         </tr>
       </tbody>
     </table></div>

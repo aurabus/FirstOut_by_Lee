@@ -61,18 +61,18 @@
     {% if kids %}
     <div class="tw"><table style="min-width:46rem">
       <thead><tr>
-        <th class="tx">이름</th><th class="tx">반</th>
-        {% for d in weekdays %}<th class="tx">{{ d }}</th>{% endfor %}
+        <th>이름</th><th>반</th>
+        {% for d in weekdays %}<th>{{ d }}</th>{% endfor %}
         <th class="tx">기본 인계자</th>
       </tr></thead>
       <tbody>
         {% for k in kids %}
         <tr>
-          <td class="tx"><a class="klink" href="/child/{{ k.id }}"><b>{{ k.name }}</b></a></td>
-          <td class="tx">{{ k.classroom.name }}</td>
+          <td><a class="klink" href="/child/{{ k.id }}"><b>{{ k.name }}</b></a></td>
+          <td>{{ k.classroom.name }}</td>
           {% for wd in range(5) %}
             {% set p = plans[k.id].get(wd) %}
-            <td class="tx">
+            <td>
               {% if p and p.round %}
                 {% if p.academy %}
                   <span class="ty 학원">학원({{ p.academy.name }})</span>

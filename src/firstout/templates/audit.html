@@ -39,21 +39,21 @@
     {% if rows %}
     <div class="tw"><table style="min-width:38rem">
       <thead><tr>
-        <th class="tx">시각</th><th class="tx">사용자</th><th class="tx">한 일</th>
-        <th class="tx">결과</th><th class="tx">접속지</th>
+        <th>시각</th><th>사용자</th><th class="tx">한 일</th>
+        <th>결과</th><th>접속지</th>
       </tr></thead>
       <tbody>
         {% for r in rows %}
         {% set said = r.said %}
         <tr class="{% if r.changed %}is-change{% endif %}">
-          <td class="tx n-f">{{ r.at.strftime('%H:%M:%S') }}</td>
-          <td class="tx">{% if r.user_name %}<b>{{ r.user_name }}</b>{% else %}<span class="z">로그인 전</span>{% endif %}</td>
+          <td class="n-f">{{ r.at.strftime('%H:%M:%S') }}</td>
+          <td>{% if r.user_name %}<b>{{ r.user_name }}</b>{% else %}<span class="z">로그인 전</span>{% endif %}</td>
           <td class="tx">
             {% if r.changed %}<span class="chg">변경</span>{% else %}<span class="vw">접속</span>{% endif %}
             {{ r.action }}
             {% if r.detail %}<em class="what">{{ r.detail }}</em>{% endif %}</td>
-          <td class="tx"><span class="res {{ said[1] }}">{{ said[0] }}</span></td>
-          <td class="tx n-f" style="font-size:.75rem;color:var(--ink-3)">{{ r.ip }}</td>
+          <td><span class="res {{ said[1] }}">{{ said[0] }}</span></td>
+          <td class="n-f" style="font-size:.75rem;color:var(--ink-3)">{{ r.ip }}</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -276,15 +276,20 @@ form{margin:0}
 .tw{overflow-x:auto;background:var(--card);border:var(--bw) solid var(--rule);
   border-radius:var(--r);box-shadow:var(--sh-2)}
 table{border-collapse:collapse;width:100%}
-thead th{font-size:var(--t-xs);color:var(--ink);font-weight:700;text-align:right;
+/* 머리글은 언제나 가운데. 값도 가운데가 기본이다 — 금액처럼 자릿수를 맞춰 읽는
+   숫자가 아니면 오른쪽 정렬은 머리글과 따로 놀아 보인다. */
+thead th{font-size:var(--t-xs);color:var(--ink);font-weight:700;text-align:center;
   padding:.55rem .7rem;border-bottom:2px solid var(--key-line);white-space:nowrap;
   background:var(--head);letter-spacing:.02em}
-tbody td{padding:.48rem .7rem;border-bottom:1px solid var(--rule-2);text-align:right;
+tbody td{padding:.48rem .7rem;border-bottom:1px solid var(--rule-2);text-align:center;
   font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:none}
-.tx{text-align:left!important}
-thead th.tx,tbody td.tx{text-align:left}
-thead th:first-child,thead th.tx{text-align:left}
+/* 글이 긴 칸만 왼쪽 — 가운데로 두면 줄마다 시작점이 달라 눈이 헤맨다 */
+.tx{text-align:left}
+tbody td.tx{text-align:left}
+thead th.tx{text-align:center}
+/* 자릿수를 맞춰 읽어야 하는 값에만 오른쪽 (금액·수량) */
+.num{text-align:right!important;font-variant-numeric:tabular-nums}
 
 /* ── 대화상자 ──────────────────────────────────────────────────── */
 .dlg{border:none;padding:0;border-radius:var(--r);background:var(--card);

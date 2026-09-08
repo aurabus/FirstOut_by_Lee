@@ -48,7 +48,7 @@
     <div class="tw"><table style="min-width:40rem">
       <thead><tr>
         <th class="tx">유치원</th><th class="tx">총괄 관리자</th><th>계정</th><th>원아</th>
-        <th class="tx">상태</th><th class="tx">관리</th><th class="tx">우리 메모</th>
+        <th>상태</th><th>관리</th><th class="tx">우리 메모</th>
       </tr></thead>
       <tbody>
         {% for k in kinders %}
@@ -59,11 +59,11 @@
           <td class="tx">{% if o %}{{ o.name }}<span class="sub">{{ o.login_id }}</span>{% else %}—{% endif %}</td>
           <td>{{ user_counts.get(k.id, 0) }}</td>
           <td>{{ kid_counts.get(k.id, 0) }}</td>
-          <td class="tx">
+          <td>
             <span class="ustate {% if k.usable %}ok{% elif k.status == '승인대기' %}wait{% else %}off{% endif %}">
               {{ k.status }}</span>
           </td>
-          <td class="tx">
+          <td>
             <div class="kacts">
               {% if k.usable %}
               <form method="post" action="/operator/{{ k.id }}/view">
