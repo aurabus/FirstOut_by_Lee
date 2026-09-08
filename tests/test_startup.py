@@ -319,3 +319,24 @@ def test_홈페이지_자리와_자료_자리가_붙어_있다():
         "site 에 index.html 도 main.html 도 없다 — 「/」 로 들어오면 아무것도 안 나온다"
     conf = (뿌리 / "deploy" / "site-nginx.conf").read_text(encoding="utf-8")
     assert "index index.html main.html;" in conf, "nginx 가 main.html 을 첫 화면으로 안 본다"
+
+
+def test_미리보기와_실제_서버가_같은_첫화면을_연다():
+    """내 PC 미리보기와 NAS 의 nginx 가 다른 화면을 열면 미리보기가 소용없다.
+
+    이 홈페이지는 첫 화면이 index.html 이 아니라 main.html 이다. 그 규칙이
+    두 군데(nginx 설정과 미리보기 도구)에 적혀 있으므로 어긋나지 않는지 본다.
+    """
+    import re
+    import sys
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(뿌리 / "tools"))
+    import site_serve
+
+    conf = (뿌리 / "deploy" / "site-nginx.conf").read_text(encoding="utf-8")
+    m = re.search(r"^\s*index\s+([^;]+);", conf, re.M)
+    assert m, "nginx 설정에 index 줄이 없다"
+    nginx = tuple(m.group(1).split())
+    assert site_serve.첫화면 == nginx, f"미리보기 {site_serve.첫화면} ≠ nginx {nginx}"

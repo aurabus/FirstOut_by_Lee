@@ -1,8 +1,11 @@
 # 아우라버스 홈페이지가 들어올 자리
 
-> 파일을 넣으신 뒤 저장소 맨 위의 **`site-check.bat`** 을 두 번 누르세요.
-> 빠진 파일이 있으면 화면이 깨지기 전에 알려줍니다.
-> (검은 창에서 하시려면 `python tools/site_check.py`)
+> 저장소 맨 위에 두 번 눌러 쓰는 파일이 둘 있습니다.
+>
+> - **`site-check.bat`** — 빠진 파일이 없는지 살펴봅니다
+> - **`site-preview.bat`** — 내 PC 에서 홈페이지를 열어 봅니다 (NAS 와 같은 방식)
+>
+> 검은 창에서 하시려면 `python tools/site_check.py` · `python tools/site_serve.py`
 
 이 폴더의 내용이 그대로 `www.aurabus.com` 이 됩니다. 지금은 자리만 잡아둔
 `index.html` 하나가 들어 있습니다 — 진짜 홈페이지 파일을 가져와 **덮어쓰면** 됩니다.
