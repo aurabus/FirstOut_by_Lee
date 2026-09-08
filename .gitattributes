@@ -1,0 +1,27 @@
+# 줄바꿈을 못박아 둔다.
+#
+# 윈도우에서 고친 파일은 줄 끝에 보이지 않는 글자(CR)가 붙는다. 그 파일이
+# 리눅스(도커·NAS)로 건너가면 이런 일이 난다.
+#
+#     /bin/sh: bad interpreter: /bin/sh^M
+#
+# 무엇이 잘못됐는지 알아보기 어려운 오류라, 아예 나지 않게 막는다.
+# 지금은 우연히 다 LF 로 담겨 있지만 「우연히」에 기대지 않는다.
+
+* text=auto eol=lf
+
+# 윈도우에서 두 번 눌러 쓰는 것만 CRLF 로 둔다
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# 손대지 않는 것들
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff2 binary
+*.xlsx binary
+*.db   binary
+*.tar  binary

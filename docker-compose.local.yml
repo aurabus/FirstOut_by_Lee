@@ -1,0 +1,17 @@
+# 내 PC(윈도우)에서 시험할 때만 함께 쓴다.
+#
+#     docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# 왜 따로 두나 — 윈도우는 폴더의 「주인」 개념이 리눅스와 달라서, NAS 에서 쓰는
+# user: 번호를 그대로 두면 자료 폴더에 쓰지 못한다. 내 PC 에서는 그냥 root 로 돈다.
+#
+# **NAS 에서는 이 파일을 쓰지 않습니다.** 거기서는 docker-compose.yml 만 씁니다.
+
+services:
+  majung:
+    # 윈도우 바인드 마운트에는 주인이 따로 없다 — 번호를 맞출 것이 없다
+    user: "0:0"
+    environment:
+      # 내 PC 에서만 보므로 프록시 뒤가 아니다. 접속지를 헤더에서 읽지 않는다.
+      MAJUNG_PROXY_HOPS: "0"
+      MAJUNG_PUBLIC_URL: ""
