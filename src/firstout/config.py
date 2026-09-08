@@ -44,8 +44,17 @@ APP_TAGLINE = "아이를 안전하게, 집으로"
 # 세션 서명 키. 이 값을 아는 사람은 남의 로그인 세션을 만들어낼 수 있으므로
 # 운영에서는 반드시 환경변수로 덮어써야 한다. main 에서 확인하고 막는다.
 DEV_SECRET = "majung-dev-secret-change-me"
-SECRET_KEY = os.environ.get("MAJUNG_SECRET", DEV_SECRET)
+
+# 빈 값은 「안 정한 것」으로 본다.
+#     MAJUNG_SECRET=          ← Container Manager 에서 값을 안 채우면 이렇게 온다
+# 예전에는 이것이 검사를 그냥 통과해 **빈 키로 세션에 서명**했다. 기본 키보다 나쁘다.
+_주어진키 = os.environ.get("MAJUNG_SECRET", "").strip()
+SECRET_KEY = _주어진키 or DEV_SECRET
 IS_DEV_SECRET = SECRET_KEY == DEV_SECRET
+
+# 짧은 키는 세우기는 하되 알려준다. 32자면 넉넉하다.
+MIN_SECRET = 32
+SECRET_TOO_SHORT = not IS_DEV_SECRET and len(SECRET_KEY) < MIN_SECRET
 
 WEEKDAYS = ["월", "화", "수", "목", "금"]
 

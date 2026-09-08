@@ -351,3 +351,68 @@ def test_자료_자리가_밖에_붙어_있다():
     assert "./data:/data" in compose, "자료 폴더가 안 붙어 있다"
     assert "nginx" not in compose, "홈페이지가 아직 이 저장소에 남아 있다"
     assert not (뿌리 / "site").exists(), "site/ 가 아직 남아 있다"
+
+
+def test_빈_서명_키는_안_정한_것으로_본다():
+    """MAJUNG_SECRET= 처럼 값을 비워두면 예전에는 검사를 그냥 통과했다.
+
+    그 채로 서버가 서면 **빈 키로 세션에 서명**한다. 기본 키보다 나쁘다.
+    Container Manager 에서 변수 이름만 넣고 값을 안 채우면 이렇게 온다.
+    """
+    import importlib
+    import os
+
+    from firstout import config
+
+    본래 = os.environ.get("MAJUNG_SECRET")
+    try:
+        for 값, 막아야하나 in (("", True), ("   ", True), ("x" * 48, False)):
+            os.environ["MAJUNG_SECRET"] = 값
+            c = importlib.reload(config)
+            assert c.IS_DEV_SECRET is 막아야하나, f"{값!r} 을 잘못 본다"
+            if 막아야하나:
+                assert c.SECRET_KEY == c.DEV_SECRET
+    finally:
+        if 본래 is None:
+            os.environ.pop("MAJUNG_SECRET", None)
+        else:
+            os.environ["MAJUNG_SECRET"] = 본래
+        importlib.reload(config)
+
+
+def test_짧은_서명_키는_알려준다():
+    import importlib
+    import os
+
+    from firstout import config
+
+    본래 = os.environ.get("MAJUNG_SECRET")
+    try:
+        os.environ["MAJUNG_SECRET"] = "short"
+        c = importlib.reload(config)
+        assert c.SECRET_TOO_SHORT
+        os.environ["MAJUNG_SECRET"] = "x" * c.MIN_SECRET
+        c = importlib.reload(config)
+        assert not c.SECRET_TOO_SHORT
+    finally:
+        if 본래 is None:
+            os.environ.pop("MAJUNG_SECRET", None)
+        else:
+            os.environ["MAJUNG_SECRET"] = 본래
+        importlib.reload(config)
+
+
+def test_도커_안에서는_도커_이야기를_한다():
+    """도커 안에서 「PowerShell 에서 $env:... 를 정하세요」는 아무 도움이 안 된다.
+
+    실제로 NAS 에 올렸을 때 그 안내가 나와서 어디에 넣어야 하는지 알 수 없었다.
+    """
+    도커 = "\n".join(M.secret_help(True))
+    내PC = "\n".join(M.secret_help(False))
+
+    assert "Container Manager" in 도커
+    assert "docker compose" in 도커
+    assert "$env:" not in 도커, "도커 안에서 PowerShell 이야기를 한다"
+
+    assert "$env:" in 내PC
+    assert "Container Manager" not in 내PC

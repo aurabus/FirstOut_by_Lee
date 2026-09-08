@@ -23,8 +23,10 @@ from .config import (
     APP_NAME,
     APP_TAGLINE,
     IS_DEV_SECRET,
+    MIN_SECRET,
     PROXY_HOPS,
     PUBLIC_URL,
+    SECRET_TOO_SHORT,
     SKIN,
     STATIC_DIR,
     TEMPLATE_DIR,
@@ -260,6 +262,56 @@ for mod in (
     app.include_router(mod.router)
 
 
+def secret_help(in_docker: bool) -> list[str]:
+    """서명 키가 없을 때 할 말. 도커 안인지에 따라 할 말이 다르다."""
+    말 = [
+        "  세션 서명 키(MAJUNG_SECRET)가 정해지지 않았습니다.",
+        "  이대로 외부에 열면 남의 로그인 세션을 만들어낼 수 있어 시작하지 않습니다.",
+        "",
+    ]
+    if in_docker:
+        # 도커 안에서 「PowerShell 에서 $env:... 를 정하세요」는 아무 도움이 안 된다
+        말 += [
+            "  이 서버는 도커 안에서 돌고 있습니다. 환경 변수를 넣어주세요.",
+            "",
+            "    Container Manager 에서 만드셨다면",
+            "      그 컨테이너를 멈추고 → 세부 정보 → 환경 → MAJUNG_SECRET 을 추가",
+            "      (환경 변수는 만들 때 정해지므로, 안 되면 컨테이너를 지우고 다시 만드세요)",
+            "",
+            "    docker compose 로 띄우셨다면",
+            "      .env 파일에  MAJUNG_SECRET=긴_임의의_글자  를 적고",
+            "      docker compose up -d --force-recreate",
+            "",
+            "  값 만드는 법 (아무 PC 에서 한 줄):",
+            '      python -c "import secrets; print(secrets.token_urlsafe(48))"',
+        ]
+    else:
+        말 += [
+            "  환경변수를 정하고 다시 실행해 주세요.",
+            "",
+            '      $env:MAJUNG_SECRET = "충분히 긴 임의의 문자열"',
+            "",
+            "  (내 PC 에서만 시험하려면 --host 127.0.0.1)",
+        ]
+    return [*말, ""]
+
+
+def in_container() -> bool:
+    """도커 안에서 돌고 있는가.
+
+    같은 안내라도 자리에 따라 할 말이 다르다. 도커 안에서 「PowerShell 에서
+    $env:... 를 정하세요」라고 하면 아무 도움이 안 된다.
+    """
+    from pathlib import Path
+
+    if Path("/.dockerenv").exists():
+        return True
+    try:
+        return "docker" in Path("/proc/1/cgroup").read_text()
+    except OSError:
+        return False
+
+
 def use_utf8_console() -> None:
     """한글 Windows 콘솔은 기본이 cp949 라 「—」 같은 글자에서 print 가 죽는다.
 
@@ -302,15 +354,17 @@ def main() -> None:
     if IS_DEV_SECRET and args.host not in ("127.0.0.1", "localhost"):
         say = print
         say()
-        say("  세션 서명 키가 기본값입니다.")
-        say("  이대로 외부에 열면 남의 로그인 세션을 만들어낼 수 있습니다.")
-        say("  환경변수를 정하고 다시 실행해 주세요.")
-        say()
-        say('      $env:MAJUNG_SECRET = "충분히 긴 임의의 문자열"')
-        say()
-        say("  (내 PC 에서만 시험하려면 --host 127.0.0.1)")
-        say()
-        return
+        for 줄 in secret_help(in_container()):
+            say(줄)
+        # 0 으로 끝내면 도커가 「잘 끝났다」고 보고 조용히 다시 띄운다.
+        # 그러면 8초마다 같은 말이 쌓이기만 하고 무엇이 잘못됐는지 드러나지 않는다.
+        raise SystemExit(1)
+
+    if SECRET_TOO_SHORT:
+        print()
+        print(f"  세션 서명 키가 짧습니다 ({MIN_SECRET}자 넘게 두시길 권합니다).")
+        print("  짧으면 맞혀서 남의 로그인 세션을 만들어낼 수 있습니다.")
+        print()
 
     # 프록시 뒤인데 몇 대인지 알려주지 않으면, 모든 접속지가 프록시 주소로 보인다.
     # 감사 로그의 접속지가 쓸모없어지고 주소별 속도 제한도 한 덩어리가 된다.
