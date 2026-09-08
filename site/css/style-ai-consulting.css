@@ -1,0 +1,953 @@
+.section-head {
+  text-align: center;
+  margin: 0 auto 80px auto;
+  max-width: 1200px;
+  padding: 0 40px;
+}
+
+.section-head h2 {
+  font-size: clamp(32px, 3.0vw, 46px); 
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 16px;
+}
+.section-head p { 
+  font-size: clamp(15px, 3.0vw, 20px);
+  font-weight: 500;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* ===========================================
+   🔹 AI CONSULTING HERO SECTION
+   =========================================== */
+.auraconsult-hero {
+  position: relative;
+  width: 100vw;
+  left: 50%;
+  margin-left: -50vw;
+  height: 750px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+ background: 
+    url("../images/ai-consulting-hero.png") center center / cover no-repeat;
+  box-sizing: border-box;
+}
+
+.hero-content-consult {
+  width: 100%;
+  max-width: 1200px;
+  padding: 80px0 40px;
+  color: #ffffff;
+  font-family: "Noto Sans KR", sans-serif;
+  text-align: left;
+}
+
+.hero-content-consult h1 {
+  font-size: clamp(42px, 5vw, 60px);
+  font-weight: 800;
+  margin: 50px 0 20px;
+  color: #ffffff;
+}
+
+.hero-content-consult h2 {
+  font-size: clamp(24px, 3.5vw, 30px);
+  font-weight: 700;
+  color: #7c4dff;
+  margin-bottom: 32px;
+}
+
+.hero-content-consult .sub-text {
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ===========================================
+   🔹 AI CONSULTING 서비스 범위 섹션
+   =========================================== */
+
+.consult-service-section {
+  padding: 120px 0;
+  text-align: center;
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+/* 카드 레이아웃 */
+.consult-circle-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.consult-circle-card {
+  width: 240px;
+  height: 240px;
+  background: #ffffff;
+  border: 1.5px solid #7C4DFF;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+/* 아이콘 영역 */
+.consult-circle-card img {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  filter: brightness(0) saturate(100%) invert(30%) sepia(39%) saturate(3623%) hue-rotate(241deg) brightness(104%) contrast(101%);
+}
+
+/* 텍스트 */
+.consult-circle-card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.consult-circle-card p {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.5;
+  max-width: 80%;
+  margin: 0 auto;
+}
+/* ===========================================
+   🔹 3단계 핵심 설계 섹션
+   =========================================== */
+.consult-steps-section {
+  background: #f9fbff;
+  padding: 120px 0;
+  text-align: center;
+  font-family: "Noto Sans KR", sans-serif;
+  overflow: hidden;
+}
+
+/* 카드 영역 */
+.steps-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: nowrap;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  align-items: stretch;
+}
+
+.step-card {
+  flex: 0 0 360px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  padding: 36px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.step-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.1);
+}
+
+.step-icon img {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 30px auto ;
+}
+
+.step-num {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #3b5bff;
+}
+
+.step-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 20px;
+}
+
+.step-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  text-align: left;
+}
+
+.step-card li {
+  font-size: 16px;
+  color: #4b5563;
+  margin-bottom: 8px;
+  position: relative;
+  padding-left: 20px;
+}
+
+.step-card li img {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  flex-shrink: 0;
+  padding-right: 10px;
+}
+
+.step-effect {
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.step-effect strong {
+  display: block;
+  font-size: 14px;
+  color: #294ed9;
+  margin-bottom: 4px;
+}
+
+.step-effect p {
+  font-size: 15px;
+  margin: 0;
+  color: #111827;
+}
+
+/* ===========================================
+   🔹 우리의 차별화 포인트 섹션
+   =========================================== */
+.consult-differ-section {
+  padding: 120px 0;
+  text-align: center;
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+/* 카드 그리드 */
+.differ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 40px;
+  align-items: stretch;
+}
+
+.differ-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  flex: 1 0 260px;
+  background: linear-gradient(145deg, #f6faff, #e8f1ff);
+  border-radius: 20px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  min-height: 360px;
+}
+
+.differ-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.step-tag {
+  display: inline-block;
+  background: #e6ecff;
+  color: #3b5bff;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 20px;
+  padding: 6px 14px;
+  text-align: left;
+  width: fit-content; /* ✅ 내용 길이에 맞춤 */
+  min-width: auto; /* ✅ 강제 폭 제거 */
+}
+
+.differ-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.differ-card p {
+  font-size: 16px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 아이콘 */
+.icon-wrap img {
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* ===========================================
+   🔹 산업별 AI 전략
+   =========================================== */
+.industry-section {
+  background: linear-gradient(145deg, #f6faff, #e8f1ff);
+  padding: 120px 0;
+  font-family: "Noto Sans KR", sans-serif;
+  text-align: center;
+  position: relative;
+  overflow: visible; /* 배경이 카드 높이에 맞게 확장되도록 */
+}
+
+/* 탭 */
+.industry-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 60px;
+}
+
+.industry-tabs button {
+  background: rgba(255,255,255,0.4);
+  border: 1.5px solid #8a98ad;
+  border-radius: 999px;
+  padding: 12px 50px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8a98ad;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.industry-tabs button.active {
+  background: rgba(230,215,255,0.3);
+  border: 2px solid #7C4DFF;
+  color: #7C4DFF;
+}
+
+/* 탭 콘텐츠 */
+.industry-contents {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  min-height: auto !important; /* 높이 고정 제거 */
+  height: auto !important;     /* ✅ 내용에 맞게 자동 확장 */
+}
+
+.tab-content {
+  display: none; /* 전환 시 깜빡임 없이 숨김 */
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  padding: 35px 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  position: relative !important; /* absolute 해제 */
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+  opacity: 1;
+}
+
+/* 내부 */
+.industry-icon img {
+  width: 80px;
+  height: 80px;
+  margin: 0 0 15px;
+}
+
+.industry-inner h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
+
+.industry-inner p {
+  font-size: 16px;
+  color: #4b5563;
+  margin: 5px 0 35px;
+}
+
+/* 카드 */
+.industry-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.industry-card {
+  flex: 1 1 320px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 33px 28px 25px;
+  text-align: left;
+  border: 0.5px solid #dbeafe;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.industry-card h4 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 15px;
+}
+
+.industry-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.industry-card li {
+  font-size: 15px;
+  color: #374151;
+  margin: 10px 0;
+  position: relative;
+  padding-left: 18px;
+}
+
+.industry-card li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: #8492ff;
+}
+
+.industry-card-title {
+  display: flex;
+  align-items: center; /* 세로 중앙 정렬 */
+  gap: 10px; /* 아이콘과 텍스트 사이 여백 */
+  margin-bottom: 14px;
+}
+
+.industry-card-title img {
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.industry-card-title h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* ===========================================
+   🔹 도입전/도입후
+   =========================================== */
+.consult-process-section {
+  color: #fff;
+  padding: 140px 0;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* 각 프로세스 묶음 */
+.process-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+}
+
+.process-pair {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 30px;
+  max-width: 1200px;
+  width: 90%;
+}
+
+/* 공통 카드 스타일 */
+.process-card {
+  flex: 1 1 480px;
+  border-radius: 16px;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transition: all 0.6s ease;
+}
+
+.process-card.before{
+  border-radius: 23px;
+  height: 100%;
+}
+
+.process-card.before .card-header {
+  background: #e5effe;
+  padding: 24px 30px;
+  border-radius: 20px 20px 0 0;
+}
+.process-card.before .card-body {
+  background: rgba(229,239,254,0.4);
+  padding: 30px 30px 24px;
+  border-radius: 0 0 20px 20px;
+  color: #111827;
+}
+
+.process-card.after{
+  border-radius: 23px;
+  height: 100%;
+}
+
+.process-card.after .card-header  {
+  background: #dddaff;
+  padding: 24px 30px;
+  border-radius: 20px 20px 0 0;
+}
+.process-card.after .card-body {
+  background: rgba(211, 210, 255, 0.3);
+  padding: 30px 30px 24px;
+  border-radius: 0 0 20px 20px;
+  color: #111827;
+}
+
+.process-card h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 6px 0 0;
+}
+
+.process-card h3 {
+  color: #111827;
+}
+
+.process-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.process-card ul li {
+  font-size: 16px;
+  margin-bottom: 10px;
+  position: relative;
+  padding-left: 16px;
+}
+
+.process-card ul li::before {
+  content: "•";
+  color: #111827;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.process-tag {
+  display: inline-block;
+  padding: 6px 20px 8px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 14px -2px;
+}
+
+.process-card.before .process-tag {
+  color: #3b5bff;
+  border: 1px solid #3b5bff;
+}
+
+.process-card.after .process-tag {
+  color: #4f46e5;
+  border: 1px solid #4f46e5;
+}
+
+/* ===========================================
+   🔹 섹션 6. AI 도입의 성과
+=========================================== */
+.consult-impact-section {
+  background: #f0f3ff;
+  padding: 120px 0;
+  text-align: center;
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+/* 카드 레이아웃 */
+.impact-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.impact-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* ✅ 세로 가운데 정렬 */
+  flex: 1 1 320px;
+  gap: 15px;
+}
+
+/* 상단 아이콘 */
+.impact-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.impact-icon img {
+  width: 45px;
+  height: 45px;
+}
+
+.impact-icon.blue { 
+    border: 15px solid transparent;
+    border-radius: 50%;
+    background-image: linear-gradient(135deg, #5cdce2, #4169fb), linear-gradient(to bottom, #e6f5ff, #dbeafe);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+ }
+.impact-icon.purple { 
+    border: 15px solid transparent;
+    border-radius: 50%;
+    background-image: linear-gradient(330deg, #6b4cf6, #5aa0ff), linear-gradient(to bottom, #dee7ff, #e6d9ff);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+}
+.impact-icon.orange { 
+    border: 15px solid transparent;
+    border-radius: 50%;
+    background-image: linear-gradient(135deg, #f3be73, #e37b55), linear-gradient(to bottom, #fff1d8, #ffe6dc);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+ }
+
+/* 개별 카드 */
+.impact-card {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  transition: all 0.3s ease;
+  padding: 30px;
+  text-align: center;
+}
+
+/* 내부 콘텐츠 */
+.impact-contents {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+ align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.impact-tag {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 0.9em;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  text-align: center;
+   max-width: 125px;
+}
+
+.impact-tag{
+  color: #7e22ce;
+  background: #f3e8ff;
+}
+
+.impact-contents h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
+
+.impact-contents ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px auto 24px;
+  width: fit-content;
+  text-align: left;
+}
+
+.impact-contents ul li {
+  font-size: 15px;
+  color: #4b5563;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.impact-contents li img {
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  margin-top: 3px;
+}
+
+/* 하단 footer 정렬 */
+.impact-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80px; /* ✅ 고정 높이로 카드 간 하단 정렬 통일 */
+  margin: 0;
+  background:  transparent;;
+  padding: 5px 100px 10px;
+  border-radius: 15px;
+}
+
+.impact-footer .impact-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.impact-footer span {
+  display: block;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.impact-footer {
+  background: linear-gradient(330deg, #6b4cf6, #5aa0ff);
+}
+
+/* 공통 카드 정렬 균일화-반응형 위 위치고정 */
+.differ-grid,
+.industry-grid,
+.impact-grid {
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.differ-card,
+.industry-card,
+.impact-card {
+  flex: 1;
+  max-width: 360px;
+  box-sizing: border-box;
+}
+
+/* =========================
+   📱 모바일 전용
+   ========================= */
+@media (max-width: 820px) {
+ html, body {
+    overflow-x: hidden;
+  }
+
+.consult-service-section,
+.consult-steps-section,
+.consult-differ-section,
+.industry-section,
+.consult-process-section,
+.consult-impact-section {
+    padding: 60px 20px;
+    box-sizing: border-box;
+  }
+
+  h1, h2, h3, h4, h5 {
+    word-break: keep-all;
+  }
+
+.section-head {
+    margin: 0 auto 40px auto;
+}
+
+.auraconsult-hero {
+    height: 450px;
+    padding: 100px 20px 50px;
+    background-attachment: scroll; /* 모바일에서 fixed 제거 */
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-content-consult h1 {
+    font-size: clamp(32px, 6vw, 40px);
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .hero-content-consult h2 {
+    font-size: clamp(32px, 5.5vw, 38px);
+    line-height: 1.3;
+    margin: 0;
+  }
+
+.hero-content-consult .sub-text {
+   font-size: 16px;
+   line-height: 1.6;
+   margin-top: 10px;
+  }
+
+  /* ✅ [섹션 1] 서비스 범위*/
+  .consult-circle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2열 구성 */
+    gap: 20px;
+    justify-items: center; /* 각 카드 중앙 정렬 */
+    align-items: center;
+    width: 100%;
+    max-width: 480px; /* 카드 폭 조절 */
+    margin: 0 auto;
+  }
+
+  .consult-circle-card {
+    width: 160px;
+    height: 160px;
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .consult-circle-card img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+  }
+
+  .consult-circle-card h3 {
+    font-size: 15px;
+  }
+
+  .consult-circle-card p {
+    font-size: 13px;
+  }
+
+  /* ✅ [섹션 2]  AI 컨설팅 핵심 효과 카드 간 여백 확보 */
+  .ai-result-card,
+  .result-card {
+    margin-bottom: 60px !important; /* 카드 하단 공간 확보 */
+  }
+
+  .ai-section,
+  .ai-section-before,
+  .ai-section-after {
+    margin-top: 60px !important;
+    margin-bottom: 60px !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ✅ [섹션 3] 핵심 설계 3단계 */
+  .steps-container {
+    display: flex;
+    flex-direction: column; /* 세로로 배치 */
+    align-items: center;    /* 가운데 정렬 */
+    justify-content: center;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .step-card {
+    width: 90%;
+    max-width: 400px;       /* 카드 최대 폭 제한 */
+    margin: 0 auto;
+  }
+
+  .step-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .step-card h3 {
+    font-size: 18px;
+  }
+
+  .step-card ul li {
+    font-size: 14px;
+  }
+
+  /* ✅ [섹션 3] 산업특화 */
+
+  /* ✅ 겹침 방지를 위한 카드 레이어 보정 */
+  .ai-result-card {
+    position: relative;
+    z-index: 2;
+  }
+
+.industry-tabs {
+    margin-bottom: 30px;
+}
+
+.industry-tabs button{
+    padding: 5px 30px;
+}
+
+  .industry-grid {
+ display: flex;
+    flex-direction: column;     /* 세로 배치 */
+    align-items: center;        /* 카드들을 가운데 정렬 */
+    justify-content: center;    /* 수직 중앙 정렬 */
+    gap: 24px;                  /* 카드 간 간격 */
+    width: 100%;
+  }
+
+  .industry-card {
+    width: 90%;                 /* 화면 양쪽 여백 확보 */
+    max-width: 400px;           /* 카드 최대폭 제한 */
+    margin: 0 auto;             /* 가운데 정렬 보조 */
+  }
+
+  /* 스크롤바 숨기기 */
+  .industry-grid::-webkit-scrollbar {
+    display: none;
+  }
+}

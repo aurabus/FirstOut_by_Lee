@@ -76,8 +76,14 @@
 넣으신 뒤 **검사기를 꼭 돌려보세요.** 빠진 파일이 있으면 화면이 깨지기 전에
 무엇이 없는지, 어느 화면이 그걸 부르는지 짚어줍니다.
 
+저장소 맨 위의 **`site-check.bat`** 을 탐색기에서 두 번 누르시면 됩니다.
+검은 창이 뜨고 결과가 나옵니다. 아무 키나 누르면 닫힙니다.
+
+PowerShell 에서 하시려면 폴더로 들어간 뒤 돌립니다.
+
 ```powershell
-python tools/site_check.py
+cd "C:\Users\NBI\Aurabus Dev"
+python tools\site_check.py
 ```
 
 넣으셨으면 윈도우에서 저장소에 올려둡니다.

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 상세 | AURABUS</title>
+
+  <link rel="stylesheet" href="css/notice.css" />
+  <link rel="stylesheet" href="css/style.css" />
+ <!-- ✅ 헤더 로더 (최적화 버전) -->
+  <script src="js/header_fast.js" defer></script>
+</head>
+<body class="sub-page">
+
+ <!-- ✅ 여기에 공통 헤더 include 코드 -->
+<div id="header-container"></div>
+
+  <!-- 히어로 -->
+<section class="sub-hero notice-hero">
+  <div class="hero-content-main">
+    <h1>공지사항</h1>
+    <p>새로운 소식과 안내를 확인하세요</p>
+  </div>
+</section>
+
+  <section class="notice-detail-section">
+ <div class="notice-detail-inner" id="notice-detail">
+    <!-- ✅ notice.js에서 내용이 자동 삽입됩니다 -->
+  </div>
+  </section>
+
+  <!-- ✅ Footer -->
+  <div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    });
+</script>
+
+<script src="js/notice.js"></script>
+</body>
+</html>

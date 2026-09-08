@@ -310,5 +310,12 @@ def test_홈페이지_자리와_자료_자리가_붙어_있다():
 
     assert "./site:/usr/share/nginx/html:ro" in compose, "홈페이지 폴더가 안 붙어 있다"
     assert "./data:/data" in compose, "자료 폴더가 안 붙어 있다"
-    # 「/」 로 들어왔을 때 열릴 것이 있어야 한다
-    assert (뿌리 / "site" / "index.html").exists(), "site/index.html 이 없다"
+
+    # 「/」 로 들어왔을 때 열릴 것이 있어야 한다.
+    # 이 홈페이지는 첫 화면이 index.html 이 아니라 main.html 이다 (맥 아파치가 그랬다).
+    # nginx 도 그렇게 보도록 맞춰 두었으므로 둘 중 하나면 된다.
+    site = 뿌리 / "site"
+    assert (site / "index.html").exists() or (site / "main.html").exists(), \
+        "site 에 index.html 도 main.html 도 없다 — 「/」 로 들어오면 아무것도 안 나온다"
+    conf = (뿌리 / "deploy" / "site-nginx.conf").read_text(encoding="utf-8")
+    assert "index index.html main.html;" in conf, "nginx 가 main.html 을 첫 화면으로 안 본다"

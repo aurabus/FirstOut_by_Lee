@@ -83,14 +83,6 @@ def 살펴보기(뿌리: Path) -> tuple[list[str], list[str]]:
             f"한 겹 더 들어간 것 같습니다 — {안쪽[0]} 이 아니라 site/{안쪽[0].rsplit('/', 1)[-1]} "
             "이어야 합니다")
 
-    # ── 맥에서 딸려온 찌꺼기 ──
-    찌꺼기 = sorted(n for n in 이름들
-                  if n.rsplit("/", 1)[-1].startswith("._") or n.endswith(".DS_Store"))
-    if 찌꺼기:
-        막을것.append(
-            f"맥에서 딸려온 찌꺼기가 {len(찌꺼기)}개 있습니다 (._ 로 시작하는 것들) — 지우세요: "
-            + ", ".join(찌꺼기[:5]) + (" …" if len(찌꺼기) > 5 else ""))
-
     # ── 부르는 파일이 다 있는가 ──
     없는것: dict[str, set[str]] = {}
     for f in 파일들:
@@ -124,6 +116,18 @@ def 살펴보기(뿌리: Path) -> tuple[list[str], list[str]]:
         for n, p in 큰것[:10]:
             표 = "  ← 아주 무겁습니다" if n >= 아주무거움 else ""
             참고.append(f"    {n / 1024 / 1024:6.2f} MB  {p}{표}")
+
+    # ── 맥에서 딸려온 찌꺼기 ──
+    # 서버까지 따라가지는 않는다 (.gitignore 가 막고, nginx 도 내주지 않는다).
+    # 그래도 남겨두면 나중에 헷갈리므로 맨 끝에 알려는 준다.
+    찌꺼기 = sorted(n for n in 이름들
+                  if n.rsplit("/", 1)[-1].startswith("._") or n.endswith(".DS_Store"))
+    if 찌꺼기:
+        참고.append("")
+        참고.append(f"맥에서 딸려온 찌꺼기가 {len(찌꺼기)}개 있습니다 (._ 로 시작하는 것들).")
+        참고.append("  서버에는 따라가지 않습니다. 지워두면 깔끔합니다 — PowerShell 에서:")
+        참고.append(r'    Get-ChildItem .\site -Recurse -Force -File '
+                    r'-Filter "._*" | Remove-Item -Force')
 
     return 막을것, 참고
 
