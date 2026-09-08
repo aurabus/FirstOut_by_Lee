@@ -226,13 +226,14 @@ from .web import (  # noqa: E402
     operator,
     roster,
     settings_page,
+    suggest,
     upload,
     users,
 )
 
 for mod in (
     attend, audit_page, auth, board, child, connect, help_page, lists,
-    operator, roster, settings_page, upload, users,
+    operator, roster, settings_page, suggest, upload, users,
 ):
     app.include_router(mod.router)
 

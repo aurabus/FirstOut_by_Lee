@@ -68,6 +68,8 @@ ACTIONS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^/audit"), "감사 로그"),
     (re.compile(r"^/connect"), "접속 안내"),
     (re.compile(r"^/help"), "사용 안내"),
+    (re.compile(r"^/suggest/\d+/reply$"), "개선 요청 답변"),
+    (re.compile(r"^/suggest"), "개선 요청"),
     (re.compile(r"^/$"), "첫 화면"),
     (re.compile(r"^/(login|pick)$"), "옛 주소"),
     (re.compile(r"^/join/"), "초대로 첫 로그인"),

@@ -750,3 +750,41 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
 }
 @media (prefers-reduced-motion:reduce){.gl-item.just,.att-item.just{animation:none;
   box-shadow:inset 3px 0 var(--pine)}}
+
+/* ── 개선 요청 ── */
+.ask{position:fixed;right:1rem;bottom:1rem;z-index:30;display:inline-flex;align-items:center;
+  gap:.4rem;border:1px solid var(--pine);background:var(--card);color:var(--pine);
+  border-radius:99px;padding:.5rem .9rem;font-size:.82rem;font-weight:600;
+  min-height:44px;box-shadow:0 3px 12px rgba(13,22,19,.16)}
+.ask:hover{background:var(--pine);color:#fff}
+.ask span{font-size:.9rem}
+.ask-body{width:100%;min-height:7rem;font-family:inherit;font-size:.92rem;line-height:1.6;
+  resize:vertical}
+@media print{.ask{display:none!important}}
+
+.sug{display:flex;flex-direction:column;gap:.7rem}
+.sug-item{border:1px solid var(--rule);background:var(--card);border-radius:3px;
+  box-shadow:var(--shadow);padding:.8rem .95rem}
+.sug-item.done{border-left:3px solid var(--pine)}
+.sug-head{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem}
+.sug-head b{font-size:.9rem;font-weight:700}
+.sug-head em{font-style:normal;font-size:.78rem;color:var(--ink-3)}
+.sug-when{margin-left:auto;font-family:var(--mono);font-size:.73rem;color:var(--ink-3)}
+.sug-state{font-size:.7rem;font-weight:700;border-radius:2px;padding:.08rem .38rem;
+  border:1px solid var(--rule);color:var(--ink-3);white-space:nowrap}
+.sug-state[data-state="받음"]{border-color:var(--gold-line);background:var(--gold-soft);
+  color:var(--gold)}
+.sug-state[data-state="만드는 중"]{border-color:var(--plum);background:var(--plum-soft);
+  color:var(--plum)}
+.sug-state[data-state="반영됨"]{border-color:var(--pine);background:var(--pine-soft);
+  color:var(--pine)}
+.sug-body{font-size:.93rem;line-height:1.7;white-space:pre-wrap;margin:0}
+.sug-reply{margin-top:.65rem;padding:.6rem .75rem;background:var(--pine-soft);
+  border-left:3px solid var(--pine);border-radius:0 3px 3px 0}
+.sug-reply b{display:block;font-size:.76rem;color:var(--pine);font-weight:700}
+.sug-reply p{margin:.25rem 0 0;font-size:.9rem;line-height:1.7;white-space:pre-wrap}
+.sug-reply em{font-style:normal;font-size:.72rem;color:var(--ink-3)}
+.sug-form{margin-top:.65rem;border-top:1px dashed var(--rule);padding-top:.6rem;
+  display:flex;flex-direction:column;gap:.4rem}
+.sug-form textarea{width:100%;font-family:inherit;font-size:.9rem;resize:vertical}
+.sug-acts{display:flex;gap:.4rem;align-items:center}

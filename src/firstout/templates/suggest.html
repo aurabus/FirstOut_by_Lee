@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% set nav = 'suggest' %}
+{% block title %}개선 요청 · {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:52rem">
+
+  {% if msg %}<p class="msg no-print">{{ msg }}</p>{% endif %}
+
+  <div class="sec" style="padding-top:1.1rem">
+    <div class="sec-h">
+      <h2>개선 요청</h2><span class="n">{{ rows | length }}건</span>
+      <span class="hint">
+        {% if me.is_operator %}모든 유치원에서 온 요청입니다
+        {% else %}화면 오른쪽 아래 <b>✎ 개선 요청</b> 으로 언제든 보내실 수 있습니다{% endif %}
+      </span>
+    </div>
+
+    {% if rows %}
+    <div class="sug">
+      {% for r in rows %}
+      <div class="sug-item {% if r.answered %}done{% endif %}">
+        <div class="sug-head">
+          <span class="sug-state s-{{ loop.index0 }}"
+                data-state="{{ r.status }}">{{ r.status }}</span>
+          <b>{{ r.where or "화면" }}</b>
+          <em>{{ r.user_name }}
+            {%- if me.is_operator and r.kinder_name %} · {{ r.kinder_name }}{% endif %}</em>
+          <span class="sug-when">{{ r.created_at.strftime('%m월 %d일 %H:%M') }}</span>
+        </div>
+
+        <p class="sug-body">{{ r.body }}</p>
+
+        {% if r.reply %}
+        <div class="sug-reply">
+          <b>답변</b>
+          <p>{{ r.reply }}</p>
+          <em>{{ r.replied_at.strftime('%m월 %d일') if r.replied_at }}</em>
+        </div>
+        {% endif %}
+
+        {% if me.is_operator %}
+        <form method="post" action="/suggest/{{ r.id }}/reply" class="sug-form no-print">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <textarea class="field" name="reply" rows="2"
+                    placeholder="답변 (비워두면 상태만 바꿉니다)">{{ r.reply }}</textarea>
+          <div class="sug-acts">
+            <select class="field" name="status" style="max-width:8rem">
+              {% for st in states %}
+              <option value="{{ st }}" {% if st == r.status %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn go sm">저장</button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty">아직 보내신 요청이 없습니다.
+      쓰시다가 불편한 점이 있으면 그 화면에서 <b>✎ 개선 요청</b> 을 눌러주세요.
+      <strong>어느 화면에서 보내셨는지가 함께 전달되어</strong> 저희가 바로 알아볼 수 있습니다.</p>
+    {% endif %}
+  </div>
+
+  {% if not me.is_operator and rows %}
+  <p class="empty no-print">답변이 달리면 이 화면에 함께 표시됩니다.
+    급한 일은 총괄 관리자께 말씀해 주세요.</p>
+  {% endif %}
+
+  <div class="foot"><span>{{ app_name }} · 개선 요청</span><span>{{ today_ko }}</span></div>
+</div>
+{% endblock %}

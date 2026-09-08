@@ -379,3 +379,47 @@ class Invite(Base):
 
     def alive(self, at: dt.datetime) -> bool:
         return self.used_at is None and self.expires_at > at
+
+
+# ── 개선 요청 ───────────────────────────────────────────
+
+SUG_NEW = "받음"
+SUG_SEEN = "확인함"
+SUG_DOING = "만드는 중"
+SUG_DONE = "반영됨"
+SUG_HOLD = "보류"
+SUG_STATES = [SUG_NEW, SUG_SEEN, SUG_DOING, SUG_DONE, SUG_HOLD]
+
+
+class Suggestion(Base):
+    """선생님이 보내는 「이게 불편해요」.
+
+    쓰다가 불편한 순간은 그 화면을 보고 있을 때다. 그때 바로 보낼 수 있어야 하고,
+    **어느 화면에서 보냈는지가 함께 담겨야** 우리가 알아들을 수 있다.
+    「명단이 불편해요」와 「1차 차량 명단에서 불편해요」는 다른 이야기다.
+
+    보낸 사람의 이름을 함께 적어둔다 — 계정이 바뀌어도 누가 말했는지 알 수 있어야
+    되물어볼 수 있기 때문이다.
+    """
+
+    __tablename__ = "suggestion"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kinder_id: Mapped[int | None] = mapped_column(
+        ForeignKey("kindergarten.id"), nullable=True, index=True
+    )
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    user_name: Mapped[str] = mapped_column(String(40), default="")
+    kinder_name: Mapped[str] = mapped_column(String(60), default="")   # 그때의 원 이름
+    where: Mapped[str] = mapped_column(String(60), default="")         # 어느 화면에서
+    body: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(10), default=SUG_NEW)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.now)
+    reply: Mapped[str] = mapped_column(Text, default="")
+    replied_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped[User | None] = relationship()
+
+    @property
+    def answered(self) -> bool:
+        return bool(self.reply)

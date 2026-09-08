@@ -44,11 +44,37 @@
     {% endif %}
     <a class="tab tab-help {% if nav == 'help' %}on{% endif %}" href="/help"
        title="사용 안내">도움말</a>
+    <a class="tab tab-help {% if nav == 'suggest' %}on{% endif %}" href="/suggest"
+       title="보낸 개선 요청과 답변">개선 요청</a>
   </div>
 </div>
 {% endif %}
 
 {% block body %}{% endblock %}
+
+{% if me %}
+<button class="ask no-print" id="askOpen" title="이 화면에서 불편한 점을 알려주세요">
+  <span>✎</span>개선 요청
+</button>
+
+<dialog id="askDlg" class="dlg">
+  <form method="post" action="/suggest" class="dlg-in">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="page" value="{{ request.url.path }}">
+    <h3>개선 요청</h3>
+    <p class="dlg-who">불편한 점이나 있었으면 하는 기능을 편하게 적어주세요.
+      <b id="askWhere">지금 보시는 화면</b>에서 보내신 것으로 함께 전달됩니다.</p>
+    <textarea class="field ask-body" name="body" rows="5" required
+              placeholder="예: 명단에서 아이를 찾기 어려워요 · 결석 사유에 「병원」을 넣어주세요"></textarea>
+    <div class="sig-acts">
+      <button class="btn go" style="flex:1">보내기</button>
+      <button class="btn" type="button" id="askClose">닫기</button>
+    </div>
+    <p class="login-hint" style="text-align:left">
+      보내신 내용과 답변은 <a href="/suggest">개선 요청</a> 에서 다시 보실 수 있습니다.</p>
+  </form>
+</dialog>
+{% endif %}
 
 {% if me %}
 <script src="/static/app.js" defer></script>
@@ -76,6 +102,17 @@
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "auto" : "smooth" });
     }
+  })();
+
+  /* 개선 요청 — 어느 화면에서든 그 자리에서 */
+  (function () {
+    var open = document.getElementById("askOpen");
+    var dlg = document.getElementById("askDlg");
+    if (!open || !dlg) return;
+    var tab = document.querySelector(".tab.on");
+    if (tab) { document.getElementById("askWhere").textContent = tab.textContent.trim(); }
+    open.onclick = function () { dlg.showModal(); dlg.querySelector("textarea").focus(); };
+    document.getElementById("askClose").onclick = function () { dlg.close(); };
   })();
 
   /* 되돌릴 수 없는 단추는 한 번 더 묻는다 */
