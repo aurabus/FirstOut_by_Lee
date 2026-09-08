@@ -247,3 +247,33 @@ def test_모서리는_결에서_가져다_쓴다():
     직접 = [v for v in re.findall(r"border-radius:([^;}]*)", app)
             if "var(" not in v and v.strip() not in ("0", "50%")]
     assert not 직접, f"결을 쓰지 않고 직접 적은 모서리: {직접}"
+
+
+def test_화면_파일이_꾸러미에_담긴다():
+    """templates 와 static 은 파이썬 파일이 아니라서 그냥 두면 설치본에 빠진다.
+
+    소스에서 바로 돌릴 때는 멀쩡하다. 그래서 눈치채지 못한다. 그런데 pip install 로
+    설치해서 돌리면(도커가 그렇다) 화면을 그리는 첫 순간에 죽는다.
+    실제로 배포 준비 중에 만든 wheel 에 html·css·글꼴이 하나도 없었다.
+
+    pyproject 의 package-data 가 꾸러미 안의 모든 비(非)파이썬 파일을 덮는지 본다.
+    """
+    import fnmatch
+    from pathlib import Path
+
+    import tomllib
+
+    import firstout
+
+    뿌리 = Path(firstout.__file__).resolve().parent
+    conf = tomllib.loads((뿌리.parent.parent / "pyproject.toml").read_text(encoding="utf-8"))
+    무늬 = conf["tool"]["setuptools"]["package-data"]["firstout"]
+
+    빠진것 = []
+    for f in 뿌리.rglob("*"):
+        if not f.is_file() or f.suffix == ".py" or "__pycache__" in f.parts:
+            continue
+        안쪽 = f.relative_to(뿌리).as_posix()
+        if not any(fnmatch.fnmatch(안쪽, 무늬하나) for 무늬하나 in 무늬):
+            빠진것.append(안쪽)
+    assert not 빠진것, f"꾸러미에 담기지 않는 파일: {빠진것}"

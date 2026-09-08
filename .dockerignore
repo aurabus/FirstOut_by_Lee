@@ -1,0 +1,20 @@
+# 이미지 안에 절대 들어가면 안 되는 것 — 원아 자료와 비밀 값
+data/
+*.db
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# 옮길 필요가 없는 것
+.git/
+.venv/
+.vscode/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+tests/
+tools/
+requirements-dev.txt

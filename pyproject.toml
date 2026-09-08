@@ -26,6 +26,16 @@ firstout = "firstout.main:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# 화면·글꼴은 파이썬 파일이 아니라서 그냥 두면 꾸러미에 담기지 않는다.
+# 소스에서 바로 돌릴 때는 멀쩡하다가, 설치해서 돌리면(도커가 그렇다)
+# 화면을 그리는 순간 죽는다 — 배포 전에 한 번 걸렸다.
+[tool.setuptools.package-data]
+firstout = [
+  "templates/*.html",
+  "static/*",
+  "static/fonts/*",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
