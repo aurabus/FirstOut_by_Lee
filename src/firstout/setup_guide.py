@@ -3,7 +3,10 @@
 승인 직후 로그인하면 「오늘 현황」이 열리는데, 원아도 선생님도 없으니 빈 화면이다.
 무엇을 해야 하는지 아무도 알려주지 않으면 거기서 멈춘다.
 
-네 가지가 끝나면 이 안내는 저절로 사라진다. 다 해놓고도 계속 뜨면 잔소리가 된다.
+꼭 해야 할 것이 끝나면 이 안내는 저절로 사라진다. 다 해놓고도 계속 뜨면 잔소리가 된다.
+
+선생님 초대는 **선택**이다. 총괄 관리자가 담임을 겸하는 작은 원은 혼자 쓴다.
+그런 원에서 이 한 줄 때문에 안내가 영영 남으면, 그게 바로 잔소리다.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ class Step:
     where: str
     done: bool
     now: str = ""      # 지금 상태 한 줄
+    optional: bool = False   # 안 해도 되는 것 — 안내가 걷히는 것을 막지 않는다
 
 
 def steps(db: Session, kinder_id: int) -> list[Step]:
@@ -70,14 +74,30 @@ def steps(db: Session, kinder_id: int) -> list[Step]:
         ),
         Step(
             "teacher", "선생님 초대하기",
-            "계정을 만들면 QR 이 뜹니다. 선생님 휴대폰으로 찍게 하시면 그 자리에서 끝납니다.",
+            "혼자 쓰셔도 됩니다. 함께 쓰실 분이 생기면 계정을 만들어 주세요 — "
+            "QR 이 뜨고, 휴대폰으로 찍으면 그 자리에서 끝납니다.",
             "/users",
             teachers > 0,
-            f"{teachers}분" if teachers else "아직 없습니다",
+            f"{teachers}분" if teachers else "아직 없습니다 (혼자 쓰셔도 됩니다)",
+            optional=True,
         ),
     ]
 
 
 def remaining(db: Session, kinder_id: int) -> list[Step]:
-    """아직 안 한 것만. 비어 있으면 안내를 띄우지 않는다."""
-    return [s for s in steps(db, kinder_id) if not s.done]
+    """아직 안 한 것만. 비어 있으면 안내를 띄우지 않는다.
+
+    꼭 해야 할 것이 모두 끝나면 선택 단계가 남아 있어도 안내를 접는다.
+    선생님 관리는 상단바에 늘 있으므로, 나중에 사람이 늘어도 찾지 못할 일은 없다.
+    """
+    return progress(db, kinder_id)[0]
+
+
+def progress(db: Session, kinder_id: int) -> tuple[list[Step], int, int]:
+    """(보여줄 단계들, 끝낸 꼭 해야 할 것, 꼭 해야 할 것 전부)."""
+    모두 = steps(db, kinder_id)
+    꼭 = [s for s in 모두 if not s.optional]
+    끝냄 = sum(1 for s in 꼭 if s.done)
+    if 끝냄 == len(꼭):
+        return [], 끝냄, len(꼭)
+    return [s for s in 모두 if not s.done], 끝냄, len(꼭)

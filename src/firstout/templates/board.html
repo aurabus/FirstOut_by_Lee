@@ -13,13 +13,13 @@
   <div class="start no-print">
     <div class="start-h">
       <b>시작하기</b>
-      <span>{{ 4 - todo | length }} / 4 단계 · 네 가지만 해두시면 내일부터 그냥 쓰시면 됩니다</span>
+      <span>{{ todo_done }} / {{ todo_must }} 단계 · 이것만 해두시면 내일부터 그냥 쓰시면 됩니다</span>
     </div>
     {% for s in todo %}
     <a class="start-row" href="{{ s.where }}">
       <span class="start-no">{{ loop.index }}</span>
       <span class="start-txt">
-        <b>{{ s.title }}</b>
+        <b>{{ s.title }}{% if s.optional %}<em class="opt">선택</em>{% endif %}</b>
         <em>{{ s.why }}</em>
         <em class="start-now">지금: {{ s.now }}</em>
       </span>

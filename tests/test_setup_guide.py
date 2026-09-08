@@ -95,3 +95,39 @@ def test_네_가지를_다_하면_안내가_사라진다(db):
     db.commit()
     assert setup_guide.remaining(db, KID) == []
     assert all(s.done for s in setup_guide.steps(db, KID))
+
+
+def _꼭_해야_할_것을_끝낸다(db) -> None:
+    from firstout import service
+
+    service.classes(db, KID)[0].name = "햇살1"
+    service.rounds(db, KID)[0].at_time = "15:50"
+    db.add(Child(kinder_id=KID, name="서아", class_id=service.classes(db, KID)[0].id))
+    db.commit()
+
+
+def test_혼자_쓰는_원에서도_안내가_걷힌다(db):
+    """총괄 관리자가 담임을 겸하면 선생님이 따로 없다.
+
+    그때도 반·차수·명부만 끝나면 안내는 사라져야 한다. 선생님 초대 한 줄 때문에
+    「시작하기」가 영영 남아 있으면 그게 잔소리다. 초대할 곳은 상단바에 늘 있다.
+    """
+    _꼭_해야_할_것을_끝낸다(db)
+    assert setup_guide.remaining(db, KID) == []
+    보여줄것, 끝냄, 꼭 = setup_guide.progress(db, KID)
+    assert (보여줄것, 끝냄, 꼭) == ([], 3, 3)
+
+
+def test_선생님_초대는_선택이고_그렇게_표시된다(db):
+    초대 = next(s for s in setup_guide.steps(db, KID) if s.key == "teacher")
+    assert 초대.optional
+    assert "혼자" in 초대.why
+    꼭 = [s for s in setup_guide.steps(db, KID) if not s.optional]
+    assert [s.key for s in 꼭] == ["class", "round", "roster"]
+
+
+def test_아직_할_일이_남았으면_선택_단계도_함께_보인다(db):
+    """설정하는 중에는 초대할 곳이 어디인지도 함께 알려주는 편이 낫다."""
+    assert "teacher" in [s.key for s in setup_guide.remaining(db, KID)]
+    _, 끝냄, 꼭 = setup_guide.progress(db, KID)
+    assert (끝냄, 꼭) == (0, 3)

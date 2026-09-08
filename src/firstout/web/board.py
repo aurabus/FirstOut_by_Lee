@@ -51,12 +51,16 @@ def board(request: Request, db: Session = Depends(get_db), d: str = ""):
         "home": sum(s.home for s in stats),
         "staying": sum(s.staying for s in stats),
     }
+    # 시작 안내 — 꼭 해야 할 것이 끝나면 저절로 걷힌다 (선생님 초대는 선택)
+    todo, 끝낸단계, 꼭할단계 = (
+        setup_guide.progress(db, me.kinder_id) if me.is_admin else ([], 0, 0))
+
     return page(
         request, "board.html", db, me,
         day=day, d=d,
         stats=stats, total=total, progress=progress,
         nocall=service.no_contact(rows),
         overdue=[p for p in progress if p["overdue"]],
-        todo=setup_guide.remaining(db, me.kinder_id) if me.is_admin else [],
+        todo=todo, todo_done=끝낸단계, todo_must=꼭할단계,
         weekend=service.weekday_index(day) is None,
     )
