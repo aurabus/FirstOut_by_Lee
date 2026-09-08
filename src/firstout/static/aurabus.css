@@ -1,0 +1,286 @@
+/* ═══════════════════════════════════════════════════════════════
+   aurabus.css — 아우라버스 공통 화면 결 (v1)
+
+   이 파일은 **프로젝트와 무관하다.** 색·모서리·그림자·글자 크기 같은 「결」과,
+   어느 프로그램에나 있는 조각(단추·입력칸·카드·안내·표·대화상자)만 담는다.
+   프로그램마다 다른 것은 각자의 app.css 에 두고, 여기 있는 값(--토큰)만 갖다 쓴다.
+
+   다른 프로젝트에 옮길 때
+     1) 이 파일과 fonts/ 폴더를 통째로 복사한다
+     2) <link rel="stylesheet" href="/static/aurabus.css"> 를 먼저 걸고
+        그 다음에 그 프로젝트의 app.css 를 건다
+     3) 색을 바꾸려면 아래 「색」 칸만 고친다. 다른 곳은 건드릴 필요가 없다
+
+   결을 통째로 바꾸려면 <html data-skin="mist"> 처럼 한 글자만 바꾸면 된다.
+   담긴 결: (기본) 숲 · mist 안개 · moss 이끼 · blank 백지
+
+   글꼴은 서버에 함께 둔다 — 인터넷이 없어도 모든 기기에서 같은 화면이어야 한다.
+   Pretendard 가변 폰트 하나로 300~700 굵기를 쓴다 (SIL OFL 1.1, fonts/OFL.txt).
+   ═══════════════════════════════════════════════════════════════ */
+
+@font-face{
+  font-family:"Pretendard";
+  /* format 은 "woff2" 로 둔다. "woff2-variations" 를 모르는 브라우저는 이 src 를
+     통째로 건너뛰어 글꼴이 아예 안 걸린다. woff2 를 지원하면 가변 축도 동작한다. */
+  src:url("/static/fonts/PretendardVariable.woff2") format("woff2");
+  font-weight:300 700;
+  font-style:normal;
+  font-display:swap;
+}
+
+/* ── 색 ─────────────────────────────────────────────────────────
+   여기만 고치면 화면 전체가 바뀐다. 이름은 역할로 지었다 —
+   「초록」이 아니라 「key」라야 나중에 색이 바뀌어도 이름이 거짓이 되지 않는다. */
+:root{
+  /* 바탕과 글자 */
+  --paper:#F1F5F2;      /* 화면 바탕 */
+  --card:#FFFFFF;       /* 올라온 면 */
+  --card-2:#E9F0EB;     /* 한 단 들어간 면 (입력칸·비활성 단추) */
+  --sunk:#E2EAE4;       /* 가장 깊은 면 (표 머리·묶음 머리) */
+  --ink:#14201C;        /* 본문 */
+  --ink-2:#3F4E47;      /* 보조 — 또렷하게 읽혀야 한다 */
+  --ink-3:#6C7A73;      /* 흐린 글자. 이보다 더 흐리면 읽기 어렵다 */
+  --rule:#DBE4DE;       /* 바깥 테두리 */
+  --rule-2:#EAF0EC;     /* 안쪽 구분선 — 줄과 줄 사이 */
+
+  /* 뜻을 가진 색 */
+  --key:#2E6A57;   --key-2:#3A836C;  --key-soft:#DFEDE6;  --key-line:#9CC7B5;
+  --warn:#8A6417;  --warn-2:#C8901F; --warn-soft:#F8F0DC; --warn-line:#DEC68C;
+  --stop:#A33C2C;  --stop-2:#C55A45; --stop-soft:#F8E3DD; --stop-line:#E0AB9C;
+  --sign:#6A4076;  --sign-2:#84558F; --sign-soft:#F0E5F3; --sign-line:#C7A6CE;
+
+  /* 예전 이름 — 손잡고 마중이 쓰던 말. 새 이름으로 이어준다 */
+  --pine:var(--key); --pine-2:var(--key-2); --pine-soft:var(--key-soft);
+  --gold:var(--warn); --gold-2:var(--warn-2); --gold-soft:var(--warn-soft);
+  --gold-line:var(--warn-line);
+  --clay:var(--stop); --clay-2:var(--stop-2); --clay-soft:var(--stop-soft);
+  --clay-line:var(--stop-line);
+  --plum:var(--sign); --plum-soft:var(--sign-soft); --plum-line:var(--sign-line);
+
+  /* ── 모양 ── 인상을 가장 크게 바꾸는 값들이다 */
+  --r:14px;             /* 카드·상자 */
+  --r-sm:10px;          /* 입력칸·작은 조각 */
+  --r-pill:999px;       /* 단추 */
+  --bw:1px;             /* 테두리 굵기 */
+  --sh:0 1px 2px rgba(20,32,28,.05);
+  --sh-2:0 1px 3px rgba(20,32,28,.06), 0 6px 18px rgba(20,32,28,.07);
+  --shadow:var(--sh);   /* 예전 이름 */
+
+  /* ── 글자 ── */
+  --sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",sans-serif;
+  /* 숫자는 같은 글꼴에 tabular 만 켠다 — 한글이 고정폭 글꼴로 떨어지지 않는다 */
+  --mono:"Pretendard",-apple-system,"Malgun Gothic",sans-serif;
+  --t-body:1rem;        /* 본문 */
+  --t-name:1.02rem;     /* 이름처럼 눈이 먼저 가는 글자 */
+  --t-sm:.88rem;        /* 보조 설명 */
+  --t-xs:.79rem;        /* 딱지·단위 */
+  --w-name:600;         /* 이름 굵기 — 또렷하게 */
+  --lh:1.64;
+
+  /* ── 사이 ── */
+  --tap:44px;           /* 손가락으로 누르는 것의 최소 크기 */
+  --gap:.55rem;
+}
+
+/* 어두운 화면 — 값만 다시 정하고, 조각들은 건드리지 않는다 */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1412; --card:#16201C; --card-2:#1E2A25; --sunk:#121B18;
+    --ink:#E9F1ED; --ink-2:#B3C0BA; --ink-3:#7F8C86;
+    --rule:#2C3A34; --rule-2:#222D28;
+    --key:#5FCFAE; --key-2:#7FDEC3; --key-soft:#0F2C25; --key-line:#2F5C4E;
+    --warn:#EFBB63; --warn-2:#E5A63A; --warn-soft:#2E2513; --warn-line:#6A5528;
+    --stop:#F0907A; --stop-2:#E8654C; --stop-soft:#341914; --stop-line:#7A3E30;
+    --sign:#D2A6DC; --sign-soft:#2B1E30; --sign-line:#553E5C;
+    --sh:0 1px 2px rgba(0,0,0,.4);
+    --sh-2:0 1px 3px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1412; --card:#16201C; --card-2:#1E2A25; --sunk:#121B18;
+  --ink:#E9F1ED; --ink-2:#B3C0BA; --ink-3:#7F8C86;
+  --rule:#2C3A34; --rule-2:#222D28;
+  --key:#5FCFAE; --key-2:#7FDEC3; --key-soft:#0F2C25; --key-line:#2F5C4E;
+  --warn:#EFBB63; --warn-2:#E5A63A; --warn-soft:#2E2513; --warn-line:#6A5528;
+  --stop:#F0907A; --stop-2:#E8654C; --stop-soft:#341914; --stop-line:#7A3E30;
+  --sign:#D2A6DC; --sign-soft:#2B1E30; --sign-line:#553E5C;
+  --sh:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 1px 3px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.4);
+}
+
+/* ── 다른 결 ── <html data-skin="mist"> 한 줄로 갈아입는다 ───────── */
+
+/* 안개 — 서늘한 회청. 테두리를 지우고 그림자로만 나눈다 */
+:root[data-skin="mist"]{
+  --paper:#EEF2F5; --card:#FFFFFF; --card-2:#E7EDF2; --sunk:#E1E8EE;
+  --ink:#18222A; --ink-2:#48565F; --ink-3:#7F8D98;
+  --rule:#E2E9EF; --rule-2:#EDF2F6;
+  --key:#3F6C8E; --key-2:#5483A5; --key-soft:#E0EAF2; --key-line:#A9C4D8;
+  --warn:#8A6A34; --warn-2:#C08F35; --warn-soft:#F5EDDD; --warn-line:#DCC79F;
+  --stop:#9C4A46; --stop-2:#BE6560; --stop-soft:#F5E3E2; --stop-line:#DFAFAC;
+  --sign:#585487; --sign-2:#6F6B9E; --sign-soft:#E6E5F3; --sign-line:#B4B1D5;
+  --r:18px; --r-sm:13px; --bw:0px;
+  --sh:0 2px 6px rgba(24,34,42,.06);
+  --sh-2:0 2px 8px rgba(24,34,42,.07), 0 10px 28px rgba(24,34,42,.08);
+}
+/* 이끼 — 따뜻한 종이 */
+:root[data-skin="moss"]{
+  --paper:#F6F4EE; --card:#FFFDF8; --card-2:#EFEDE5; --sunk:#E8E5DB;
+  --ink:#232720; --ink-2:#525A4E; --ink-3:#848C7E;
+  --rule:#E0DCD0; --rule-2:#EDEAE1;
+  --key:#5C7A63; --key-2:#6E8F74; --key-soft:#E4EBE2; --key-line:#B0C3B3;
+  --sign:#6B5378; --sign-2:#83679015; --sign-soft:#ECE5F0; --sign-line:#C3AECB;
+  --r:12px; --r-sm:9px;
+}
+/* 백지 — 그림자 없이 평평하게 */
+:root[data-skin="blank"]{
+  --paper:#FAFAF8; --card:#FFFFFF; --card-2:#F2F2EF; --sunk:#EDEDE9;
+  --ink:#181B19; --ink-2:#464B48; --ink-3:#848A86;
+  --rule:#E4E4DF; --rule-2:#F0F0EC;
+  --key:#6B4A63; --key-2:#7E5876; --key-soft:#F0E8EE; --key-line:#CBB2C4;
+  --sign:#3F6152; --sign-2:#4F7766; --sign-soft:#E3ECE7; --sign-line:#A9C2B5;
+  --r:8px; --r-sm:6px;
+  --sh:none; --sh-2:none;
+}
+
+/* ── 바탕 ──────────────────────────────────────────────────────── */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:var(--t-body);font-weight:400;line-height:var(--lh)}
+h1,h2,h3{margin:0;letter-spacing:-.014em;text-wrap:balance;line-height:1.35}
+p{margin:0}
+a{color:var(--key)}
+button,input,select,textarea{font-family:inherit;font-size:inherit;
+  letter-spacing:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--key-2);outline-offset:2px;border-radius:var(--r-sm)}
+form{margin:0}
+.wrap{max-width:66rem;margin:0 auto;padding:0 clamp(.7rem,2.5vw,1.4rem) 4rem}
+.n-f{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.z{color:var(--ink-3);opacity:.55}
+.sub{display:block;font-style:normal;font-size:var(--t-xs);color:var(--ink-3)}
+
+/* ── 숫자 타일 ──────────────────────────────────────────────────
+   칸 수를 고정하지 않는다 — 화면마다 개수가 다르고, 빈 칸이 남으면
+   숫자가 한쪽으로 몰려 읽기 어려워진다 */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));
+  gap:var(--gap);margin:1.05rem 0}
+.tile{background:var(--card);border:var(--bw) solid var(--rule);
+  border-radius:var(--r);padding:.7rem .9rem .75rem;box-shadow:var(--sh)}
+.tile dt{font-size:var(--t-xs);color:var(--ink-3);font-weight:500}
+.tile dd{margin:.1rem 0 0;font-size:1.55rem;font-weight:700;line-height:1.15;
+  font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+.tile.pine,.tile.key{border-top:3px solid var(--key)}
+.tile.pine dd{color:var(--key)}
+.tile.key dd{font-weight:700}
+.tile.warn{border-color:var(--warn-line);background:var(--warn-soft)}
+.tile.warn dd,.tile.warn dt{color:var(--warn)}
+.tile.alert{border-color:var(--stop-line);background:var(--stop-soft)}
+.tile.alert dd,.tile.alert dt{color:var(--stop)}
+
+/* ── 묶음 ───────────────────────────────────────────────────── */
+.sec{margin-top:1.5rem}
+.sec-h{display:flex;align-items:baseline;gap:.55rem;padding-bottom:.42rem;
+  border-bottom:1px solid var(--rule);margin-bottom:.75rem;flex-wrap:wrap}
+.sec-h h2{font-size:1.06rem;font-weight:700}
+.sec-h .n{font-family:var(--mono);font-size:var(--t-xs);color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.sec-h .hint{font-size:var(--t-xs);color:var(--ink-3);margin-left:auto}
+.empty{color:var(--ink-3);font-size:var(--t-sm);padding:.8rem 0}
+
+/* ── 안내 ───────────────────────────────────────────────────────
+   눌렀는데 아무 일도 안 일어난 것처럼 보이면 안 된다.
+   ✓ 표시와 굵은 글씨로 눈에 걸리게 하고, 나타날 때 한 번 깜빡인다. */
+.msg{display:flex;align-items:center;gap:.55rem;
+  background:var(--key-soft);border:1px solid var(--key-line);
+  border-left:4px solid var(--key);border-radius:var(--r);
+  padding:.7rem .95rem;font-size:var(--t-sm);font-weight:500;color:var(--key);
+  margin:.9rem 0;box-shadow:var(--sh);animation:msgin .45s ease-out}
+.msg::before{content:"✓";flex:0 0 1.25rem;height:1.25rem;border-radius:50%;
+  background:var(--key);color:var(--card);font-size:.76rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+@keyframes msgin{
+  from{opacity:0;transform:translateY(-.35rem)}
+  60%{box-shadow:0 0 0 .34rem var(--key-soft)}
+  to{opacity:1;transform:none}
+}
+.ok-bar{background:var(--key-soft);border:1px solid var(--key-line);
+  border-left:4px solid var(--key);border-radius:var(--r);padding:.6rem .9rem;
+  font-size:var(--t-sm);color:var(--key);margin:1rem 0}
+.alert{display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;
+  background:var(--stop-soft);border:1px solid var(--stop-line);
+  border-left:4px solid var(--stop);border-radius:var(--r);
+  padding:.6rem .9rem;font-size:var(--t-sm);margin:.55rem 0;color:var(--ink-2)}
+.alert b{color:var(--stop);font-weight:700;white-space:nowrap}
+.alert span{color:var(--ink-2)}
+
+/* ── 단추 · 입력 ───────────────────────────────────────────────── */
+.btn{border:1px solid var(--rule);background:var(--card-2);color:var(--ink);
+  padding:.5rem .95rem;border-radius:var(--r-pill);font-size:var(--t-sm);
+  font-weight:500;min-height:var(--tap);white-space:nowrap;display:inline-flex;
+  align-items:center;justify-content:center;text-decoration:none;
+  box-shadow:var(--sh);transition:background .12s,border-color .12s}
+.btn:hover{border-color:var(--ink-3)}
+.btn.go{background:var(--key);border-color:var(--key);color:#fff}
+.btn.go:hover{background:var(--key-2);border-color:var(--key-2)}
+.btn.sm{min-height:36px;padding:.3rem .75rem;font-size:var(--t-xs)}
+.btn.del{color:var(--stop);border-color:var(--stop-line);background:var(--card)}
+.btn.del:hover{background:var(--stop-soft);border-color:var(--stop)}
+.btn[disabled]{opacity:.45}
+
+.picks{display:flex;gap:.32rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center}
+.pick{border:1px solid var(--rule);background:var(--card);border-radius:var(--r-pill);
+  padding:.42rem .85rem;font-size:var(--t-sm);font-weight:500;min-height:42px;
+  color:var(--ink-2);text-decoration:none;display:inline-flex;align-items:center;
+  box-shadow:var(--sh)}
+.pick:hover{border-color:var(--ink-3);color:var(--ink)}
+.pick.on{border-color:var(--key);background:var(--key-soft);color:var(--key);font-weight:700}
+.pick .sub{display:inline;font-family:var(--mono);font-size:var(--t-xs);opacity:.75;
+  margin-left:.35rem}
+
+.field{border:1px solid var(--rule);background:var(--card);border-radius:var(--r-sm);
+  padding:.45rem .7rem;font-size:var(--t-sm);min-height:42px;min-width:7rem}
+.field:focus{border-color:var(--key-2)}
+.field.t{max-width:6.5rem;font-family:var(--mono);text-align:center}
+.search{width:100%;padding:.6rem .9rem;border:1px solid var(--rule);
+  border-radius:var(--r-sm);background:var(--card);font-size:.95rem;
+  min-height:var(--tap);margin-bottom:.8rem;box-shadow:var(--sh)}
+.search:focus{border-color:var(--key-2)}
+
+/* ── 줄 목록 (설정·계정 같은 곳) ─────────────────────────────────── */
+.cfg{background:var(--card);border:var(--bw) solid var(--rule);border-radius:var(--r);
+  box-shadow:var(--sh-2);overflow:hidden}
+.cfg-row{display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;
+  border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
+.cfg-row:last-child{border-bottom:none}
+.cfg-row.off{opacity:.55}
+.cfg-cnt{font-family:var(--mono);font-size:var(--t-xs);color:var(--ink-3);
+  min-width:3.2rem;text-align:right}
+.cfg-note{font-size:var(--t-xs);color:var(--ink-3);padding:.6rem .8rem;
+  background:var(--sunk);border-top:1px solid var(--rule-2)}
+
+/* ── 표 ─────────────────────────────────────────────────────────
+   넓은 표는 제 안에서만 옆으로 흐르게 한다 — 화면 전체가 흔들리면 안 된다 */
+.tw{overflow-x:auto;background:var(--card);border:var(--bw) solid var(--rule);
+  border-radius:var(--r);box-shadow:var(--sh-2)}
+table{border-collapse:collapse;width:100%}
+thead th{font-size:var(--t-xs);color:var(--ink-3);font-weight:600;text-align:right;
+  padding:.5rem .7rem;border-bottom:1px solid var(--rule);white-space:nowrap;
+  background:var(--sunk)}
+tbody td{padding:.48rem .7rem;border-bottom:1px solid var(--rule-2);text-align:right;
+  font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:none}
+.tx{text-align:left!important}
+
+/* ── 대화상자 ──────────────────────────────────────────────────── */
+.dlg{border:none;padding:0;border-radius:var(--r);background:var(--card);
+  color:var(--ink);width:min(26rem,92vw);box-shadow:0 12px 40px rgba(8,14,12,.28)}
+.dlg::backdrop{background:rgba(8,14,12,.45)}
+.dlg-in{padding:1.1rem;display:flex;flex-direction:column;gap:.7rem}
+.dlg h3{font-size:1.1rem;font-weight:700}
+.dlg-who{font-size:var(--t-sm);color:var(--ink-2)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}

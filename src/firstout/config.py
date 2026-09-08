@@ -34,6 +34,10 @@ try:
 except ValueError:
     PROXY_HOPS = 0
 
+# 화면의 결. 비워두면 기본(숲). aurabus.css 에 담긴 것: mist · moss · blank
+#     $env:MAJUNG_SKIN = "mist"
+SKIN = os.environ.get("MAJUNG_SKIN", "").strip().lower()
+
 APP_NAME = "손잡고 마중"
 APP_TAGLINE = "아이를 안전하게, 집으로"
 

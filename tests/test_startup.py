@@ -115,3 +115,29 @@ def test_사용_안내의_모든_대목에_갈_수_있다():
         wanted |= set(re.findall(r'href="/help#([^"]+)"', f.read_text(encoding="utf-8")))
     assert wanted, "화면에서 안내로 가는 길이 하나도 없다"
     assert wanted <= have, f"없는 대목으로 보낸다: {wanted - have}"
+
+
+def test_화면이_쓰는_모든_class_가_CSS_에_있다():
+    """공통 결(aurabus.css)과 이 프로그램 조각(app.css)을 함께 본다.
+
+    실제로 출결 화면의 CSS 가 통째로 빠져 있어 화면이 깨진 적이 있다.
+    """
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    static = Path(firstout.__file__).parent / "static"
+    css = " ".join(
+        re.sub(r"/\*.*?\*/", "", (static / n).read_text(encoding="utf-8"), flags=re.S)
+        for n in ("aurabus.css", "app.css")
+    )
+    defined = set(re.findall(r"\.([A-Za-z][\w-]*)", css))
+
+    used = set()
+    for f in (Path(firstout.__file__).parent / "templates").glob("*.html"):
+        for m in re.findall(r'class="([^"]*)"', f.read_text(encoding="utf-8")):
+            m = re.sub(r"\{\{.*?\}\}|\{%.*?%\}", " ", m)
+            used |= {n for n in m.split() if n and n[0].isascii() and n[0].isalpha()}
+
+    assert used <= defined, f"CSS 에 없는 class: {sorted(used - defined)}"

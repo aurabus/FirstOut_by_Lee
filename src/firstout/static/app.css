@@ -1,60 +1,44 @@
-/* 손잡고 마중 — 화면 전체 스타일
+/* 손잡고 마중 — 이 프로그램만의 화면 조각
 
-   글꼴은 서버에 함께 둔다. 원내망에 인터넷이 없어도 모든 기기에서 같은 화면이어야 하기 때문이다.
-   Pretendard 가변 폰트 파일 하나로 300~700 굵기를 모두 쓴다 (SIL OFL 1.1, fonts/OFL.txt).
-   숫자 정렬은 이 글꼴의 tabular-nums 로 처리하므로 별도 고정폭 글꼴이 필요 없다.
-   태블릿에서 손가락으로 누르므로 누르는 것은 최소 44px 을 지킨다. */
+   결(색·모서리·그림자·글자)은 aurabus.css 에 있다. 여기는 그 값을 가져다 쓰기만 한다.
+   그래서 색을 바꾸고 싶으면 이 파일이 아니라 aurabus.css 의 「색」 칸을 고치면 된다.
 
-@font-face{
-  font-family:"Pretendard";
-  /* format 은 "woff2" 로 둔다. "woff2-variations" 를 모르는 브라우저는 이 src 를 통째로
-     건너뛰어 글꼴이 아예 안 걸린다. woff2 를 지원하면 가변 축도 함께 동작한다. */
-  src:url("/static/fonts/PretendardVariable.woff2") format("woff2");
-  font-weight:300 700;
-  font-style:normal;
-  font-display:swap;
-}
+   태블릿에서 손가락으로 누르므로 누르는 것은 최소 --tap(44px) 을 지킨다. */
 
-:root{
-  --paper:#EFF3F1; --card:#FFFFFF; --card-2:#E9EFEC; --sunk:#DFE7E3;
-  --ink:#0D1613; --ink-2:#44514C; --ink-3:#75827C;
-  --rule:#CBD4CF; --rule-2:#DEE5E1;
-  --pine:#0A6B55; --pine-2:#0E8368; --pine-soft:#D6EDE6;
-  --gold:#8F5D06; --gold-2:#E09B22; --gold-soft:#FBEED2; --gold-line:#DDB35E;
-  --clay:#B02618; --clay-2:#D9503C; --clay-soft:#FBDFD9; --clay-line:#E39887;
-  --plum:#5B3A86; --plum-soft:#EDE4F8; --plum-line:#C0A6E0;
-  --sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",sans-serif;
-  /* 숫자는 같은 글꼴에 tabular 만 켠다 — 한글이 고정폭 글꼴로 떨어지는 문제가 사라진다 */
-  --mono:"Pretendard",-apple-system,"Malgun Gothic",sans-serif;
-  --shadow:0 1px 2px rgba(13,22,19,.07);
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --paper:#0A110F; --card:#141D19; --card-2:#1C2723; --sunk:#101815;
-    --ink:#EBF2EE; --ink-2:#A9B7B1; --ink-3:#7A8781;
-    --rule:#32403A; --rule-2:#26312C;
-    --pine:#4FD0AE; --pine-2:#74DFC3; --pine-soft:#0E2C25;
-    --gold:#F0BB5E; --gold-2:#E5A63A; --gold-soft:#2F2614; --gold-line:#6A5528;
-    --clay:#F5917A; --clay-2:#E8654C; --clay-soft:#361C16; --clay-line:#7C3E2F;
-    --plum:#C0A2EC; --plum-soft:#251C33; --plum-line:#4E3E6B;
-    --shadow:0 1px 2px rgba(0,0,0,.35);
-  }
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:400;
-  line-height:1.62;letter-spacing:-.003em;-webkit-font-smoothing:antialiased}
-h1,h2,h3{margin:0;letter-spacing:-.012em;text-wrap:balance}
-p{margin:0}
-a{color:var(--pine)}
-button,input,select{font-family:inherit;font-size:inherit;letter-spacing:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--pine-2);outline-offset:2px}
-form{margin:0}
-.wrap{max-width:66rem;margin:0 auto;padding:0 clamp(.7rem,2.5vw,1.4rem) 4rem}
-.n-f{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* ── 표 꾸밈 · 설정 줄 ──
+   공통 표(aurabus.css)는 뼈대만 잡는다. 여기는 이 프로그램의 열과 색이다. */
+.board thead tr:first-child th.gh{font-size:.68rem;letter-spacing:.05em;color:var(--pine);
+.board .grp{border-left:1px solid var(--rule)}
+.board tbody tr.tot{background:var(--sunk)}
+.v-abs{color:var(--clay)} .v-early{color:var(--gold)} .v-home{color:var(--ink-3)}
+.v-left{color:var(--ink);font-weight:700} .v-tot{color:var(--ink-2)} .z{color:var(--rule)}
+.ord{display:flex;flex-direction:column;gap:1px}
+.ord button{border:1px solid var(--rule);background:var(--card-2);width:1.7rem;height:1.15rem;
+.tags{display:flex;flex-wrap:wrap;gap:.35rem;padding:.6rem .7rem}
+.tag-x{border:1px solid var(--plum-line);background:var(--plum-soft);color:var(--plum);
+.tag-x button{border:none;background:none;color:inherit;padding:0 .1rem;min-height:0}
+
+/* ── 서명 창 속살 ──
+   대화상자 껍데기는 공통(.dlg)이고, 안에 든 것은 이 프로그램의 일이다. */
+.dg-box{display:flex;align-items:center;gap:.6rem;border:1px solid var(--plum-line);
+.dg-who{flex:1;display:flex;flex-direction:column;gap:.05rem;min-width:0}
+.dg-who b{font-size:1rem;font-weight:700;color:var(--plum)}
+.dg-who span{font-size:.75rem;color:var(--ink-3)}
+.glist{display:flex;flex-direction:column;gap:.4rem}
+.gitem{width:100%;text-align:left;border:1px solid var(--rule);background:var(--card-2);
+.gitem:hover{border-color:var(--pine-2)}
+.gitem b{font-weight:500;font-size:.93rem}
+.gitem span{font-size:.75rem;color:var(--ink-3)}
+.sigpad{width:100%;height:9rem;border:1.5px dashed var(--rule);border-radius:3px;
+.sig-line{font-size:.75rem;color:var(--ink-3);text-align:center}
+.sig-acts{display:flex;gap:.4rem}
+.gitem--temp{border-style:dashed}
 
 /* ── 상단바 ── */
+/* 도움말·개선 요청은 일하는 탭이 아니라 곁다리다 — 오른쪽으로 밀어 두고 옅게 */
+.tab-help{margin-left:auto;color:var(--ink-3)}
+.tab-help + .tab-help{margin-left:0}
+
 .bar{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--rule)}
 .bar-in{max-width:66rem;margin:0 auto;padding:.6rem clamp(.7rem,2.5vw,1.4rem);
   display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
@@ -78,57 +62,6 @@ form{margin:0}
 .tab .cnt{font-family:var(--mono);font-size:.73rem;color:var(--ink-3);margin-left:.26rem}
 .tab.on .cnt{color:var(--pine)}
 
-/* ── 타일 ── */
-/* 칸 수를 고정하지 않는다 — 화면마다 타일 개수가 다르고, 빈 칸이 남으면
-   숫자가 한쪽으로 몰려 읽기 어려워진다 */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));
-  gap:.5rem;margin:1.05rem 0}
-.tile{background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--rule);
-  border-radius:3px;padding:.6rem .78rem .68rem;box-shadow:var(--shadow)}
-.tile dt{font-size:.74rem;color:var(--ink-3);font-weight:500}
-.tile dd{margin:0;font-family:var(--mono);font-size:1.7rem;font-weight:500;line-height:1.22;
-  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.tile.pine{border-top-color:var(--pine)} .tile.pine dd{color:var(--pine)}
-.tile.key{border-top-color:var(--ink)} .tile.key dd{font-weight:700}
-.tile.warn{border-color:var(--gold-line);border-top-color:var(--gold-2);background:var(--gold-soft)}
-.tile.warn dd,.tile.warn dt{color:var(--gold)}
-.tile.alert{border-color:var(--clay-line);border-top-color:var(--clay);background:var(--clay-soft)}
-.tile.alert dd,.tile.alert dt{color:var(--clay)}
-@media (max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
-
-/* ── 섹션 ── */
-.sec{margin:1.45rem 0 0}
-.sec-h{display:flex;align-items:center;gap:.55rem;padding-bottom:.48rem;
-  border-bottom:1px solid var(--rule);margin-bottom:.72rem;flex-wrap:wrap}
-.sec-h h2{font-size:1rem;font-weight:700}
-.sec-h .n{font-family:var(--mono);font-size:.78rem;color:var(--ink-3)}
-.sec-h .hint{font-size:.77rem;color:var(--ink-3);margin-left:auto}
-.empty{color:var(--ink-3);font-size:.85rem;padding:.8rem 0}
-
-/* ── 알림 ── */
-.alert{display:flex;gap:.6rem;align-items:flex-start;background:var(--clay-soft);
-  border-left:3px solid var(--clay);padding:.55rem .8rem;font-size:.85rem;margin-bottom:.4rem}
-.alert b{color:var(--clay);font-weight:500;white-space:nowrap;font-size:.79rem}
-.alert span{color:var(--ink-2)}
-.ok-bar{background:var(--pine-soft);border-left:3px solid var(--pine);padding:.55rem .8rem;
-  font-size:.85rem;color:var(--pine);margin:1rem 0}
-/* 처리 결과 안내 — 눌렀는데 아무 일도 안 일어난 것처럼 보이면 안 된다.
-   ✓ 표시와 굵은 글씨로 눈에 걸리게 하고, 나타날 때 한 번 깜빡인다. */
-.msg{display:flex;align-items:center;gap:.55rem;
-  background:var(--pine-soft);border:1px solid var(--pine);border-left-width:4px;
-  border-radius:3px;padding:.7rem .9rem;font-size:.92rem;font-weight:500;
-  color:var(--pine);margin:.9rem 0;box-shadow:var(--shadow);
-  animation:msgin .45s ease-out}
-.msg::before{content:"✓";flex:0 0 1.25rem;height:1.25rem;border-radius:50%;
-  background:var(--pine);color:var(--card);font-size:.78rem;font-weight:700;
-  display:flex;align-items:center;justify-content:center}
-@keyframes msgin{
-  from{opacity:0;transform:translateY(-.35rem)}
-  60%{box-shadow:0 0 0 .32rem var(--pine-soft)}
-  to{opacity:1;transform:none}
-}
-@media (prefers-reduced-motion:reduce){.msg{animation:none}}
-
 /* ── 차수 카드 ── */
 .rounds{display:grid;grid-template-columns:repeat(5,1fr);gap:.45rem}
 .rnd{background:var(--card);border:1px solid var(--rule);border-radius:3px;
@@ -138,7 +71,7 @@ form{margin:0}
 .rnd.ok{border-color:var(--pine);background:var(--pine-soft)}
 .rnd-t{font-family:var(--mono);font-size:.72rem;color:var(--ink-3)}
 .rnd-t em{font-style:normal;font-family:var(--sans);font-size:.68rem}
-.rnd-n{font-size:.86rem;font-weight:700}
+.rnd-n{font-size:var(--t-name);font-weight:var(--w-name);margin-top:.15rem}
 .rnd-n .sg{font-style:normal;color:var(--plum);margin-left:.22rem;font-size:.8rem}
 .rnd-c{font-family:var(--mono);font-size:1.18rem;font-weight:500;line-height:1.2;
   font-variant-numeric:tabular-nums}
@@ -155,77 +88,11 @@ form{margin:0}
 .legend span{display:flex;align-items:center;gap:.4rem}
 .legend i{width:.85rem;height:.58rem;border-radius:2px;display:block}
 
-/* ── 표 ── */
-.tw{overflow-x:auto;background:var(--card);border:1px solid var(--rule);border-radius:3px;
-  box-shadow:var(--shadow)}
-table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:32rem}
-thead th{font-size:.72rem;color:var(--ink-3);font-weight:500;text-align:right;padding:.5rem .65rem;
-  border-bottom:1px solid var(--rule);white-space:nowrap}
-thead th:first-child,thead th.tx{text-align:left}
-tbody td{padding:.46rem .65rem;border-bottom:1px solid var(--rule-2);text-align:right;
-  font-family:var(--mono);font-variant-numeric:tabular-nums}
-tbody td:first-child,tbody td.tx{text-align:left;font-family:var(--sans)}
-tbody tr:last-child td{border-bottom:none}
-.board{min-width:42rem}
-.board thead tr:first-child th{border-bottom:1px solid var(--rule-2);padding-bottom:.26rem}
-.board thead tr:first-child th.gh{font-size:.68rem;letter-spacing:.05em;color:var(--pine);
-  text-align:center;font-weight:700}
-.board thead tr:last-child th{padding-top:.26rem}
-.board .grp{border-left:1px solid var(--rule)}
-.board tbody tr{background:var(--card)}
-.board tbody tr:nth-child(even){background:var(--card-2)}
-.board tbody tr:hover{background:var(--pine-soft)}
-.board tbody tr.tot{background:var(--sunk)}
-.board tbody td{padding:.48rem .62rem;font-size:.93rem;font-weight:500}
-.board .nm{position:sticky;left:0;background:inherit;font-weight:700;
-  border-right:1px solid var(--rule-2);min-width:6.4rem}
-.v-abs{color:var(--clay)} .v-early{color:var(--gold)} .v-home{color:var(--ink-3)}
-.v-left{color:var(--ink);font-weight:700} .v-tot{color:var(--ink-2)} .z{color:var(--rule)}
-
 /* ── 유형 배지 ── */
 .ty{display:inline-block;font-size:.72rem;padding:.06rem .42rem;border-radius:2px;
   border:1px solid currentColor;white-space:nowrap;line-height:1.5}
 .ty.개별{color:var(--pine)} .ty.차량{color:var(--gold)}
 .ty.학원{color:var(--plum)} .ty.돌봄{color:var(--ink-2)} .ty.정규{color:var(--ink-3)}
-
-/* ── 버튼 · 선택줄 ── */
-.btn{border:1px solid var(--rule);background:var(--card-2);padding:.46rem .82rem;border-radius:3px;
-  font-size:.85rem;font-weight:500;min-height:44px;white-space:nowrap;display:inline-flex;
-  align-items:center;justify-content:center;text-decoration:none;color:inherit}
-.btn:hover{border-color:var(--ink-3)}
-.btn.go{background:var(--pine);border-color:var(--pine);color:#fff}
-.btn.go:hover{background:var(--pine-2);border-color:var(--pine-2)}
-.btn.sm{min-height:36px;padding:.3rem .6rem;font-size:.79rem}
-.btn.del{color:var(--clay);border-color:var(--clay-line)}
-.picks{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:center}
-.pick{border:1px solid var(--rule);background:var(--card);border-radius:3px;padding:.42rem .78rem;
-  font-size:.85rem;font-weight:500;min-height:42px;color:var(--ink-2);text-decoration:none;
-  display:inline-flex;align-items:center}
-.pick.on{border-color:var(--pine);background:var(--pine-soft);color:var(--pine);font-weight:700}
-.pick .sub{font-family:var(--mono);font-size:.73rem;opacity:.75;margin-left:.35rem}
-.field{border:1px solid var(--rule);background:var(--card-2);border-radius:3px;padding:.4rem .6rem;
-  font-size:.9rem;min-height:40px;min-width:7rem}
-.field.t{max-width:6.5rem;font-family:var(--mono);text-align:center}
-.search{width:100%;padding:.55rem .8rem;border:1px solid var(--rule);border-radius:3px;
-  background:var(--card);font-size:.92rem;min-height:44px;margin-bottom:.75rem}
-
-/* ── 설정 ── */
-.cfg{background:var(--card);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow);
-  overflow:hidden}
-.cfg-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;
-  border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
-.cfg-row:last-child{border-bottom:none}
-.cfg-cnt{font-family:var(--mono);font-size:.78rem;color:var(--ink-3);min-width:3.2rem;text-align:right}
-.cfg-note{font-size:.8rem;color:var(--ink-3);padding:.55rem .7rem;background:var(--sunk);
-  border-top:1px solid var(--rule-2)}
-.ord{display:flex;flex-direction:column;gap:1px}
-.ord button{border:1px solid var(--rule);background:var(--card-2);width:1.7rem;height:1.15rem;
-  font-size:.6rem;line-height:1;border-radius:2px;padding:0;min-height:0}
-.tags{display:flex;flex-wrap:wrap;gap:.35rem;padding:.6rem .7rem}
-.tag-x{border:1px solid var(--plum-line);background:var(--plum-soft);color:var(--plum);
-  border-radius:2px;padding:.28rem .5rem;font-size:.8rem;min-height:36px;display:flex;
-  align-items:center;gap:.4rem}
-.tag-x button{border:none;background:none;color:inherit;padding:0 .1rem;min-height:0}
 
 /* ── 로그인 ── */
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.2rem}
@@ -311,9 +178,9 @@ tbody tr:last-child td{border-bottom:none}
   .att{border:.8pt solid #000;border-radius:0;box-shadow:none}
   .att-item{border-bottom:.5pt solid #666;break-inside:avoid;background:transparent!important}
   .att-item:last-child{border-bottom:none}
-  .att-row{padding:1.3mm 2mm;gap:3mm}
-  .att-name{flex:0 0 26mm;border-left:0!important;padding-left:0;font-size:10pt;font-weight:700}
-  .att-meta{font-size:9pt;color:#000;gap:3mm}
+  .att-row{display:flex;align-items:center;gap:.6rem;padding:.45rem .7rem .45rem 0;flex-wrap:wrap}
+  .att-name{flex:0 0 5.5rem;font-size:var(--t-name);font-weight:var(--w-name);border-left:3px solid transparent;padding-left:.65rem}
+  .att-meta{margin-left:auto;display:flex;align-items:center;gap:.4rem;font-size:var(--t-sm);color:var(--ink-2)}
   .att-plan{border-color:#999!important}
 
   /* 귀가 명단 */
@@ -323,9 +190,9 @@ tbody tr:last-child td{border-bottom:none}
     border-bottom:.6pt solid #000;font-size:9.5pt}
   .gl-item{border-bottom:.5pt solid #666;break-inside:avoid;padding:0}
   .gl-item:last-child{border-bottom:none}
-  .gl-row{padding:1.4mm 2mm;gap:3mm}
+  .gl-row{display:grid;grid-template-columns:1.9rem 1fr;gap:.7rem;align-items:center;padding:.6rem .85rem;width:100%;text-align:left;background:none;border:0;min-height:50px}
   .gl-chk{border-color:#000!important;background:transparent!important;color:#000!important}
-  .gl-name{font-size:10pt;font-weight:700}
+  .gl-name{font-weight:var(--w-name);font-size:var(--t-name)}
   .gl-sub,.gl-t{font-size:8.5pt;color:#333!important}
 
   /* 마무리 서명줄 */
@@ -352,7 +219,7 @@ tbody tr:last-child td{border-bottom:none}
 .gl-item.done .gl-chk{background:var(--pine);border-color:var(--pine);color:#fff}
 .gl-name{font-weight:500;font-size:.95rem}
 .gl-item.done .gl-name{color:var(--ink-3);text-decoration:line-through}
-.gl-sub{font-size:.74rem;color:var(--ink-3);margin-left:.45rem}
+.gl-sub{font-size:var(--t-xs);color:var(--ink-3);margin-left:.45rem}
 .gl-t{font-family:var(--mono);font-size:.74rem;color:var(--pine);padding-right:.7rem}
 .sg-need{font-style:normal;color:var(--plum);font-size:.7rem;margin-left:.3rem}
 .gl-memo{border:1px solid var(--rule);background:var(--card);border-radius:2px;font-size:.72rem;
@@ -361,30 +228,6 @@ tbody tr:last-child td{border-bottom:none}
 .gl-memo.has{border-color:var(--gold-line);background:var(--gold-soft);color:var(--gold);font-weight:500}
 .sign-row{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
   border-top:1.5px solid var(--rule);margin-top:.65rem;padding-top:.5rem;font-size:.77rem;color:var(--ink-3)}
-
-/* ── 대화상자 ── */
-.dlg{border:1px solid var(--rule);border-radius:4px;background:var(--card);color:var(--ink);
-  padding:0;width:min(26rem,92vw);box-shadow:0 8px 30px rgba(0,0,0,.25)}
-.dlg::backdrop{background:rgba(8,14,12,.5)}
-.dlg-in{padding:1.05rem;display:flex;flex-direction:column;gap:.7rem}
-.dlg h3{font-size:1.08rem;font-weight:700}
-.dlg-who{font-size:.84rem;color:var(--ink-2)}
-.dg-box{display:flex;align-items:center;gap:.6rem;border:1px solid var(--plum-line);
-  background:var(--plum-soft);border-radius:3px;padding:.55rem .7rem}
-.dg-who{flex:1;display:flex;flex-direction:column;gap:.05rem;min-width:0}
-.dg-who b{font-size:1rem;font-weight:700;color:var(--plum)}
-.dg-who span{font-size:.75rem;color:var(--ink-3)}
-.glist{display:flex;flex-direction:column;gap:.4rem}
-.gitem{width:100%;text-align:left;border:1px solid var(--rule);background:var(--card-2);
-  border-radius:3px;padding:.6rem .78rem;min-height:46px;display:flex;justify-content:space-between;
-  align-items:center;gap:.6rem}
-.gitem:hover{border-color:var(--pine-2)}
-.gitem b{font-weight:500;font-size:.93rem}
-.gitem span{font-size:.75rem;color:var(--ink-3)}
-.sigpad{width:100%;height:9rem;border:1.5px dashed var(--rule);border-radius:3px;
-  background:var(--card-2);touch-action:none;display:block;cursor:crosshair}
-.sig-line{font-size:.75rem;color:var(--ink-3);text-align:center}
-.sig-acts{display:flex;gap:.4rem}
 
 /* ── 날짜 이동 ── */
 .daybar{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin:.9rem 0 .2rem}
@@ -725,7 +568,7 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
 
 /* 선생님 목록 — 이름과 직함은 평소에 글자로만 */
 .uwho{display:flex;align-items:baseline;gap:.4rem;min-width:9rem;flex-wrap:wrap}
-.uwho b{font-size:.95rem;font-weight:600}
+.uwho b{font-size:var(--t-name);font-weight:var(--w-name)}
 .uwho em{font-style:normal;font-size:.78rem;color:var(--ink-3)}
 .uedit{display:flex;gap:.3rem;flex-wrap:wrap}
 .uedit[hidden]{display:none}

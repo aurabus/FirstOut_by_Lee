@@ -20,8 +20,7 @@
       {% for r in rows %}
       <div class="sug-item {% if r.answered %}done{% endif %}">
         <div class="sug-head">
-          <span class="sug-state s-{{ loop.index0 }}"
-                data-state="{{ r.status }}">{{ r.status }}</span>
+          <span class="sug-state" data-state="{{ r.status }}">{{ r.status }}</span>
           <b>{{ r.where or "화면" }}</b>
           <em>{{ r.user_name }}
             {%- if me.is_operator and r.kinder_name %} · {{ r.kinder_name }}{% endif %}</em>

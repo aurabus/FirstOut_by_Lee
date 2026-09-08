@@ -25,6 +25,7 @@ from .config import (
     IS_DEV_SECRET,
     PROXY_HOPS,
     PUBLIC_URL,
+    SKIN,
     STATIC_DIR,
     TEMPLATE_DIR,
     WEEKDAYS,
@@ -120,6 +121,7 @@ def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
     base = {
         "request": request,
         "app_name": APP_NAME,
+        "skin": SKIN,
         "tagline": APP_TAGLINE,
         "me": teacher,
         "kinder": teacher.kinder if teacher else ctx.get("kinder"),
