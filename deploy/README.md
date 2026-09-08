@@ -586,6 +586,31 @@ docker compose up -d --build
 
 ---
 
+## 내 PC 에서 먼저 돌려 보려면
+
+윈도우에 도커를 깔면 NAS 에 올리기 전에 여기서 확인할 수 있습니다.
+잘못을 GitHub 에 밀지 않고도 잡을 수 있어 훨씬 빠릅니다.
+
+```powershell
+cd "C:\Users\NBI\Aurabus Dev"
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+`http://127.0.0.1:8765/` 에서 로그인 화면이 뜨면 됩니다. 끝낼 때는:
+
+```powershell
+docker compose down
+```
+
+`docker-compose.local.yml` 을 함께 주는 까닭은 **윈도우에는 폴더의 주인 개념이
+없어서**입니다. NAS 에서 쓰는 `user:` 번호를 그대로 두면 자료 폴더에 쓰지 못합니다.
+내 PC 에서는 그냥 root 로 돕니다. **NAS 에서는 이 파일을 쓰지 않습니다.**
+
+> **내 PC 에서 잘 돈다고 NAS 에서도 잘 돈다는 뜻은 아닙니다.** 윈도우는 파일 주인을
+> 따지지 않아서, NAS 에서 가장 자주 걸리는 「자료 폴더 주인이 안 맞아 죽는 일」이
+> 여기서는 재현되지 않습니다. 그 확인은 NAS 에서 해야 합니다.
+> 시놀로지가 ARM 모델이라면 이미지가 도는 바탕도 달라서, 그것도 NAS 에서만 알 수 있습니다.
+
 ## 서브도메인을 더 만들 때
 
 예를 들어 `demo.aurabus.com` 을 추가한다면 **세 군데**를 손보면 됩니다.
