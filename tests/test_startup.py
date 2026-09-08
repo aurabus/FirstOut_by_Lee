@@ -416,3 +416,22 @@ def test_도커_안에서는_도커_이야기를_한다():
 
     assert "$env:" in 내PC
     assert "Container Manager" not in 내PC
+
+
+def test_배치_파일에는_한글이_없다():
+    """chcp 로 코드페이지를 바꾼 뒤 cmd 는 파일의 나머지를 바이트 위치로 다시 읽는다.
+
+    그래서 한글이 한 글자라도 있으면 — rem 주석 안이라도 — 그 뒤가 통째로 밀려
+    cmd 가 깨진 글자를 명령으로 실행한다. 실제로 두 번 그렇게 깨졌다.
+    한글 안내는 전부 파이썬·PowerShell 쪽에 둔다.
+    """
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    나쁜곳 = {}
+    for f in 뿌리.glob("*.bat"):
+        글 = f.read_text(encoding="utf-8")
+        바깥글자 = sorted({c for c in 글 if ord(c) > 127})
+        if 바깥글자:
+            나쁜곳[f.name] = "".join(바깥글자)
+    assert not 나쁜곳, f"배치 파일에 영문 아닌 글자가 있다: {나쁜곳}"
