@@ -114,7 +114,7 @@ def suspend(kid: int, request: Request, db: Session = Depends(get_db)):
     if k:
         k.status = KG_SUSPENDED
         db.commit()
-        return _back(f"{k.name} 이용 중지")
+        return _back(f"{k.name} 이용 중지 — 선생님들이 로그인할 수 없습니다")
     return _back()
 
 
@@ -127,7 +127,7 @@ def memo(kid: int, request: Request, memo: str = Form(""), db: Session = Depends
     if k:
         k.memo = clip(memo, 200)
         db.commit()
-    return _back("메모 저장")
+    return _back(f"{k.name} 메모를 저장했습니다")
 
 
 @router.post("/operator/{kid}/reject")

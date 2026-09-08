@@ -671,3 +671,8 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:4px;
   display:flex;flex-direction:column;gap:.4rem}
 .sug-form textarea{width:100%;font-family:inherit;font-size:.9rem;resize:vertical}
 .sug-acts{display:flex;gap:.4rem;align-items:center}
+
+/* 운영 화면의 유치원 줄 — 단추가 겹치지 않게 한 줄로 */
+.kacts{display:flex;gap:.3rem;flex-wrap:wrap;align-items:center}
+.kacts form{display:inline-flex}
+.kmemo{display:flex;gap:.3rem;align-items:center}
