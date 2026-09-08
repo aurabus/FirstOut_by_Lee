@@ -176,3 +176,36 @@ def test_화면용_규칙이_인쇄_안에_갇히지_않는다():
     outside = re.sub(r"@media print\{(?:[^{}]|\{[^{}]*\})*\}", "", css, flags=re.S)
     for sel in (".gl", ".gl-item", ".att", ".att-item", ".board", ".tiles", ".btn"):
         assert re.search(re.escape(sel) + r"\{", outside), f"{sel} 이 인쇄 안에만 있다"
+
+
+def test_표의_칸_수가_줄마다_같다():
+    """머리글이 몸통보다 한 칸 많으면 표가 통째로 어긋난다.
+
+    실제로 「귀가 현황」에 colspan=3 을 걸어 놓고 아래에는 칸을 둘만 두어,
+    빈 유령 칸이 하나 생기고 머리글이 값과 한 칸씩 밀린 적이 있다.
+    브라우저는 아무 말도 하지 않고 그냥 그렇게 그린다.
+    """
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    def 줄별_칸수(표: str) -> list[int]:
+        내려오는: dict[int, int] = {}          # rowspan 으로 아랫줄까지 먹는 칸
+        너비 = []
+        for i, 줄 in enumerate(re.findall(r"<tr\b[^>]*>(.*?)</tr>", 표, re.S)):
+            w = 내려오는.pop(i, 0)
+            for 칸 in re.findall(r"<(?:th|td)\b([^>]*)>", 줄):
+                cs = int((re.search(r'colspan="(\d+)"', 칸) or [0, 1])[1])
+                rs = int((re.search(r'rowspan="(\d+)"', 칸) or [0, 1])[1])
+                w += cs
+                for k in range(1, rs):
+                    내려오는[i + k] = 내려오는.get(i + k, 0) + cs
+            너비.append(w)
+        return 너비
+
+    for f in sorted((Path(firstout.__file__).parent / "templates").glob("*.html")):
+        본문 = re.sub(r"\{\{.*?\}\}|\{%.*?%\}", "", f.read_text(encoding="utf-8"), flags=re.S)
+        for 표 in re.findall(r"<table\b.*?</table>", 본문, re.S):
+            너비 = 줄별_칸수(표)
+            assert len(set(너비)) <= 1, f"{f.name}: 줄마다 칸 수가 다르다 {너비}"

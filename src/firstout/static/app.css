@@ -5,28 +5,6 @@
 
    태블릿에서 손가락으로 누르므로 누르는 것은 최소 --tap(44px) 을 지킨다. */
 
-/* ── 반별 현황 표 ── */
-.board{min-width:42rem}
-.board thead tr:first-child th{border-bottom:1px solid var(--rule-2);padding-bottom:.26rem}
-.board thead tr:first-child th.gh{font-size:.68rem;letter-spacing:.05em;color:var(--pine);
-  text-align:center;font-weight:700}
-.board thead tr:last-child th{padding-top:.26rem}
-.board .grp{border-left:1px solid var(--rule)}
-.board tbody tr{background:var(--card)}
-.board tbody tr:nth-child(even){background:var(--card-2)}
-.board tbody tr:hover{background:var(--pine-soft)}
-.board tbody tr.tot{background:var(--sunk)}
-.board tbody td{padding:.48rem .62rem;font-size:.93rem;font-weight:500}
-.board .nm{position:sticky;left:0;background:inherit;font-weight:700;
-  border-right:1px solid var(--rule-2);min-width:6.4rem}
-.tags{display:flex;flex-wrap:wrap;gap:.35rem;padding:.6rem .7rem}
-.tag-x button{border:none;background:none;color:inherit;padding:0 .1rem;min-height:0}
-.dg-who{flex:1;display:flex;flex-direction:column;gap:.05rem;min-width:0}
-.dg-who b{font-size:1rem;font-weight:700;color:var(--plum)}
-.dg-who span{font-size:.75rem;color:var(--ink-3)}
-.gitem:hover{border-color:var(--pine-2)}
-.sig-line{font-size:.75rem;color:var(--ink-3);text-align:center}
-
 /* ── 반별 현황 표 · 설정 줄 ──
    공통 표(aurabus.css)는 뼈대만 잡는다. 여기는 이 프로그램의 열과 색이다. */
 .board{min-width:42rem}
