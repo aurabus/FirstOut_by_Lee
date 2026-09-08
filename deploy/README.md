@@ -233,52 +233,31 @@ MAJUNG_GID=100         ← 4-5 에서 본 번호
 chmod 600 .env
 ```
 
-### 5-4. 자료 폴더를 미리 만든다 ← 빠뜨리기 쉽습니다
+### 5-4. 한 줄로 띄운다
 
 ```bash
-mkdir -p data
+sh deploy/nas-up.sh
 ```
 
-**이 한 줄을 꼭 먼저 하세요.** 이 폴더가 없으면 도커가 대신 만드는데, 그때 주인이
-`root` 가 되어 버립니다. 그러면 손잡고 마중이 자료를 쓰지 못하고
-`Permission denied` 를 내며 계속 죽습니다.
+이 한 줄이 **빠뜨리기 쉬운 것을 대신 챙깁니다.**
 
-지금처럼 내 손으로 만들면 주인이 나(4-5 에서 본 번호)가 되어 딱 맞습니다.
+- 도커를 어떻게 부르는지 알아냅니다 (`docker compose` · `docker-compose` · `sudo`)
+- `.env` 에 세션 서명 키가 들어 있는지 봅니다
+- **자료 폴더(`data/`)를 내 손으로 만듭니다** — 없으면 도커가 주인을 `root` 로
+  만들어 버려서 손잡고 마중이 자료를 못 쓰고 계속 죽습니다
+- `.env` 의 번호가 지금 계정과 다르면 알려줍니다
+- 만들고 띄우고, **살아났는지 확인해서 알려줍니다**
 
-### 5-5. 띄운다
+처음에는 몇 분 걸립니다. 끝에 이렇게 나오면 성공입니다.
 
-```bash
-docker compose up -d --build
+```
+  손잡고 마중  http://127.0.0.1:8765/   살아 있습니다
+  홈페이지     http://127.0.0.1:8080/   살아 있습니다
 ```
 
-처음에는 손잡고 마중을 만드느라 몇 분 걸립니다. 글자가 죽 흐르는 것이 정상입니다.
+새 버전을 올릴 때도 `git pull` 뒤에 같은 줄을 돌리면 됩니다.
 
-**`docker: command not found` 라고 나오면** 앞에 `sudo` 를 붙여 보세요.
-
-```bash
-sudo docker compose up -d --build
-```
-
-**`docker compose` 는 없는데 `docker-compose` 는 있다고 나오면** (DSM 7.1 이하의
-옛 Docker 패키지가 그렇습니다) 띄어쓰기 대신 붙임표를 쓰시면 됩니다.
-
-```bash
-sudo docker-compose up -d --build
-```
-
-이 문서의 나머지 `docker compose ...` 명령도 모두 같은 식으로 바꿔 쓰시면 됩니다.
-
-### 5-6. NAS 안에서 잘 도는지 본다
-
-```bash
-docker compose ps
-curl -s -o /dev/null -w "홈페이지 %{http_code}\n" http://127.0.0.1:8080/
-curl -s http://127.0.0.1:8765/health
-```
-
-둘 다 `Up` 이고, `홈페이지 200` 과 `{"status":"ok", ...}` 가 나오면 성공입니다.
-
-### 5-7. 운영자 계정을 한 번 만든다
+### 5-5. 운영자 계정을 한 번 만든다
 
 유치원의 가입 신청을 승인하는 계정입니다. **딱 한 번만** 만듭니다.
 
@@ -414,6 +393,38 @@ curl.exe -sI http://www.aurabus.com/ | Select-String "HTTP/|Location"
 
 ---
 
+### 8-1. 검사기로 한 번에 확인한다
+
+**사무실 밖에서** (휴대폰 테더링이 편합니다) 내 PC 에서 돌립니다.
+
+```powershell
+python tools\live_check.py
+```
+
+인증서·화면·http 넘김·숨어야 할 포트를 한꺼번에 봅니다.
+
+```
+  인증서
+  ○ aurabus.com              인증서 맞음 · 78일 남음
+  ○ www.aurabus.com          인증서 맞음 · 78일 남음
+  ○ majung.aurabus.com       인증서 맞음 · 78일 남음
+
+  화면
+  ○ https://www.aurabus.com        열림 (홈페이지)
+  ○ https://majung.aurabus.com     열림 (손잡고 마중)
+
+  숨어야 할 것 (DSM 관리 화면)
+  ○ [5000, 5001, 8033, 8043] 모두 막혀 있습니다
+
+  다 좋습니다.
+```
+
+> **사무실 안에서 돌리면 전부 안 된다고 나올 수 있습니다.** 공유기 안에서는
+> 우리 공인 주소로 자기 자신을 부르지 못하는 경우가 많습니다. 검사기가 그런
+> 낌새를 알아채면 알려주니, 그때는 밖에서 다시 돌려보세요.
+
+---
+
 ## 9. NAS 를 잠근다 ← 가장 중요한 장
 
 NAS 를 인터넷에 직접 내놓기로 하셨으니, 이 장은 **선택이 아닙니다.**
@@ -481,12 +492,30 @@ UPS 를 USB 로 물리면 **제어판 → 하드웨어 및 전원 → UPS** 에�
 
 ## 11. 평소 관리
 
-### 새 버전 올리기
+### 새 버전 올리기 — 내 PC 에서 두 번 누르면 끝
+
+저장소 맨 위의 **`nas-deploy.bat`** 을 두 번 누르시면 됩니다.
+
+1. 아직 저장 안 한 것이 있으면 물어보고 GitHub 에 올립니다
+2. NAS 에 들어가 받아옵니다
+3. NAS 에서 `deploy/nas-up.sh` 를 돌려 다시 띄우고 살아났는지 확인합니다
+
+처음 누르면 **NAS 주소를 한 번만** 물어봅니다 (예: `aurabus@192.168.100.10`).
+테일스케일 주소를 넣으시면 사무실 밖에서도 됩니다. 적어둔 것은 `.nas` 파일에
+들어가고 저장소에는 올라가지 않습니다.
+
+비밀번호를 매번 묻는 게 번거로우면 열쇠를 한 번 심어두시면 됩니다 (PowerShell).
+
+```powershell
+ssh-keygen -t ed25519 -N '""' -f "$env:USERPROFILE\.ssh\id_ed25519"
+type "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh 아이디@NAS주소 "mkdir -p .ssh && cat >> .ssh/authorized_keys"
+```
+
+NAS 앞에서 직접 하시려면 이렇게 해도 같습니다.
 
 ```bash
 cd /volume1/docker/majung/app
-git pull
-docker compose up -d --build
+git pull && sh deploy/nas-up.sh
 ```
 
 **홈페이지와 손잡고 마중이 함께 갱신됩니다.** 자료(`data/`)는 그대로 남습니다.

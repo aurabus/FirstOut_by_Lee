@@ -340,3 +340,20 @@ def test_미리보기와_실제_서버가_같은_첫화면을_연다():
     assert m, "nginx 설정에 index 줄이 없다"
     nginx = tuple(m.group(1).split())
     assert site_serve.첫화면 == nginx, f"미리보기 {site_serve.첫화면} ≠ nginx {nginx}"
+
+
+def test_NAS_에_올리는_스크립트가_빠뜨린_것을_챙긴다():
+    """자료 폴더와 비밀 값은 빠뜨리면 컨테이너가 곧바로 죽는 자리다.
+
+    문서에 적어두는 것만으로는 부족해서 스크립트가 대신 챙기게 했다.
+    그 챙김이 사라지면 다시 같은 곳에서 막힌다.
+    """
+    from pathlib import Path
+
+    sh = (Path(__file__).resolve().parent.parent / "deploy" / "nas-up.sh").read_text(
+        encoding="utf-8")
+    for 챙길것 in ("mkdir -p data",          # 없으면 주인이 root 가 된다
+                  "MAJUNG_SECRET",           # 비어 있으면 서버가 안 뜬다
+                  "docker-compose",          # 옛 DSM 도 받아준다
+                  "/health"):                # 살아났는지 실제로 확인한다
+        assert 챙길것 in sh, f"nas-up.sh 가 {챙길것} 을 챙기지 않는다"

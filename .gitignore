@@ -19,6 +19,7 @@ $RECYCLE.BIN/
 
 # ===== 환경변수 / 비밀정보 =====
 .env
+.nas
 .env.*
 !.env.example
 *.pem
