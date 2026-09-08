@@ -39,15 +39,15 @@ services:
 
   # ── 손잡고 마중 ─────────────────────────────────────────────
   majung:
-    build:
-      context: .
-      args:
-        # 자료 폴더의 주인 번호. NAS 에서 `id` 로 확인한 값을 넣는다.
-        UID: "${MAJUNG_UID:-1000}"
-        GID: "${MAJUNG_GID:-1000}"
+    build: .
     image: majung:latest
     container_name: majung
     restart: unless-stopped
+
+    # 누구로 돌릴지는 **띄울 때** 정한다 — 이미지를 다시 만들 필요가 없다.
+    # NAS 에서 `id` 로 확인한 번호를 .env 에 적는다 (예: 1026:100).
+    # 이 번호가 자료 폴더(data/)의 주인과 달라야 할 이유는 없다.
+    user: "${MAJUNG_UID:-1000}:${MAJUNG_GID:-1000}"
 
     environment:
       # 세션 서명 키 — 이 값을 아는 사람은 남의 로그인을 만들어낼 수 있다

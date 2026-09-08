@@ -24,19 +24,16 @@ RUN apt-get update \
  && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
  && rm -rf /var/lib/apt/lists/*
 
-# 뿌리 권한으로 돌리지 않는다. 자료 폴더의 주인을 이 번호로 맞춰야 한다.
+# 뿌리 권한으로 돌리지 않는다.
 #
-# 시놀로지 계정의 번호를 그대로 받아 쓰는데, 그 번호가 이미 이미지 안에 있을 수 있다.
-# 데비안에는 GID 100 이 `users` 로 이미 들어 있어서 — 그리고 시놀로지 계정의 기본
-# 그룹이 흔히 100(users) 이라서 — 그냥 만들면 「이미 있다」며 빌드가 멈춘다.
-# 있으면 있는 것을 쓰고, 없을 때만 만든다.
-ARG UID=1000
-ARG GID=1000
-RUN set -eu; \
-    if ! getent group "$GID" >/dev/null; then groupadd -g "$GID" majung; fi; \
-    if ! getent passwd "$UID" >/dev/null; then \
-        useradd -u "$UID" -g "$GID" -M -s /usr/sbin/nologin majung; \
-    fi
+# 예전에는 시놀로지 계정 번호를 **빌드할 때** 받아 넣었는데, 그러면 Container
+# Manager 화면에서 올릴 때 걸린다 — 빌드 인자를 넣을 자리가 마땅치 않고,
+# 번호가 바뀌면 이미지를 처음부터 다시 만들어야 한다.
+#
+# 그래서 이미지는 늘 같게 만들고, **누구로 돌릴지는 띄울 때** 정한다
+# (docker-compose.yml 의 user:). 자료 폴더는 바깥에서 붙여 쓰므로
+# 그 폴더의 주인과 띄울 때의 번호만 맞으면 된다.
+RUN useradd -u 1000 -m -s /usr/sbin/nologin majung || true
 
 WORKDIR /app
 
@@ -45,11 +42,11 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN pip install --no-cache-dir .
 
-RUN mkdir -p /data && chown -R "$UID:$GID" /data /app
+# 어떤 번호로 돌든 읽을 수 있어야 한다
+RUN mkdir -p /data && chmod -R a+rX /app && chmod 777 /data
 
-# 이름이 아니라 번호로 지정한다 — 위에서 사용자를 새로 안 만들었을 수도 있다
-USER ${UID}:${GID}
-# 이름 없는 사용자로 돌 때 파이썬이 집 폴더를 찾다 놀라지 않게
+USER 1000:1000
+# 이름 없는 번호로 돌 때 파이썬이 집 폴더를 찾다 놀라지 않게
 ENV HOME=/tmp
 
 EXPOSE 8000

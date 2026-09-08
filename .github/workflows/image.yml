@@ -1,0 +1,64 @@
+# 손잡고 마중 도커 이미지를 GitHub 이 대신 만들어 준다.
+#
+# 왜 여기서 만드나 — 개발용 윈도우 PC 에는 도커가 없다. 그리고 NAS 에서 직접
+# 만들면 느린 데다, 만들다 실패하면 왜 실패했는지 보기가 번거롭다.
+# 여기서 만들어 파일로 내려받아 Container Manager 에 손으로 올리면
+# 「도커가 도는지」만 먼저 확인해 볼 수 있다.
+#
+# 쓰는 법
+#   GitHub 저장소 → Actions → 「도커 이미지 만들기」 → Run workflow
+#   끝나면 그 실행 화면 맨 아래 Artifacts 에서 majung-image 를 내려받는다
+#   (zip 이 받아지니 풀면 majung.tar 가 나온다 — 그걸 Container Manager 에 올린다)
+
+name: 도커 이미지 만들기
+
+on:
+  workflow_dispatch:          # 손으로 눌러 만든다
+  push:
+    branches: [main]
+    paths:                    # 이미지에 들어가는 것이 바뀌었을 때만
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "src/**"
+      - ".github/workflows/image.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 이미지 만들기
+        run: docker build -t majung:latest .
+
+      - name: 제대로 만들어졌는지 한 번 돌려 본다
+        run: |
+          docker run -d --name 시험 \
+            -e MAJUNG_SECRET=ci-only-not-a-real-secret-value-1234567890 \
+            -p 8000:8000 majung:latest
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/health > /dev/null; then break; fi
+            sleep 2
+          done
+          echo "── /health ──"
+          curl -fsS http://127.0.0.1:8000/health
+          echo
+          echo "── 로그인 화면이 그려지는가 ──"
+          curl -fsS http://127.0.0.1:8000/signin | grep -q "손잡고" \
+            && echo "좋음: 화면이 그려집니다"
+          echo "── 시각이 한국인가 ──"
+          docker exec 시험 date
+          docker rm -f 시험
+
+      - name: 파일로 내보내기
+        run: |
+          docker save -o majung.tar majung:latest
+          ls -lh majung.tar
+
+      - name: 내려받을 수 있게 올리기
+        uses: actions/upload-artifact@v4
+        with:
+          name: majung-image
+          path: majung.tar
+          retention-days: 14
+          compression-level: 9
