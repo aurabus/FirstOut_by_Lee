@@ -217,16 +217,48 @@ MAJUNG_UID=1026        ← 4-5 에서 본 번호
 MAJUNG_GID=100         ← 4-5 에서 본 번호
 ```
 
-### 5-4. 띄운다
+다 채우셨으면 **이 파일을 나만 읽게** 잠급니다. 세션 서명 키가 들어 있습니다.
+
+```bash
+chmod 600 .env
+```
+
+### 5-4. 자료 폴더를 미리 만든다 ← 빠뜨리기 쉽습니다
+
+```bash
+mkdir -p data
+```
+
+**이 한 줄을 꼭 먼저 하세요.** 이 폴더가 없으면 도커가 대신 만드는데, 그때 주인이
+`root` 가 되어 버립니다. 그러면 손잡고 마중이 자료를 쓰지 못하고
+`Permission denied` 를 내며 계속 죽습니다.
+
+지금처럼 내 손으로 만들면 주인이 나(4-5 에서 본 번호)가 되어 딱 맞습니다.
+
+### 5-5. 띄운다
 
 ```bash
 docker compose up -d --build
 ```
 
 처음에는 손잡고 마중을 만드느라 몇 분 걸립니다. 글자가 죽 흐르는 것이 정상입니다.
-`docker: command not found` 라고 나오면 `sudo docker compose ...` 로 다시 해보세요.
 
-### 5-5. NAS 안에서 잘 도는지 본다
+**`docker: command not found` 라고 나오면** 앞에 `sudo` 를 붙여 보세요.
+
+```bash
+sudo docker compose up -d --build
+```
+
+**`docker compose` 는 없는데 `docker-compose` 는 있다고 나오면** (DSM 7.1 이하의
+옛 Docker 패키지가 그렇습니다) 띄어쓰기 대신 붙임표를 쓰시면 됩니다.
+
+```bash
+sudo docker-compose up -d --build
+```
+
+이 문서의 나머지 `docker compose ...` 명령도 모두 같은 식으로 바꿔 쓰시면 됩니다.
+
+### 5-6. NAS 안에서 잘 도는지 본다
 
 ```bash
 docker compose ps
@@ -236,7 +268,7 @@ curl -s http://127.0.0.1:8765/health
 
 둘 다 `Up` 이고, `홈페이지 200` 과 `{"status":"ok", ...}` 가 나오면 성공입니다.
 
-### 5-6. 운영자 계정을 한 번 만든다
+### 5-7. 운영자 계정을 한 번 만든다
 
 유치원의 가입 신청을 승인하는 계정입니다. **딱 한 번만** 만듭니다.
 
@@ -322,6 +354,35 @@ DSM → **제어판 → 로그인 포털 → 고급 → 역방향 프록시 → 
 나머지는 같습니다. **사용자 지정 헤더 두 줄을 여기에도 꼭 넣으세요.**
 이게 없으면 감사 로그의 접속지가 전부 NAS 주소로 뭉갭니다.
 
+### 7-4. `http://` 로 들어온 손님을 `https://` 로 보낸다
+
+세 규칙 모두 **원본 프로토콜을 `HTTPS`(443)로만** 만들었습니다. 그러면
+`http://www.aurabus.com` 처럼 **`http://` 를 붙여 들어온 손님**은 이 규칙에 걸리지
+않고 DSM 자기 화면으로 떨어집니다. 예전 즐겨찾기나 명함에 적힌 주소가 그렇습니다.
+
+DSM → **제어판 → 로그인 포털 → DSM** 에서
+**「HTTP 연결을 HTTPS 로 자동 리디렉션」** 을 켜면 됩니다.
+
+> **80 포트에 역방향 프록시 규칙을 만들지 마세요.** 그러고 싶어지지만 그러면
+> 인증서 갱신이 깨집니다. 인증기관이 `http://주소/.well-known/...` 로 확인하는데,
+> 그 주소가 우리 컨테이너로 넘어가 버려 확인에 실패합니다.
+> 80 포트는 DSM 에게 맡겨 두는 것이 맞습니다.
+
+켠 뒤 확인합니다 (윈도우 PowerShell).
+
+```powershell
+curl.exe -sI http://www.aurabus.com/ | Select-String "HTTP/|Location"
+```
+
+`301` 이나 `302` 가 나오고 `Location` 이 `https://www.aurabus.com/` 이면 잘 된 것입니다.
+
+만약 `Location` 이 `:8043` 같은 **포트가 붙은 주소**로 나오면 이 방법은 이 DSM 판에서는
+안 맞는 것입니다. 그때는 켠 것을 다시 끄고 이렇게 하세요.
+
+- 명함·인쇄물·검색등록에 적힌 주소를 `https://` 로 바꿉니다
+- 요즘 브라우저는 주소만 치면 `https` 부터 시도하므로 대부분은 그냥 열립니다
+- 홈페이지 안의 링크는 모두 상대경로라 문제없습니다
+
 ---
 
 ## 8. 밖에서 확인한다
@@ -332,8 +393,14 @@ DSM → **제어판 → 로그인 포털 → 고급 → 역방향 프록시 → 
 - `https://www.aurabus.com` → 홈페이지가 뜨고 **자물쇠가 보여야** 합니다
 - `https://aurabus.com` → 홈페이지
 - `https://majung.aurabus.com` → 손잡고 마중 로그인 화면
+- `http://www.aurabus.com` (https 없이) → 홈페이지로 넘어가야 합니다 (7-4)
 
-셋 다 되면 갈아타기 끝입니다. 맥미니는 이제 꺼두셔도 됩니다.
+넷 다 되면 갈아타기 끝입니다. 맥미니는 이제 꺼두셔도 됩니다.
+
+**한 가지만 더 확인하세요 — 접속지가 제대로 남는지.** 손잡고 마중에 로그인한 뒤
+**감사 로그**를 열어 방금 내 접속 기록의 「접속지」를 봅니다. 거기에 NAS 주소나
+`172.x.x.x` 같은 것이 아니라 **내 실제 주소**가 찍혀 있어야 합니다.
+아니면 7장의 사용자 지정 헤더 두 줄이 빠진 것입니다.
 
 ---
 
@@ -478,8 +545,15 @@ docker compose up -d --build
 
 **손잡고 마중이 계속 죽는다 (`Restarting` 이 반복된다)**
 → `docker compose logs majung` 을 봅니다.
-   - `Permission denied` → 4-5 의 번호가 안 맞습니다. `.env` 를 고치고
-     `docker compose up -d --build majung`
+   - `Permission denied` → 자료 폴더의 주인이 안 맞습니다. 5-4 의 `mkdir -p data` 를
+     빠뜨렸거나, `.env` 의 번호가 4-5 에서 본 것과 다른 경우입니다. 이렇게 고칩니다.
+
+     ```bash
+     docker compose down
+     sudo chown -R $(id -u):$(id -g) data
+     vi .env                       # UID·GID 를 `id` 가 알려준 번호로
+     docker compose up -d --build
+     ```
    - `MAJUNG_SECRET` 이야기가 나오면 → `.env` 에 키를 안 넣으신 것입니다
 
 **감사 로그의 접속지가 전부 같은 주소로 나온다**
@@ -496,6 +570,7 @@ docker compose up -d --build
 - [ ] `https://www.aurabus.com` 이 열리고 자물쇠가 보인다
 - [ ] `https://aurabus.com` (www 없이) 도 열린다
 - [ ] `https://majung.aurabus.com` 에서 로그인이 된다
+- [ ] `http://` 로 들어가도 `https://` 로 넘어간다
 - [ ] `https://aurabus.com:8043` 이 **안** 열린다
 - [ ] `https://aurabus.com:5001` 이 **안** 열린다
 - [ ] 공유기 포트포워딩에 **80·443 만** 있다

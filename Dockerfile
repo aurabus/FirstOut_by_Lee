@@ -25,9 +25,18 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # 뿌리 권한으로 돌리지 않는다. 자료 폴더의 주인을 이 번호로 맞춰야 한다.
+#
+# 시놀로지 계정의 번호를 그대로 받아 쓰는데, 그 번호가 이미 이미지 안에 있을 수 있다.
+# 데비안에는 GID 100 이 `users` 로 이미 들어 있어서 — 그리고 시놀로지 계정의 기본
+# 그룹이 흔히 100(users) 이라서 — 그냥 만들면 「이미 있다」며 빌드가 멈춘다.
+# 있으면 있는 것을 쓰고, 없을 때만 만든다.
 ARG UID=1000
 ARG GID=1000
-RUN groupadd -g $GID majung && useradd -u $UID -g $GID -m -s /bin/bash majung
+RUN set -eu; \
+    if ! getent group "$GID" >/dev/null; then groupadd -g "$GID" majung; fi; \
+    if ! getent passwd "$UID" >/dev/null; then \
+        useradd -u "$UID" -g "$GID" -M -s /usr/sbin/nologin majung; \
+    fi
 
 WORKDIR /app
 
@@ -36,9 +45,12 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN pip install --no-cache-dir .
 
-RUN mkdir -p /data && chown -R majung:majung /data /app
-USER majung
-VOLUME ["/data"]
+RUN mkdir -p /data && chown -R "$UID:$GID" /data /app
+
+# 이름이 아니라 번호로 지정한다 — 위에서 사용자를 새로 안 만들었을 수도 있다
+USER ${UID}:${GID}
+# 이름 없는 사용자로 돌 때 파이썬이 집 폴더를 찾다 놀라지 않게
+ENV HOME=/tmp
 
 EXPOSE 8000
 
