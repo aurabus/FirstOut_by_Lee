@@ -5,6 +5,7 @@ Desktop.ini
 $RECYCLE.BIN/
 *.lnk
 .DS_Store
+._*
 
 # ===== 에디터 / IDE =====
 .vscode/*

@@ -8,38 +8,72 @@
 
 정적 HTML 이라 만드는 과정(빌드)이 없습니다. 파일을 넣으면 그게 곧 홈페이지입니다.
 
-## 지금 돌고 있는 홈페이지에서 가져와야 할 것
+## 무엇을 어디로 옮기나
 
-맥미니의 웹 폴더(아파치의 `DocumentRoot`, 보통 `/Library/WebServer/Documents`
-또는 사용자 폴더의 `Sites`)를 통째로 가져오시면 됩니다. 빠뜨리기 쉬운 것을
-적어두니 대조해 보세요.
+맥에서 가져온 폴더 안의 **`Documents/Source/`** 가 그 홈페이지의 뿌리입니다.
+그 안의 파일이 곧 `www.aurabus.com/...` 이 됩니다 (`Source` 라는 이름은 주소에
+나오지 않습니다). **`Source` 폴더 자체가 아니라 그 안의 내용물**을 옮깁니다.
+
+```
+Documents/
+├── index.html.en      ← 옮기지 않습니다 (아파치가 깔릴 때 딸려오는 기본 페이지)
+└── Source/            ← 이 폴더 안의 것들을
+    ├── css/               전부 site/ 로
+    ├── images/
+    ├── js/
+    ├── main.html
+    ├── company.html
+    ├── ai-consulting.html
+    ├── ai-edu.html
+    ├── aurafarm.html
+    ├── aurallm.html
+    ├── notice.html
+    ├── notice-detail.html
+    ├── contact.html
+    ├── header.html
+    ├── footer.html
+    └── ._로 시작하는 것들  ← 옮기지 않습니다 (맥이 만든 찌꺼기)
+```
+
+옮기고 나면 이렇게 되어야 합니다.
 
 ```
 site/
-├── index.html              ← 「/」 로 들어왔을 때 열리는 화면. 없으면 안 됩니다
-├── main.html               (index.html 과 같은 내용으로 보입니다)
-├── company.html
-├── ai-consulting.html
-├── ai-edu.html
-├── aurafarm.html
-├── aurallm.html
-├── notice.html
-├── contact.html
-├── header.html             ← 공통 머리글. js 가 불러와 끼워 넣습니다
-├── css/
-│   ├── style.css
-│   ├── style_main.css
-│   ├── style_sub.css
-│   ├── contact.css
-│   ├── notice.css
-│   ├── style-ai-consulting.css
-│   └── style-ai-edu.css
-├── js/
-│   ├── header_fast.js
-│   ├── ai-consulting.js
-│   └── notice.js
-└── images/                 ← 그림 90여 개. 폴더째 가져오세요
+├── main.html          ← 「/」 로 들어오면 이게 열립니다
+├── company.html · ai-consulting.html · ai-edu.html · aurafarm.html
+├── aurallm.html · notice.html · notice-detail.html · contact.html
+├── header.html · footer.html
+├── css/ · images/ · js/
+└── README.md          ← 원래 있던 것, 그대로 두세요
 ```
+
+### 잊지 마세요 — 자리표 `index.html` 은 지웁니다
+
+`site/index.html` 은 제가 자리만 잡아둔 안내 화면입니다. 그대로 두면
+**진짜 첫 화면(`main.html`)을 가려 버립니다.** 파일을 옮긴 뒤 지우세요.
+
+### 이 홈페이지는 첫 화면이 `index.html` 이 아닙니다
+
+`Source` 안에 `index.html` 이 없습니다. 맥의 아파치가 `/` 로 들어온 손님에게
+`main.html` 을 내주도록 설정되어 있었습니다. 그래서 nginx 도 같은 규칙을 쓰도록
+맞춰 두었습니다 (`deploy/site-nginx.conf`). **`main.html` 을 `index.html` 로
+이름을 바꾸지 마세요** — 다른 화면들이 `main.html` 을 링크로 걸고 있어서 깨집니다.
+
+### 옮기지 말아야 할 것
+
+- **`._` 로 시작하는 파일 전부** — 맥이 USB 에 복사할 때 만드는 찌꺼기입니다.
+  탐색기에서 이름 순으로 정렬하면 위쪽에 몰려 있습니다
+- `.DS_Store`
+- `index.html.en` — 아파치 기본 페이지입니다
+- `백업` · `이전버전` 같은 폴더가 있다면 그것도
+
+### 다 옮겼으면
+
+```powershell
+python tools/site_check.py
+```
+
+빠진 파일, 남은 찌꺼기, 지우지 않은 자리표를 모두 짚어줍니다.
 
 ## 옮기고 나서 살펴볼 것 셋
 

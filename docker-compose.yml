@@ -29,6 +29,8 @@ services:
     volumes:
       # :ro 는 read only — 컨테이너가 홈페이지 파일을 고치지 못하게 한다
       - ./site:/usr/share/nginx/html:ro
+      # 첫 화면이 main.html 이라 그 규칙을 넣어 준다 (deploy/site-nginx.conf 참고)
+      - ./deploy/site-nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "127.0.0.1:8080:80"
     logging:

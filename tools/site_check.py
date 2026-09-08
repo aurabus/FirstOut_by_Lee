@@ -58,15 +58,38 @@ def 살펴보기(뿌리: Path) -> tuple[list[str], list[str]]:
     이름들 = {f.relative_to(뿌리).as_posix() for f in 파일들}
 
     # ── 「/」 로 들어왔을 때 열릴 것 ──
-    if "index.html" not in 이름들:
+    # 이 홈페이지는 첫 화면이 index.html 이 아니라 main.html 이다 (맥 아파치가 그랬다).
+    # nginx 도 그렇게 보도록 맞춰 두었으므로 둘 중 하나만 있으면 된다.
+    첫화면 = [n for n in ("index.html", "main.html") if n in 이름들]
+    if not 첫화면:
         막을것.append(
-            "site/index.html 이 없습니다 — 「/」 로 들어오면 아무것도 안 나옵니다")
+            "site/main.html 도 index.html 도 없습니다 — 「/」 로 들어오면 아무것도 안 나옵니다")
+
+    # ── 자리표가 남아 있는가 ──
+    # 자리표 index.html 이 남아 있으면 진짜 첫 화면(main.html)을 가려 버린다.
+    자리표 = 뿌리 / "index.html"
+    if 자리표.exists() and "main.html" in 이름들:
+        글 = 자리표.read_text(encoding="utf-8", errors="replace")
+        if "홈페이지 파일이 아직 없습니다" in 글:
+            막을것.append(
+                "자리표 site/index.html 이 남아 있습니다 — 지우세요. "
+                "그대로 두면 진짜 첫 화면(main.html)을 가립니다")
 
     # ── 한 겹 더 들어갔는가 ──
-    안쪽 = sorted({n for n in 이름들 if n.count("/") >= 1 and n.endswith("index.html")})
-    if "index.html" not in 이름들 and 안쪽:
+    안쪽 = sorted({n for n in 이름들
+                  if n.count("/") >= 1 and n.rsplit("/", 1)[-1] in ("index.html", "main.html")})
+    if not 첫화면 and 안쪽:
         막을것.append(
-            f"한 겹 더 들어간 것 같습니다 — {안쪽[0]} 이 아니라 site/index.html 이어야 합니다")
+            f"한 겹 더 들어간 것 같습니다 — {안쪽[0]} 이 아니라 site/{안쪽[0].rsplit('/', 1)[-1]} "
+            "이어야 합니다")
+
+    # ── 맥에서 딸려온 찌꺼기 ──
+    찌꺼기 = sorted(n for n in 이름들
+                  if n.rsplit("/", 1)[-1].startswith("._") or n.endswith(".DS_Store"))
+    if 찌꺼기:
+        막을것.append(
+            f"맥에서 딸려온 찌꺼기가 {len(찌꺼기)}개 있습니다 (._ 로 시작하는 것들) — 지우세요: "
+            + ", ".join(찌꺼기[:5]) + (" …" if len(찌꺼기) > 5 else ""))
 
     # ── 부르는 파일이 다 있는가 ──
     없는것: dict[str, set[str]] = {}
