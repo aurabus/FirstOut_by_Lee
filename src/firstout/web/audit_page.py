@@ -64,9 +64,13 @@ def audit_view(
         )
     )
 
-    # 숫자만 보고는 무슨 일인지 알 수 없어, 줄마다 사람 말로 바꿔 붙인다
+    # 숫자만 보고는 무슨 일인지 알 수 없어, 줄마다 사람 말로 바꿔 붙인다.
+    # 화면 이름은 적을 때 붙여 두지만, 이름표가 늘기 전에 쌓인 기록은 영문 주소를
+    # 그대로 들고 있다. 보여줄 때 한 번 더 붙여 「/attend」 같은 것이 남지 않게 한다.
     for r in rows:
         r.said = audit.outcome(r.method, r.status, bool(r.user_name), r.path)
+        if not r.action or r.action.startswith("/"):
+            r.action = audit.describe(r.path)
 
     names = [
         n

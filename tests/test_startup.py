@@ -209,3 +209,41 @@ def test_표의_칸_수가_줄마다_같다():
         for 표 in re.findall(r"<table\b.*?</table>", 본문, re.S):
             너비 = 줄별_칸수(표)
             assert len(set(너비)) <= 1, f"{f.name}: 줄마다 칸 수가 다르다 {너비}"
+
+
+def test_CSS_가_없는_값을_쓰지_않는다():
+    """var(--없는것) 이 들어가면 그 줄만 조용히 버려진다.
+
+    실제로 --pine-line 을 정의하지 않은 채 쓰고 있었다. 테두리 색이 그냥 안 먹었는데
+    오류는 어디에도 나지 않았다. 모서리·색 같은 값은 전부 결(토큰)에서 가져다 쓰므로
+    이름 하나가 어긋나면 그 자리만 딴 모습이 된다.
+    """
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    static = Path(firstout.__file__).parent / "static"
+    css = " ".join(
+        re.sub(r"/\*.*?\*/", "", (static / n).read_text(encoding="utf-8"), flags=re.S)
+        for n in ("aurabus.css", "app.css"))
+    정의 = set(re.findall(r"(--[\w-]+)\s*:", css))
+    쓴것 = set(re.findall(r"var\((--[\w-]+)", css))
+    assert not (쓴것 - 정의), f"정의 없이 쓰는 값: {sorted(쓴것 - 정의)}"
+
+
+def test_모서리는_결에서_가져다_쓴다():
+    """모서리를 화면마다 직접 적으면 어떤 곳은 둥글고 어떤 곳은 각지게 남는다.
+
+    부드러운 인상을 결(--r/--r-sm/--r-xs/--r-pill)로 한곳에서 정하기로 했으므로,
+    프로그램 CSS 에는 px 로 적은 모서리가 없어야 한다. 원(50%)과 인쇄용 0 은 뺀다.
+    """
+    import re
+    from pathlib import Path
+
+    import firstout
+
+    app = (Path(firstout.__file__).parent / "static" / "app.css").read_text(encoding="utf-8")
+    직접 = [v for v in re.findall(r"border-radius:([^;}]*)", app)
+            if "var(" not in v and v.strip() not in ("0", "50%")]
+    assert not 직접, f"결을 쓰지 않고 직접 적은 모서리: {직접}"
