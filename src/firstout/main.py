@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from . import flash, service
+from . import flash, service, viewing
 from .config import (
     APP_NAME,
     APP_TAGLINE,
@@ -36,9 +36,10 @@ from .csrf import (
     CSRFMiddleware,
     ForcePasswordChange,
     SecurityHeaders,
+    ViewOnly,
 )
 from .db import SessionLocal, get_db, init_db
-from .models import User
+from .models import Kindergarten, User
 from .security import CSRF_COOKIE, new_csrf, pw_stamp, read_token
 
 # Windows 기본 목록에 woff2 가 없어 octet-stream 으로 나가므로 직접 등록한다
@@ -49,6 +50,7 @@ app = FastAPI(title=APP_NAME, docs_url=None, redoc_url=None)
 # 나중에 더한 것이 바깥이다. 바깥부터 안쪽으로:
 #   보안 헤더 → 감사 로그 → 첫 비밀번호 강제 → CSRF → 화면
 app.add_middleware(CSRFMiddleware)
+app.add_middleware(ViewOnly)
 app.add_middleware(ForcePasswordChange)
 app.add_middleware(AuditMiddleware)
 app.add_middleware(SecurityHeaders)
@@ -108,6 +110,19 @@ def current_user(request: Request, db: Session) -> User | None:
     # 승인 전이거나 중지된 유치원이면 들여보내지 않는다
     if u.kinder_id is not None and (u.kinder is None or not u.kinder.usable):
         return None
+
+    # 운영자가 유치원을 둘러보는 중이면 그 원의 사람인 것처럼 화면을 만든다.
+    # **표에서 떼어낸 뒤** 값을 바꾼다 — 붙어 있는 채로 바꾸면 다음 commit 때
+    # 운영자 계정이 그 유치원 소속으로 저장되어 버린다.
+    if u.is_operator:
+        seeing = viewing.which(request.cookies.get(viewing.COOKIE))
+        if seeing is not None:
+            k = db.get(Kindergarten, seeing)
+            if k is not None:
+                db.expunge(u)
+                u.kinder_id = k.id
+                u.kinder = k
+                u.viewing = True
     return u
 
 
@@ -137,6 +152,7 @@ def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
         "rounds": service.rounds(db, teacher.kinder_id) if teacher and teacher.kinder_id else [],
         "now": now(),
         "csrf": request.cookies.get(CSRF_COOKIE) or new_csrf(),
+        "viewing": bool(getattr(teacher, "viewing", False)),
         # 이 값을 달고 있는 <script> 만 브라우저가 실행한다 (csrf.SecurityHeaders)
         "nonce": request.scope.get("state", {}).get("csp_nonce", ""),
     }

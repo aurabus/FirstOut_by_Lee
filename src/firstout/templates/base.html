@@ -17,6 +17,18 @@
 </head>
 <body>
 
+{% if viewing %}
+<div class="peek no-print">
+  <b>운영자 둘러보기</b>
+  <span>{{ kinder.name if kinder else "" }} 화면을 보고 있습니다 — <strong>보기 전용</strong>이라
+    아무것도 바뀌지 않습니다.</span>
+  <form method="post" action="/view/stop">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn sm">둘러보기 끝내기</button>
+  </form>
+</div>
+{% endif %}
+
 {% if me %}
 <div class="bar no-print">
   <div class="bar-in">
@@ -30,7 +42,7 @@
       <input type="hidden" name="_csrf" value="{{ csrf }}"><button class="out">로그아웃</button></form>
   </div>
   <div class="tabs">
-    {% if me.is_operator %}
+    {% if me.is_operator and not viewing %}
     <a class="tab {% if nav == 'operator' %}on{% endif %}" href="/operator">유치원 운영</a>
     <a class="tab {% if nav == 'audit' %}on{% endif %}" href="/audit">감사 로그</a>
     {% else %}

@@ -244,7 +244,7 @@
 /* ── 귀가 명단 ── */
 .gl{background:var(--card);border:1px solid var(--rule);border-radius:3px;overflow:hidden;
   box-shadow:var(--shadow)}
-.gl-h{background:var(--sunk);padding:.4rem .75rem;font-size:.82rem;font-weight:700;
+.gl-h{background:var(--head);padding:.45rem .8rem;font-size:.86rem;font-weight:700;
   border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;gap:.6rem}
 .gl-h span{font-weight:400;color:var(--ink-3);font-family:var(--mono);font-size:.75rem}
 .gl-item{display:grid;grid-template-columns:1fr auto auto;align-items:center;

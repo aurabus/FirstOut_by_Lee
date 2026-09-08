@@ -318,3 +318,47 @@ class ForcePasswordChange:
             res = RedirectResponse("/me/password", status_code=303)
             return await res(scope, receive, send)
         return await self.app(scope, receive, send)
+
+
+# ── 둘러보는 동안에는 바꾸지 않는다 ─────────────────────
+
+class ViewOnly:
+    """운영자가 유치원을 둘러보는 중에는 바꾸는 요청을 막는다.
+
+    남의 원 자료를 우리가 고칠 수 있으면 「누가 고쳤나」가 흐려지고, 무엇보다
+    그럴 이유가 없다 — 상태를 보는 것이 목적이다.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("method") == "GET":
+            return await self.app(scope, receive, send)
+
+        from . import viewing
+
+        path = scope.get("path", "")
+        if not viewing.blocked(path):
+            return await self.app(scope, receive, send)
+        if viewing.which(_cookie_named(scope, viewing.COOKIE)) is None:
+            return await self.app(scope, receive, send)
+
+        from . import flash
+
+        # 막았다고 그 주소로 돌려보내면 안 된다 — 그 길은 GET 을 받지 않아 405 가 난다.
+        # 보고 있던 화면(Referer)으로 돌려보내고, 알 수 없으면 첫 화면으로.
+        ref = _header(scope, b"referer")
+        back = "/board"
+        if ref:
+            from urllib.parse import urlparse
+
+            u = urlparse(ref)
+            if not u.netloc or u.netloc == _header(scope, b"host"):
+                back = (u.path or "/board") + (f"?{u.query}" if u.query else "")
+
+        res = flash.put(
+            RedirectResponse(back, status_code=303),
+            "둘러보는 중에는 바꿀 수 없습니다 — 보기 전용입니다",
+        )
+        return await res(scope, receive, send)

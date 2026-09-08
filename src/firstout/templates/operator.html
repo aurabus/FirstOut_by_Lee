@@ -72,6 +72,10 @@
           </td>
           <td class="tx">
             {% if k.usable %}
+            <form method="post" action="/operator/{{ k.id }}/view">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <button class="btn sm go">둘러보기</button>
+            </form>
             <form method="post" action="/operator/{{ k.id }}/suspend">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
               <button class="btn sm del">중지</button>
