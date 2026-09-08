@@ -298,50 +298,6 @@ def test_배포에_필요한_값이_모두_안내되어_있다():
     assert not 빠진값, f".env.example 에 없는 값: {sorted(빠진값)}"
 
 
-def test_홈페이지_자리와_자료_자리가_붙어_있다():
-    """홈페이지는 site/ 를, 손잡고 마중은 data/ 를 밖에서 붙여 쓴다.
-
-    자료를 이미지 안에 넣으면 새 버전을 올릴 때마다 원아 자료가 날아간다.
-    """
-    from pathlib import Path
-
-    뿌리 = Path(__file__).resolve().parent.parent
-    compose = (뿌리 / "docker-compose.yml").read_text(encoding="utf-8")
-
-    assert "./site:/usr/share/nginx/html:ro" in compose, "홈페이지 폴더가 안 붙어 있다"
-    assert "./data:/data" in compose, "자료 폴더가 안 붙어 있다"
-
-    # 「/」 로 들어왔을 때 열릴 것이 있어야 한다.
-    # 이 홈페이지는 첫 화면이 index.html 이 아니라 main.html 이다 (맥 아파치가 그랬다).
-    # nginx 도 그렇게 보도록 맞춰 두었으므로 둘 중 하나면 된다.
-    site = 뿌리 / "site"
-    assert (site / "index.html").exists() or (site / "main.html").exists(), \
-        "site 에 index.html 도 main.html 도 없다 — 「/」 로 들어오면 아무것도 안 나온다"
-    conf = (뿌리 / "deploy" / "site-nginx.conf").read_text(encoding="utf-8")
-    assert "index index.html main.html;" in conf, "nginx 가 main.html 을 첫 화면으로 안 본다"
-
-
-def test_미리보기와_실제_서버가_같은_첫화면을_연다():
-    """내 PC 미리보기와 NAS 의 nginx 가 다른 화면을 열면 미리보기가 소용없다.
-
-    이 홈페이지는 첫 화면이 index.html 이 아니라 main.html 이다. 그 규칙이
-    두 군데(nginx 설정과 미리보기 도구)에 적혀 있으므로 어긋나지 않는지 본다.
-    """
-    import re
-    import sys
-    from pathlib import Path
-
-    뿌리 = Path(__file__).resolve().parent.parent
-    sys.path.insert(0, str(뿌리 / "tools"))
-    import site_serve
-
-    conf = (뿌리 / "deploy" / "site-nginx.conf").read_text(encoding="utf-8")
-    m = re.search(r"^\s*index\s+([^;]+);", conf, re.M)
-    assert m, "nginx 설정에 index 줄이 없다"
-    nginx = tuple(m.group(1).split())
-    assert site_serve.첫화면 == nginx, f"미리보기 {site_serve.첫화면} ≠ nginx {nginx}"
-
-
 def test_NAS_에_올리는_스크립트가_빠뜨린_것을_챙긴다():
     """자료 폴더와 비밀 값은 빠뜨리면 컨테이너가 곧바로 죽는 자리다.
 
@@ -380,3 +336,18 @@ def test_도커_이름은_영문만_쓴다():
         이름들 |= set(re.findall(r"^\s*image:\s*(\S+)", 글, re.M))
         나쁜 = sorted(n for n in 이름들 if not 좋은이름.match(n.split(":")[0]))
         assert not 나쁜, f"{f.name}: 도커가 거절할 이름 {나쁜}"
+
+
+def test_자료_자리가_밖에_붙어_있다():
+    """자료를 이미지 안에 넣으면 새 버전을 올릴 때마다 원아 자료가 날아간다.
+
+    홈페이지는 다른 저장소(aurabus-site)로 갈라져 나갔다. 여기는 마중만 본다.
+    """
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    compose = (뿌리 / "docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "./data:/data" in compose, "자료 폴더가 안 붙어 있다"
+    assert "nginx" not in compose, "홈페이지가 아직 이 저장소에 남아 있다"
+    assert not (뿌리 / "site").exists(), "site/ 가 아직 남아 있다"

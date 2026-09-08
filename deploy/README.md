@@ -74,33 +74,37 @@
 
 ---
 
-## 2. 홈페이지 파일을 `site/` 에 넣는다
+## 2. 두 저장소를 준비한다
 
-맥미니의 웹 폴더를 통째로 가져와 이 저장소의 `site/` 폴더에 넣습니다.
-무엇을 가져와야 하는지는 **[site/README.md](../site/README.md)** 에 목록으로 적어두었습니다.
+이 NAS 에는 **서로 다른 두 가지**가 올라갑니다. 저장소도 둘입니다.
 
-넣으신 뒤 **검사기를 꼭 돌려보세요.** 빠진 파일이 있으면 화면이 깨지기 전에
-무엇이 없는지, 어느 화면이 그걸 부르는지 짚어줍니다.
+| 저장소 | 무엇 | 주소 |
+|---|---|---|
+| `FirstOut_by_Lee` | **손잡고 마중** (유치원 귀가 관리) | `majung.aurabus.com` |
+| `aurabus-site` | **아우라버스 홈페이지** | `www.aurabus.com` |
 
-저장소 맨 위의 **`site-check.bat`** 을 탐색기에서 두 번 누르시면 됩니다.
-검은 창이 뜨고 결과가 나옵니다. 아무 키나 누르면 닫힙니다.
+둘은 서로 아무것도 공유하지 않습니다. 각자 자기 저장소에서 받아 각자 돕니다.
+이 문서는 **둘을 같은 NAS 에 올리는 안내**이고, 인증서와 문지기(역방향 프록시)만
+둘이 함께 씁니다.
 
-PowerShell 에서 하시려면 폴더로 들어간 뒤 돌립니다.
+### 홈페이지 저장소를 GitHub 에 올린다
+
+내 PC 의 `C:\Users\NBI\Aurabus Site` 폴더에 준비되어 있습니다.
+아직 GitHub 에 없으니 한 번 올려주세요.
+
+1. GitHub 에서 **`aurabus-site`** 라는 빈 저장소를 만듭니다.
+   README 나 .gitignore 를 함께 만들지는 **마세요** — 이미 들어 있습니다
+2. PowerShell 에서:
 
 ```powershell
-cd "C:\Users\NBI\Aurabus Dev"
-python tools\site_check.py
+cd "C:\Users\NBI\Aurabus Site"
+git remote add origin https://github.com/aurabus/aurabus-site.git
+git branch -M main
+git push -u origin main
 ```
 
-넣으셨으면 윈도우에서 저장소에 올려둡니다.
-
-```powershell
-git add site
-git commit -m "홈페이지 파일을 가져옴"
-git push
-```
-
----
+홈페이지를 고칠 때는 그 폴더에서 하시면 됩니다. `site-preview.bat` 으로 미리 보고
+`site-check.bat` 으로 빠진 파일을 확인하는 것도 그 폴더 안에 있습니다.
 
 ## 3. 서브도메인을 만든다
 
@@ -184,10 +188,18 @@ uid=1026(aurabus) gid=100(users) ...
 NAS 에 들어간 그 검은 화면에서 이어서 칩니다.
 
 ```bash
-cd /volume1/docker/majung
-git clone https://github.com/aurabus/FirstOut_by_Lee.git app
-cd app
+cd /volume1/docker
+git clone https://github.com/aurabus/FirstOut_by_Lee.git majung
+git clone https://github.com/aurabus/aurabus-site.git aurabus-site
+cd majung
 ls
+```
+
+두 폴더가 나란히 생깁니다.
+
+```
+/volume1/docker/majung/         손잡고 마중
+/volume1/docker/aurabus-site/   아우라버스 홈페이지
 ```
 
 `Dockerfile`, `docker-compose.yml`, `site`, `src` 같은 것들이 보이면 된 것입니다.
@@ -262,6 +274,19 @@ sh deploy/nas-up.sh
 ```
 
 새 버전을 올릴 때도 `git pull` 뒤에 같은 줄을 돌리면 됩니다.
+
+### 5-4-2. 홈페이지도 띄운다
+
+홈페이지는 만들 것이 없어서 더 간단합니다.
+
+```bash
+cd /volume1/docker/aurabus-site
+docker compose up -d
+curl -s -o /dev/null -w "홈페이지 %{http_code}
+" http://127.0.0.1:8080/
+```
+
+`홈페이지 200` 이 나오면 됩니다.
 
 ### 5-5. 운영자 계정을 한 번 만든다
 
@@ -520,11 +545,25 @@ type "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh 아이디@NAS주소 "mkdir -p 
 NAS 앞에서 직접 하시려면 이렇게 해도 같습니다.
 
 ```bash
-cd /volume1/docker/majung/app
+cd /volume1/docker/majung
 git pull && sh deploy/nas-up.sh
 ```
 
-**홈페이지와 손잡고 마중이 함께 갱신됩니다.** 자료(`data/`)는 그대로 남습니다.
+자료(`data/`)는 그대로 남습니다.
+
+### 홈페이지만 고쳤을 때
+
+홈페이지는 저장소가 다르므로 그쪽에서 따로 올립니다. 훨씬 간단합니다 —
+정적 파일이라 **다시 띄울 필요도 없습니다.**
+
+```bash
+cd /volume1/docker/aurabus-site
+git pull
+```
+
+이것으로 끝입니다. 새로고침하면 바뀐 화면이 나옵니다.
+(`docker-compose.yml` 이나 `nginx.conf` 를 고치셨을 때만 `docker compose up -d` 를
+한 번 더 하시면 됩니다.)
 
 ### 자주 쓰는 것
 

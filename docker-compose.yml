@@ -1,41 +1,18 @@
-# NAS 한 대에서 홈페이지와 손잡고 마중을 함께 돌린다.
+# 손잡고 마중 — 시놀로지 NAS 에서 도는 모습.
 #
-#   site    아우라버스 홈페이지 (정적 HTML)
-#   majung  손잡고 마중
+#     docker compose up -d --build
 #
-# 바깥에서 들어오는 손님은 **DSM 의 역방향 프록시**가 받아서 주소에 따라
-# 이 둘 중 하나로 넘겨준다. 인증서도 DSM 이 발급하고 갱신한다.
-# 중간에 남의 회사를 거치지 않으므로 오가는 내용을 우리만 본다.
+# 바깥 손님은 **DSM 의 역방향 프록시**가 받아서 여기로 넘겨준다.
+#     majung.aurabus.com  →  localhost:8765
+# 인증서도 DSM 이 발급하고 갱신한다. 중간에 남의 회사를 거치지 않으므로
+# 오가는 내용(원아 이름·보호자 연락처)을 우리만 본다.
 #
-#   www.aurabus.com     →  localhost:8080  (site)
-#   aurabus.com         →  localhost:8080  (site)
-#   majung.aurabus.com  →  localhost:8765  (majung)
-#
-# 두 컨테이너 모두 127.0.0.1 에만 문을 연다. NAS 밖에서는 직접 닿지 못하고
-# 반드시 DSM 역방향 프록시를 거쳐야 한다.
+# 아우라버스 홈페이지는 **다른 저장소**(aurabus-site)에서 따로 돈다.
+# 같은 NAS 에 있지만 서로 아무것도 공유하지 않는다.
 #
 # 비밀 값은 이 파일에 적지 않는다. 같은 폴더의 .env 에 두고 여기서 읽어 간다.
-# (.env 는 .gitignore 로 막혀 있어 저장소에 올라가지 않는다)
 
 services:
-
-  # ── 홈페이지 ────────────────────────────────────────────────
-  # 정적 HTML 이라 그냥 내어주기만 하면 된다. 고칠 것이 생기면
-  # site/ 폴더의 파일을 바꾸면 끝이다 — 다시 띄울 필요도 없다.
-  site:
-    image: nginx:alpine
-    container_name: aurabus-site
-    restart: unless-stopped
-    volumes:
-      # :ro 는 read only — 컨테이너가 홈페이지 파일을 고치지 못하게 한다
-      - ./site:/usr/share/nginx/html:ro
-      # 첫 화면이 main.html 이라 그 규칙을 넣어 준다 (deploy/site-nginx.conf 참고)
-      - ./deploy/site-nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "127.0.0.1:8080:80"
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
 
   # ── 손잡고 마중 ─────────────────────────────────────────────
   majung:

@@ -29,15 +29,15 @@ if (Test-Path $주소파일) {
     Write-Host ""
     $NAS = (Read-Host "  NAS 주소").Trim()
     if (-not $NAS) { 탈 "주소가 비었습니다." }
-    $경로 = Read-Host "  저장소 위치 (그냥 엔터 = /volume1/docker/majung/app)"
-    if (-not $경로) { $경로 = "/volume1/docker/majung/app" }
+    $경로 = Read-Host "  저장소 위치 (그냥 엔터 = /volume1/docker/majung)"
+    if (-not $경로) { $경로 = "/volume1/docker/majung" }
     @("# NAS 접속 주소와 저장소 위치. 이 파일은 저장소에 올라가지 않습니다.",
       $NAS, $경로.Trim()) | Set-Content $주소파일 -Encoding utf8
     말 "적어 두었습니다 (.nas)"
 }
 $줄들 = Get-Content $주소파일 | Where-Object { $_ -and -not $_.StartsWith("#") }
 $NAS = $줄들[0].Trim()
-$경로 = if ($줄들.Count -gt 1) { $줄들[1].Trim() } else { "/volume1/docker/majung/app" }
+$경로 = if ($줄들.Count -gt 1) { $줄들[1].Trim() } else { "/volume1/docker/majung" }
 
 Write-Host ""
 말 "NAS   : $NAS"
