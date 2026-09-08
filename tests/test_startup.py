@@ -277,3 +277,38 @@ def test_화면_파일이_꾸러미에_담긴다():
         if not any(fnmatch.fnmatch(안쪽, 무늬하나) for 무늬하나 in 무늬):
             빠진것.append(안쪽)
     assert not 빠진것, f"꾸러미에 담기지 않는 파일: {빠진것}"
+
+
+def test_배포에_필요한_값이_모두_안내되어_있다():
+    """docker-compose 가 찾는 값은 .env.example 에 다 적혀 있어야 한다.
+
+    빠뜨리면 NAS 에서 컨테이너가 뜨지 않고, 로그에는 낯선 변수 이름만 찍힌다.
+    처음 올려보는 사람에게는 무슨 말인지 알 수 없는 오류가 된다.
+    """
+    import re
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    compose = (뿌리 / "docker-compose.yml").read_text(encoding="utf-8")
+    본보기 = (뿌리 / ".env.example").read_text(encoding="utf-8")
+
+    쓰는값 = set(re.findall(r"\$\{([A-Z_][A-Z0-9_]*)", compose))
+    적힌값 = set(re.findall(r"^([A-Z_][A-Z0-9_]*)=", 본보기, re.M))
+    빠진값 = 쓰는값 - 적힌값
+    assert not 빠진값, f".env.example 에 없는 값: {sorted(빠진값)}"
+
+
+def test_홈페이지_자리와_자료_자리가_붙어_있다():
+    """홈페이지는 site/ 를, 손잡고 마중은 data/ 를 밖에서 붙여 쓴다.
+
+    자료를 이미지 안에 넣으면 새 버전을 올릴 때마다 원아 자료가 날아간다.
+    """
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    compose = (뿌리 / "docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "./site:/usr/share/nginx/html:ro" in compose, "홈페이지 폴더가 안 붙어 있다"
+    assert "./data:/data" in compose, "자료 폴더가 안 붙어 있다"
+    # 「/」 로 들어왔을 때 열릴 것이 있어야 한다
+    assert (뿌리 / "site" / "index.html").exists(), "site/index.html 이 없다"
