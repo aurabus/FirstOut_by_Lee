@@ -435,3 +435,48 @@ def test_배치_파일에는_한글이_없다():
         if 바깥글자:
             나쁜곳[f.name] = "".join(바깥글자)
     assert not 나쁜곳, f"배치 파일에 영문 아닌 글자가 있다: {나쁜곳}"
+
+
+def _우리_ps1(뿌리):
+    """우리가 쓴 PowerShell 파일만. 꾸러미가 딸려 넣은 것(.venv)은 뺀다."""
+    남 = {".venv", ".git", "node_modules", "build"}
+    return [f for f in 뿌리.rglob("*.ps1") if not (남 & set(f.parts))]
+
+
+def test_PowerShell_파일은_BOM_으로_저장한다():
+    """Windows PowerShell 5.1 은 BOM 이 없으면 .ps1 을 cp949 로 읽는다.
+
+    그러면 한글이 깨지고, 깨진 글자가 코드로 읽혀 문법 오류가 난다. 실제로
+    「Unexpected token '?=' in expression」 같은 알 수 없는 오류로 멈췄다.
+    BOM 세 바이트가 있으면 UTF-8 로 읽는다.
+    """
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    BOM = b"\xef\xbb\xbf"
+    없는것 = [f.name for f in _우리_ps1(뿌리) if not f.read_bytes().startswith(BOM)]
+    assert not 없는것, f"BOM 없이 저장된 PowerShell 파일: {없는것}"
+
+
+def test_PowerShell_이름은_영문으로_둔다():
+    """BOM 이 사라져도 최소한 돌기는 해야 한다.
+
+    한글은 화면에 보여줄 글에만 쓰고, 변수·함수 이름은 영문으로 둔다.
+    그러면 BOM 을 잃어도 글자만 깨질 뿐 문법은 살아 있다.
+    """
+    import re
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    나쁜곳 = {}
+    for f in _우리_ps1(뿌리):
+        글 = f.read_text(encoding="utf-8-sig")
+        # 따옴표 안(사람에게 보여줄 글)은 뺀다
+        코드 = re.sub(r'"[^"]*"|\'[^\']*\'', '""', 글)
+        코드 = re.sub(r"^\s*#.*$", "", 코드, flags=re.M)
+        이름 = set(re.findall(r"\$([^\W\d]\w*)", 코드))
+        이름 |= set(re.findall(r"function\s+([^\W\d]\w*)", 코드))
+        한글이름 = sorted(n for n in 이름 if any(ord(c) > 127 for c in n))
+        if 한글이름:
+            나쁜곳[f.name] = 한글이름
+    assert not 나쁜곳, f"이름에 한글이 든 PowerShell 파일: {나쁜곳}"
