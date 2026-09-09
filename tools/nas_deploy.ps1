@@ -18,29 +18,31 @@ function Say($s) { Write-Host "  $s" }
 function Die($s) { Write-Host ""; Write-Host "  [멈춤] $s" -ForegroundColor Red; Write-Host ""; exit 1 }
 
 # ── NAS 주소 ──────────────────────────────────────────────
+# .nas 에 세 줄로 적어 둡니다 — 계정@주소 / 저장소 위치 / SSH 포트.
+# 시놀로지는 SSH 포트를 22 에서 옮겨 두는 일이 흔해서 포트를 따로 받습니다.
 $addrFile = Join-Path $root ".nas"
-if (Test-Path $addrFile) {
-    $line = Get-Content $addrFile | Where-Object { $_ -and -not $_.StartsWith("#") } | Select-Object -First 1
-    $NAS = $line.Trim()
-} else {
+if (-not (Test-Path $addrFile)) {
     Write-Host ""
     Say "NAS 에 어떻게 들어가는지 한 번만 알려주세요."
-    Say "예: aurabus@192.168.100.10   (테일스케일 주소도 됩니다)"
     Write-Host ""
-    $NAS = (Read-Host "  NAS 주소").Trim()
-    if (-not $NAS) { Die "주소가 비었습니다." }
-    $path = Read-Host "  저장소 위치 (그냥 엔터 = /volume1/docker/majung)"
+    $NAS = (Read-Host "  계정@주소 (그냥 엔터 = aurabus@192.168.100.10)").Trim()
+    if (-not $NAS) { $NAS = "aurabus@192.168.100.10" }
+    $path = (Read-Host "  저장소 위치 (그냥 엔터 = /volume1/docker/majung)").Trim()
     if (-not $path) { $path = "/volume1/docker/majung" }
-    @("# NAS 접속 주소와 저장소 위치. 이 파일은 저장소에 올라가지 않습니다.",
-      $NAS, $path.Trim()) | Set-Content $addrFile -Encoding utf8
+    $port = (Read-Host "  SSH 포트 (그냥 엔터 = 9292)").Trim()
+    if (-not $port) { $port = "9292" }
+    @("# NAS 접속 정보. 이 파일은 저장소에 올라가지 않습니다.",
+      "# 첫 줄 = 계정@주소 · 둘째 줄 = 저장소 위치 · 셋째 줄 = SSH 포트",
+      $NAS, $path, $port) | Set-Content $addrFile -Encoding utf8
     Say "적어 두었습니다 (.nas)"
 }
-$lines = Get-Content $addrFile | Where-Object { $_ -and -not $_.StartsWith("#") }
+$lines = @(Get-Content $addrFile | Where-Object { $_ -and -not $_.StartsWith("#") })
 $NAS = $lines[0].Trim()
 $path = if ($lines.Count -gt 1) { $lines[1].Trim() } else { "/volume1/docker/majung" }
+$port = if ($lines.Count -gt 2) { $lines[2].Trim() } else { "22" }
 
 Write-Host ""
-Say "NAS   : $NAS"
+Say "NAS   : $NAS  (포트 $port)"
 Say "저장소: $path"
 Write-Host ""
 
@@ -68,12 +70,12 @@ Say "NAS 에서 받아 띄웁니다. 처음에는 몇 분 걸립니다..."
 Write-Host ""
 
 $cmd = "cd '$path' && git pull --ff-only && sh deploy/nas-up.sh"
-ssh $NAS $cmd
+ssh -p $port $NAS $cmd
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Say "NAS 쪽에서 문제가 있었습니다. 위의 내용을 보세요."
     Say "비밀번호를 매번 묻는다면 아래 한 줄로 열쇠를 심어두시면 됩니다:"
-    Say "   type `$env:USERPROFILE\.ssh\id_ed25519.pub | ssh $NAS `"cat >> .ssh/authorized_keys`""
+    Say "   type `$env:USERPROFILE\.ssh\id_ed25519.pub | ssh -p $port $NAS `"cat >> .ssh/authorized_keys`""
     exit 1
 }
 
