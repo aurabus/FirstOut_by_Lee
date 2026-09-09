@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from .models import (
     KG_ACTIVE,
+    ROLE_ADMIN,
     ROLE_OPERATOR,
     Academy,
     Bus,
@@ -77,7 +78,11 @@ def fill_new_kinder(
 
 
 def seed_operator(db: Session, login_id: str, password: str) -> User | None:
-    """운영자 계정 — 서버를 세울 때 한 번 만든다."""
+    """운영자 계정 — 서버를 세울 때 한 번 만든다.
+
+    처음 비밀번호는 세우는 사람이 정해 건네주는 값이라 이미 남의 손을 거쳤다.
+    그래서 **첫 로그인 때 본인이 다시 정하게** 한다.
+    """
     if db.scalar(select(User).where(User.role == ROLE_OPERATOR)):
         return None
     u = User(
@@ -87,10 +92,56 @@ def seed_operator(db: Session, login_id: str, password: str) -> User | None:
         name="운영자",
         role=ROLE_OPERATOR,
         title="서비스 운영",
+        must_change_pw=True,
     )
     db.add(u)
     db.commit()
     return u
+
+
+def open_kinder(
+    db: Session,
+    kinder_name: str,
+    admin_name: str,
+    login_id: str,
+    password: str,
+) -> tuple[Kindergarten, User] | None:
+    """유치원 하나를 열고 총괄 관리자를 함께 만든다.
+
+    가입 신청 → 승인을 거치지 않고 바로 쓸 수 있는 상태로 만든다. 시범 운영처럼
+    우리가 먼저 자리를 깔아 드리는 경우를 위한 것이다.
+
+    반·귀가 차수·학원은 기본값으로 채워 넣는다 — 들어가자마자 빈 화면을
+    마주하지 않도록. 원아는 넣지 않는다 (명부를 올리는 것이 첫 일이다).
+
+    이미 같은 이름의 유치원이나 같은 아이디가 있으면 아무것도 하지 않고 None.
+    """
+    if db.scalar(select(Kindergarten).where(Kindergarten.name == kinder_name)):
+        return None
+    if db.scalar(select(User).where(User.login_id == login_id.strip().lower())):
+        return None
+
+    k = Kindergarten(
+        name=kinder_name,
+        status=KG_ACTIVE,
+        seq=(db.scalar(select(func.max(Kindergarten.seq))) or 0) + 1,
+    )
+    db.add(k)
+    db.flush()
+    fill_new_kinder(db, k)
+
+    u = User(
+        kinder_id=k.id,
+        login_id=login_id.strip().lower(),
+        password_hash=hash_password(password),
+        name=admin_name,
+        role=ROLE_ADMIN,
+        title="총괄 관리자",
+        must_change_pw=True,   # 첫 로그인 때 본인이 정하게 한다
+    )
+    db.add(u)
+    db.commit()
+    return k, u
 
 
 def seed_base(db: Session) -> None:

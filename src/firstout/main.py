@@ -346,12 +346,20 @@ def main() -> None:
     ap.add_argument("--open", action="store_true", help="브라우저를 함께 연다")
     ap.add_argument("--operator", metavar="아이디:비밀번호",
                     help="운영자 계정을 만든다 (서버를 처음 세울 때 한 번)")
+    ap.add_argument("--open-kinder", metavar="유치원이름",
+                    help="유치원을 열고 바로 쓸 수 있게 한다 (--admin 과 함께)")
+    ap.add_argument("--admin", metavar="이름:아이디:비밀번호",
+                    help="그 유치원의 총괄 관리자 (--open-kinder 와 함께)")
+    ap.add_argument("--setup-only", action="store_true",
+                    help="계정·유치원만 만들고 서버는 띄우지 않는다")
     args = ap.parse_args()
 
     ensure_dirs()
 
     # 기본 서명 키로 외부에 열면 남의 로그인 세션을 만들어낼 수 있다. 아예 막는다.
-    if IS_DEV_SECRET and args.host not in ("127.0.0.1", "localhost"):
+    # 다만 --setup-only 는 아무 문도 열지 않는다 — 계정만 만들고 끝난다.
+    # 그때까지 서명 키를 요구하면, 자리를 깔아 드리려고 값을 억지로 지어내게 된다.
+    if IS_DEV_SECRET and not args.setup_only and args.host not in ("127.0.0.1", "localhost"):
         say = print
         say()
         for 줄 in secret_help(in_container()):
@@ -377,13 +385,21 @@ def main() -> None:
         print()
 
     if args.reset:
-        from .config import DB_PATH
+        from .config import BACKUP_DIR, DB_PATH
 
         for suffix in ("", "-wal", "-shm"):
             f = DB_PATH.with_name(DB_PATH.name + suffix)
             if f.exists():
                 f.unlink()
-        print("자료를 모두 지웠습니다.")
+        print("  자료를 지웠습니다.")
+
+        # 백업은 남긴다 — 여기까지 지우면 되돌릴 것이 하나도 없어진다.
+        # 다만 남아 있다는 사실은 말해 준다. 「모두 지웠다」고만 하면
+        # 깨끗한 줄 알고 넘어갔다가 옛 자료가 되살아난다.
+        남은것 = sorted(BACKUP_DIR.glob("*.db")) if BACKUP_DIR.exists() else []
+        if 남은것:
+            print(f"  백업 {len(남은것)}개는 그대로 두었습니다 ({BACKUP_DIR}).")
+            print("  정말 처음부터라면 그 폴더도 비우세요.")
 
     global RUN_PORT
     RUN_PORT = args.port
@@ -402,6 +418,24 @@ def main() -> None:
             else:
                 print("  운영자 계정이 이미 있습니다")
 
+        if args.open_kinder:
+            from .seed import open_kinder
+
+            조각 = (args.admin or "").split(":")
+            if len(조각) != 3 or not all(x.strip() for x in 조각):
+                print("  --admin 이름:아이디:비밀번호 형태로 함께 넣어주세요")
+                print('      예: --open-kinder "봄뜰유치원" --admin "지민희:jimin:1234"')
+                raise SystemExit(2)
+            이름, 아이디, 비번 = (x.strip() for x in 조각)
+            지음 = open_kinder(db, args.open_kinder.strip(), 이름, 아이디, 비번)
+            if 지음 is None:
+                print(f"  「{args.open_kinder}」 또는 아이디 「{아이디}」가 이미 있습니다")
+            else:
+                k, u = 지음
+                print(f"  유치원 개설: {k.name}")
+                print(f"  총괄 관리자: {u.name} ({u.login_id})")
+                print("               첫 로그인 때 비밀번호를 새로 정하게 됩니다")
+
         if args.demo:
             from .seed import seed_demo, seed_demo_kinder
 
@@ -412,6 +446,12 @@ def main() -> None:
             _demo_users(db, k)
 
         kinders = service.kindergartens(db)
+
+    if args.setup_only:
+        print()
+        print("  준비를 마쳤습니다. 서버는 띄우지 않았습니다.")
+        print()
+        return
 
     _print_banner(args.port, kinders)
 
