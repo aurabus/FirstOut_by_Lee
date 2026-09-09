@@ -26,6 +26,10 @@ $RECYCLE.BIN/
 *.key
 secrets.json
 
+# ===== 내보낸 도커 이미지 (300MB) =====
+dist/
+*.tar
+
 # ===== 로그 / 임시파일 =====
 *.log
 logs/
