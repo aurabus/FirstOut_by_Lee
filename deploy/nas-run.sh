@@ -1,7 +1,7 @@
 #!/bin/sh
 # NAS 에서 받은 것을 풀어 돌린다.
 #
-# nas-deploy.bat 이 이미지·홈페이지 파일·compose 를 한 묶음으로 보내면서
+# nas-deploy.bat 이 이미지와 compose 를 한 묶음으로 보내면서
 # 이 스크립트를 함께 보낸다. NAS 에는 **도커 말고 아무것도 필요 없다** —
 # git 도, 소스도, 만드는 과정도.
 #
@@ -56,17 +56,6 @@ step "보내온 이미지를 들입니다"
 [ -f "$HERE/majung.tar" ] || die "majung.tar 이 안 왔습니다."
 $SUDO $DOCKER load -i "$HERE/majung.tar"
 
-# ── 홈페이지 파일 ───────────────────────────────────────────
-if [ -d "$HERE/site" ]; then
-    step "홈페이지 파일을 놓습니다"
-    mkdir -p "$BASE/site"
-    # 통째로 갈아 끼운다 — 지운 파일이 남아 있지 않게
-    rm -rf "$BASE/site/public"
-    cp -r "$HERE/site/public" "$BASE/site/public"
-    cp "$HERE/site/nginx.conf" "$BASE/site/nginx.conf"
-    say "화면 $(find "$BASE/site/public" -name '*.html' | wc -l | tr -d ' ')장"
-fi
-
 # ── 설정 ────────────────────────────────────────────────────
 cp "$HERE/compose.nas.yml" "$BASE/docker-compose.yml"
 
@@ -95,12 +84,40 @@ else
 fi
 chmod 600 .env 2>/dev/null || true
 
+# 시놀로지 ACL 을 넘기 위한 그룹.
+# 공유 폴더의 ACL 은 소유자 번호가 아니라 administrators 그룹에 쓰기를 준다.
+# 내가 그 그룹에 들어 있으면 컨테이너에도 달아 준다 — 내가 가진 것 이상은 주지 않는다.
+ADMIN_GID=$(awk -F: '$1=="administrators"{print $3}' /etc/group 2>/dev/null | head -1)
+case " $(id -G) " in
+    *" $ADMIN_GID "*) : ;;
+    *) ADMIN_GID=$(id -g) ;;
+esac
+[ -n "$ADMIN_GID" ] || ADMIN_GID=$(id -g)
+if grep -q "^MAJUNG_EXTRA_GID=" .env 2>/dev/null; then
+    sed -i "s/^MAJUNG_EXTRA_GID=.*/MAJUNG_EXTRA_GID=$ADMIN_GID/" .env
+else
+    echo "MAJUNG_EXTRA_GID=$ADMIN_GID" >> .env
+fi
+
 # 계정 번호가 바뀌었으면 맞춰 준다 (자료 폴더 주인과 어긋나면 곧바로 죽는다)
 NOW_UID=$(id -u); NOW_GID=$(id -g)
 if ! grep -q "^MAJUNG_UID=$NOW_UID$" .env 2>/dev/null; then
     say "계정 번호를 지금 값으로 맞춥니다 ($NOW_UID:$NOW_GID)"
     sed -i "s/^MAJUNG_UID=.*/MAJUNG_UID=$NOW_UID/" .env
     sed -i "s/^MAJUNG_GID=.*/MAJUNG_GID=$NOW_GID/" .env
+fi
+
+# ── 정말 쓸 수 있는지 미리 본다 ─────────────────────────────
+# 여기서 막히면 서버는 파이썬 오류 스무 줄을 뱉고 죽는다. 무슨 일인지 알아보기
+# 어려우니, 그 전에 한 번 써 보고 사람 말로 멈춘다.
+step "자료 폴더에 쓸 수 있는지 봅니다"
+if $SUDO $DOCKER run --rm -u "$(id -u):$(id -g)" --group-add "$ADMIN_GID"         -v "$BASE/data:/data" majung:latest         sh -c 'touch /data/.write-test && rm -f /data/.write-test' 2>/dev/null; then
+    say "○ 쓸 수 있습니다"
+else
+    die "자료 폴더에 쓰지 못합니다: $BASE/data
+  DSM File Station 에서 그 폴더를 오른쪽 클릭 → 속성 → 권한 으로 가서
+  **Everyone** 에게 읽기·쓰기를 주시면 열립니다.
+  (지금 번호: $(id -u):$(id -g), 더한 그룹: $ADMIN_GID)"
 fi
 
 # ── 띄운다 ──────────────────────────────────────────────────
@@ -122,14 +139,6 @@ if curl -fsS http://127.0.0.1:8765/health >/dev/null 2>&1; then
 else
     say "✗ 손잡고 마중이 응답하지 않습니다"
     $DC logs --tail=25 majung || true
-    BAD=1
-fi
-
-if curl -fsS -o /dev/null http://127.0.0.1:8080/ 2>/dev/null; then
-    say "○ 홈페이지      http://127.0.0.1:8080/   살아 있습니다"
-else
-    say "✗ 홈페이지가 응답하지 않습니다"
-    $DC logs --tail=25 site || true
     BAD=1
 fi
 

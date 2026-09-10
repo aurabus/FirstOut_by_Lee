@@ -5,10 +5,13 @@
 # 하는 일
 #   1. 여기서 이미지를 만든다
 #   2. 여기서 한 번 띄워 확인한다 (안 되면 NAS 로 보내지 않는다)
-#   3. 이미지·홈페이지 파일·설정을 한 묶음으로 NAS 에 보낸다
+#   3. 이미지와 설정을 한 묶음으로 NAS 에 보낸다
 #   4. NAS 에서 들이고 띄우고, 살아났는지 확인한다
 #
 # **NAS 에는 도커 말고 아무것도 필요 없습니다.** git 도, 소스도, 만드는 과정도.
+#
+# 홈페이지는 여기서 다루지 않습니다 — 제 저장소(Aurabus Site)에서 제 손으로
+# 배포됩니다. 한 배포가 다른 쪽을 흔들지 않게 갈라 두었습니다.
 # 여기서 시험한 그 이미지가 글자 하나 다르지 않게 NAS 에서 돕니다.
 #
 # 비밀번호는 이 스크립트가 만지지 않습니다. ssh 가 직접 물어보고,
@@ -23,9 +26,6 @@ Set-Location $root
 function Say($s) { Write-Host "  $s" }
 function Step($s) { Write-Host ""; Write-Host "── $s ─────────────────────────" -ForegroundColor Cyan }
 function Die($s) { Write-Host ""; Write-Host "  [멈춤] $s" -ForegroundColor Red; Write-Host ""; exit 1 }
-
-# 홈페이지가 있는 자리 (없으면 마중만 보냅니다)
-$siteRoot = Join-Path (Split-Path -Parent $root) "Aurabus Site"
 
 # ── 어디로 보낼지 ─────────────────────────────────────────
 $addrFile = Join-Path $root ".nas"
@@ -94,15 +94,6 @@ docker save -o (Join-Path $pack "majung.tar") majung:latest
 if ($LASTEXITCODE -ne 0) { Die "이미지를 파일로 내보내지 못했습니다." }
 Copy-Item (Join-Path $root "deploy\compose.nas.yml") $pack
 Copy-Item (Join-Path $root "deploy\nas-run.sh") $pack
-
-if (Test-Path (Join-Path $siteRoot "public")) {
-    New-Item -ItemType Directory (Join-Path $pack "site") | Out-Null
-    Copy-Item (Join-Path $siteRoot "public") (Join-Path $pack "site") -Recurse
-    Copy-Item (Join-Path $siteRoot "nginx.conf") (Join-Path $pack "site")
-    Say "홈페이지도 함께 보냅니다"
-} else {
-    Say "홈페이지 폴더를 못 찾아 마중만 보냅니다 ($siteRoot)"
-}
 
 # 리눅스에서 읽을 것이므로 줄바꿈을 LF 로 맞춘다
 $sh = Join-Path $pack "nas-run.sh"
