@@ -513,17 +513,17 @@ def test_NAS_로_보내는_스크립트가_리눅스_문법이다():
     import subprocess
     from pathlib import Path
 
-    sh = Path(__file__).resolve().parent.parent / "deploy" / "nas-bootstrap.sh"
+    sh = Path(__file__).resolve().parent.parent / "deploy" / "nas-run.sh"
     raw = sh.read_bytes()
     assert b"\r\n" not in raw, "CR 이 섞이면 리눅스에서 bad interpreter 가 난다"
 
     # 챙겨야 할 것들이 빠지지 않았는지 (빠뜨리면 NAS 에서 곧바로 죽는다)
     글 = raw.decode("utf-8")
-    for 있어야할것 in ("mkdir -p data",       # 없으면 도커가 주인을 root 로 만든다
+    for 있어야할것 in ("mkdir -p \"$BASE/data\"",   # 없으면 도커가 주인을 root 로 만든다
                       "MAJUNG_SECRET=",       # 서명 키를 서버에서 만든다
                       "docker-compose",       # 옛 DSM 도 받아준다
                       "/health"):             # 정말 살아났는지 확인한다
-        assert 있어야할것 in 글, f"nas-bootstrap.sh 가 {있어야할것} 을 챙기지 않는다"
+        assert 있어야할것 in 글, f"nas-run.sh 가 {있어야할것} 을 챙기지 않는다"
 
     if Path("/bin/sh").exists():
         r = subprocess.run(["sh", "-n", str(sh)], capture_output=True, text=True)

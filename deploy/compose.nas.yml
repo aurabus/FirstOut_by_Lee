@@ -1,0 +1,45 @@
+# NAS 에서 도는 모습 — **여기서 만들어 보낸 이미지**를 그대로 쓴다.
+#
+# 이 파일에는 build: 가 없다. NAS 는 만들지 않고 받아서 돌리기만 한다.
+# 그래서 NAS 에 소스도 git 도 필요 없고, 여기서 시험한 그 이미지가
+# 글자 하나 다르지 않게 NAS 에서 돈다.
+#
+# nas-deploy.bat 이 이 파일을 이미지와 함께 실어 보낸다.
+
+name: aurabus
+
+services:
+
+  majung:
+    image: majung:latest
+    container_name: majung
+    restart: unless-stopped
+    user: "${MAJUNG_UID:-1000}:${MAJUNG_GID:-1000}"
+    environment:
+      MAJUNG_SECRET: "${MAJUNG_SECRET:?.env 에 MAJUNG_SECRET 이 없습니다}"
+      MAJUNG_PUBLIC_URL: "${MAJUNG_PUBLIC_URL:-}"
+      MAJUNG_PROXY_HOPS: "${MAJUNG_PROXY_HOPS:-1}"
+      MAJUNG_SKIN: "${MAJUNG_SKIN:-}"
+      TZ: "Asia/Seoul"
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:8765:8000"
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  site:
+    image: nginx:alpine
+    container_name: aurabus-site
+    restart: unless-stopped
+    volumes:
+      - ./site/public:/usr/share/nginx/html:ro
+      - ./site/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      TZ: "Asia/Seoul"
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
