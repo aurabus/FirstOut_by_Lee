@@ -92,7 +92,9 @@ Say "  (치는 동안 아무것도 안 보이는 게 정상입니다)"
 Say "──────────────────────────────────────────────"
 Write-Host ""
 
-ssh -p $port -o StrictHostKeyChecking=accept-new $NAS $cmd
+# -t 로 터미널을 하나 붙여 준다. 이게 없으면 NAS 쪽에서 sudo 가 비밀번호를
+# 물어볼 자리가 없어 그냥 실패한다 — 시놀로지에서 도커는 sudo 로만 된다.
+ssh -t -p $port -o StrictHostKeyChecking=accept-new $NAS $cmd
 $code = $LASTEXITCODE
 
 Write-Host ""

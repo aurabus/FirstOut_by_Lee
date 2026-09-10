@@ -26,17 +26,57 @@ step() { printf '\n── %s ─────────────────
 die()  { printf '\n  [멈춤] %s\n\n' "$*" >&2; exit 1; }
 
 # ── 도커를 어떻게 부르나 ─────────────────────────────────────
-find_dc() {
-    if docker compose version >/dev/null 2>&1; then echo "docker compose"; return; fi
-    if docker-compose version >/dev/null 2>&1; then echo "docker-compose"; return; fi
-    if sudo -n docker compose version >/dev/null 2>&1; then echo "sudo docker compose"; return; fi
-    if sudo -n docker-compose version >/dev/null 2>&1; then echo "sudo docker-compose"; return; fi
+# 시놀로지는 SSH 로 들어오면 PATH 가 짧아서 docker 가 안 잡힌다. Container Manager
+# 가 멀쩡히 돌고 있어도 그렇다. 그래서 실제로 놓여 있는 자리를 직접 뒤진다.
+# 그리고 DSM 에서 도커는 보통 root 만 쓸 수 있어 sudo 가 필요하다.
+PATH="$PATH:/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin"
+export PATH
+
+find_docker() {
+    for c in docker              /usr/local/bin/docker              /var/packages/ContainerManager/target/usr/bin/docker              /var/packages/Docker/target/usr/bin/docker
+    do
+        command -v "$c" >/dev/null 2>&1 && { echo "$c"; return; }
+        [ -x "$c" ] && { echo "$c"; return; }
+    done
     echo ""
 }
-DC=$(find_dc)
-[ -n "$DC" ] || die "도커를 찾지 못했습니다. Container Manager 를 설치해 주세요.
-  (sudo 로만 되는 경우라면 비밀번호 없이 쓸 수 있게 해두셔야 합니다)"
+DOCKER=$(find_docker)
+[ -n "$DOCKER" ] || die "도커 실행 파일을 찾지 못했습니다.
+  Container Manager 가 설치되어 있는지 확인해 주세요. 찾아본 자리:
+    /usr/local/bin/docker
+    /var/packages/ContainerManager/target/usr/bin/docker
+    /var/packages/Docker/target/usr/bin/docker"
+
+# 그냥 되는지, sudo 가 있어야 하는지 가려낸다
+if $DOCKER info >/dev/null 2>&1; then
+    SUDO=""
+elif sudo -n true 2>/dev/null && sudo -n $DOCKER info >/dev/null 2>&1; then
+    SUDO="sudo"
+else
+    SUDO="sudo"
+    say "도커를 쓰려면 sudo 가 필요합니다 — 비밀번호를 한 번 더 물어봅니다."
+    sudo -v || die "sudo 를 쓰지 못했습니다.
+  DSM 제어판 → 사용자 및 그룹 → $(id -un) → 편집 → 그룹 에서
+  **administrators** 에 넣어 주세요."
+    $SUDO $DOCKER info >/dev/null 2>&1 || die "도커에 말을 걸지 못했습니다.
+  Container Manager 가 실행 중인지 확인해 주세요."
+fi
+
+# compose 는 요즘 것(docker compose)과 옛것(docker-compose)이 있다
+if $SUDO $DOCKER compose version >/dev/null 2>&1; then
+    DC="$SUDO $DOCKER compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    DC="$SUDO docker-compose"
+elif [ -x /usr/local/bin/docker-compose ]; then
+    DC="$SUDO /usr/local/bin/docker-compose"
+else
+    die "docker compose 를 찾지 못했습니다."
+fi
 say "도커: $DC"
+
+# ── git 이 있나 ─────────────────────────────────────────────
+command -v git >/dev/null 2>&1 || die "git 이 없습니다.
+  DSM 패키지 센터에서 **Git Server** 를 설치해 주세요."
 
 # ── 받아온다 ────────────────────────────────────────────────
 pull_or_clone() {
