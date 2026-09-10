@@ -480,3 +480,51 @@ def test_PowerShell_이름은_영문으로_둔다():
         if 한글이름:
             나쁜곳[f.name] = 한글이름
     assert not 나쁜곳, f"이름에 한글이 든 PowerShell 파일: {나쁜곳}"
+
+
+def test_PowerShell_이_파일을_읽을_때_UTF8_을_못박는다():
+    """Get-Content 는 BOM 없는 파일을 cp949 로 읽는다.
+
+    그렇게 읽은 한글은 깨지고, 깨진 글자가 리눅스로 건너가 문법 오류가 된다.
+    실제로 NAS 에 보낼 스크립트가 그렇게 망가져 「end of file unexpected」로 멈췄다.
+    파일을 읽는 곳에서는 UTF-8 을 못박아야 한다.
+    """
+    import re
+    from pathlib import Path
+
+    뿌리 = Path(__file__).resolve().parent.parent
+    나쁜곳 = {}
+    for f in _우리_ps1(뿌리):
+        글 = f.read_text(encoding="utf-8-sig")
+        # 파일 통째로 읽는 곳 — Get-Content -Raw 는 인코딩을 스스로 짐작한다
+        위험 = [ln.strip() for ln in 글.splitlines()
+                if re.search(r"Get-Content\s+[^|]*-Raw", ln) and "-Encoding" not in ln]
+        if 위험:
+            나쁜곳[f.name] = 위험
+    assert not 나쁜곳, (
+        f"인코딩을 짐작하게 두는 곳: {나쁜곳}\n"
+        "  [IO.File]::ReadAllText($p, [Text.Encoding]::UTF8) 를 쓰세요")
+
+
+def test_NAS_로_보내는_스크립트가_리눅스_문법이다():
+    """이 스크립트는 NAS 로 실려 가 거기서 돈다. 여기서 못 돌려보므로 눈으로도
+    확인하기 어렵다 — 적어도 sh 문법과 줄바꿈은 여기서 지킨다.
+    """
+    import subprocess
+    from pathlib import Path
+
+    sh = Path(__file__).resolve().parent.parent / "deploy" / "nas-bootstrap.sh"
+    raw = sh.read_bytes()
+    assert b"\r\n" not in raw, "CR 이 섞이면 리눅스에서 bad interpreter 가 난다"
+
+    # 챙겨야 할 것들이 빠지지 않았는지 (빠뜨리면 NAS 에서 곧바로 죽는다)
+    글 = raw.decode("utf-8")
+    for 있어야할것 in ("mkdir -p data",       # 없으면 도커가 주인을 root 로 만든다
+                      "MAJUNG_SECRET=",       # 서명 키를 서버에서 만든다
+                      "docker-compose",       # 옛 DSM 도 받아준다
+                      "/health"):             # 정말 살아났는지 확인한다
+        assert 있어야할것 in 글, f"nas-bootstrap.sh 가 {있어야할것} 을 챙기지 않는다"
+
+    if Path("/bin/sh").exists():
+        r = subprocess.run(["sh", "-n", str(sh)], capture_output=True, text=True)
+        assert r.returncode == 0, f"sh 문법 오류: {r.stderr}"
