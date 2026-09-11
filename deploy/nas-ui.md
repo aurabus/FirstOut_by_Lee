@@ -227,13 +227,17 @@ firstout --setup-only --operator admin:1234 --open-kinder "주덕화곡초등학
 **제어판 → 로그인 포털 → 고급 → 역방향 프록시** 로 갑니다.
 **생성** 을 눌러 **세 개**를 만듭니다.
 
-### 규칙 ① 홈페이지 (www)
+> **세 개를 다 만드셔야 합니다.** 홈페이지는 `www` 로 들어온 손님을
+> `aurabus.com` 으로 되돌려 보냅니다. 그래서 **`aurabus.com` 규칙(②)이 없으면**
+> www 로 들어온 사람도 결국 갈 곳을 잃습니다 — 실제로 그렇게 막혔습니다.
+
+### 규칙 ① 홈페이지 (aurabus.com) ← 이게 진짜 홈페이지 주소입니다
 
 | 칸 | 값 |
 |---|---|
-| 설명 | `홈페이지 www` |
+| 설명 | `홈페이지` |
 | 원본 · 프로토콜 | **HTTPS** |
-| 원본 · 호스트 이름 | `www.aurabus.com` |
+| 원본 · 호스트 이름 | **`aurabus.com`** (www 없이) |
 | 원본 · 포트 | `443` |
 | 대상 · 프로토콜 | **HTTP** |
 | 대상 · 호스트 이름 | `localhost` |
@@ -247,9 +251,10 @@ firstout --setup-only --operator admin:1234 --open-kinder "주덕화곡초등학
 | `X-Forwarded-Proto` | `$scheme` |
 | `X-Forwarded-For` | `$proxy_add_x_forwarded_for` |
 
-### 규칙 ② 홈페이지 (www 없이)
+### 규칙 ② 홈페이지 (www)
 
-①과 똑같이 만들되 **호스트 이름만 `aurabus.com`**.
+①과 똑같이 만들되 **호스트 이름만 `www.aurabus.com`**.
+이 규칙은 www 로 들어온 손님을 ①로 넘겨주는 몫입니다.
 
 ### 규칙 ③ 손잡고 마중
 
