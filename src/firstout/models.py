@@ -343,6 +343,9 @@ class AuditLog(Base):
     path: Mapped[str] = mapped_column(String(200), default="")
     action: Mapped[str] = mapped_column(String(60), default="")      # 사람이 읽는 설명
     status: Mapped[int] = mapped_column(Integer, default=0)
+    # 이 요청에 붙은 번호. 기술 로그(docker logs)의 같은 번호와 이어 붙는다 —
+    # 「선생님 화면에 뜬 번호」 하나로 자국까지 따라갈 수 있게 하는 유일한 끈이다.
+    req_id: Mapped[str] = mapped_column(String(12), default="")
     ip: Mapped[str] = mapped_column(String(45), default="")
     agent: Mapped[str] = mapped_column(String(120), default="")
     # 되돌리기 어렵고 드물게 일어나는 일에만 「무엇이 어떻게」를 한 줄로 남긴다.

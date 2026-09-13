@@ -369,6 +369,9 @@ tr.is-change{background:var(--gold-soft)}
 .chg{font-size:.7rem;border:1px solid var(--gold-line);color:var(--gold);
   border-radius:var(--r-xs);padding:.02rem .3rem;margin-right:.35rem}
 .pathv{font-size:.75rem;color:var(--ink-3);word-break:break-all}
+/* 터진 요청의 번호 — 선생님이 화면에서 읽어 주신 그 여섯 글자 */
+.reqid{display:block;font-style:normal;font-family:var(--mono);font-size:.7rem;
+  letter-spacing:.06em;color:var(--stop);margin-top:.1rem}
 
 /* ── 엑셀 올리기 ── */
 .steps{display:flex;flex-direction:column;gap:.5rem}

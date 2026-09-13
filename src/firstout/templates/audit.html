@@ -52,7 +52,9 @@
             {% if r.changed %}<span class="chg">변경</span>{% else %}<span class="vw">접속</span>{% endif %}
             {{ r.action }}
             {% if r.detail %}<em class="what">{{ r.detail }}</em>{% endif %}</td>
-          <td><span class="res {{ said[1] }}">{{ said[0] }}</span></td>
+          <td><span class="res {{ said[1] }}">{{ said[0] }}</span>
+            {# 터진 줄에만 번호를 보여준다. 이 번호로 서버 기록에서 자국을 찾는다 #}
+            {% if r.status >= 500 and r.req_id %}<em class="reqid">{{ r.req_id }}</em>{% endif %}</td>
           <td class="n-f" style="font-size:.75rem;color:var(--ink-3)">{{ r.ip }}</td>
         </tr>
         {% endfor %}

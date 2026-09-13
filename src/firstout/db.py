@@ -51,6 +51,7 @@ def _add_columns() -> None:
 
     want = {
         ("audit_log", "detail"): "varchar(200) not null default ''",
+        ("audit_log", "req_id"): "varchar(12) not null default ''",
         ("child", "left_on"): "date",
     }
     with engine.begin() as conn:

@@ -13,12 +13,12 @@ import mimetypes
 import sys
 
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from . import flash, service, viewing
+from . import flash, logs, service, viewing
 from .config import (
     APP_NAME,
     APP_TAGLINE,
@@ -180,8 +180,43 @@ def page(request: Request, name: str, db: Session, teacher: User | None, **ctx):
     return res
 
 
+@app.exception_handler(Exception)
+def error_page(request: Request, exc: Exception) -> HTMLResponse:
+    """터졌을 때 선생님이 보시는 화면.
+
+    그냥 두면 「Internal Server Error」 열 몇 글자가 전부다. 그걸 보신 선생님은
+    우리에게 「안 돼요」 라고만 하실 수 있고, 우리는 그 말만으로는 어느 요청이
+    터졌는지 알 수 없다.
+
+    그래서 **요청 번호를 화면에 띄운다.** 선생님이 그 여섯 글자만 읽어 주시면
+    기술 로그에서 자국을, 감사 로그에서 누가 무엇을 했는지를 곧바로 찾는다.
+
+    여기서 다시 터지면 안 되므로 화면 틀(base.html)도 DB 도 쓰지 않는다.
+    """
+    번호 = str(request.scope.get("state", {}).get("req_id", ""))
+    몸 = f"""<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>문제가 생겼습니다 · {APP_NAME}</title>
+<link rel="stylesheet" href="/static/aurabus.css?v={STATIC_VER}">
+<link rel="stylesheet" href="/static/app.css?v={STATIC_VER}">
+</head><body>
+<div class="login"><div class="login-card" style="text-align:center">
+  <h1 style="font-size:1.2rem;font-weight:700">문제가 생겼습니다</h1>
+  <p style="font-size:.9rem;color:var(--ink-2)">
+    하시던 일은 저장되지 않았습니다. 잠시 뒤 다시 해보세요.</p>
+  <p style="font-size:.8rem;color:var(--ink-3);margin-top:.2rem">
+    계속 그러면 아래 번호를 알려주세요.</p>
+  <p style="font-family:var(--mono);font-size:1.6rem;font-weight:700;
+            letter-spacing:.12em;color:var(--pine);margin:.4rem 0">{번호}</p>
+  <a class="btn go" href="/board" style="margin-top:.4rem">돌아가기</a>
+</div></div></body></html>"""
+    return HTMLResponse(몸, status_code=500)
+
+
 @app.on_event("startup")
 def _startup() -> None:
+    logs.setup()
     ensure_dirs()
     init_db()
     with SessionLocal() as db:
@@ -189,21 +224,22 @@ def _startup() -> None:
 
         gone = audit.purge_old(db)
         if gone:
-            print(f"  감사 로그 {gone}건 정리 (한 달 지난 기록)")
+            logs.log.info("감사 로그 %d건 정리 (한 달 지난 기록)", gone)
 
         sigs = retention.purge_signatures(db)
         if sigs:
-            print(f"  서명 {sigs}건 삭제 (한 달 지난 그림)")
+            logs.log.info("서명 %d건 삭제 (한 달 지난 그림)", sigs)
 
         left = retention.purge_left_children(db)
         if left:
-            print(f"  퇴원 원아 {left}명 자료 삭제 (한 달 지난 기록)")
+            logs.log.info("퇴원 원아 %d명 자료 삭제 (한 달 지난 기록)", left)
 
         try:
             note, dropped = backup.run()
-            print(f"  {note}" + (f" · 오래된 사본 {dropped}개 정리" if dropped else ""))
+            logs.log.info("%s%s", note,
+                          f" · 오래된 사본 {dropped}개 정리" if dropped else "")
         except Exception as e:   # noqa: BLE001 — 백업 실패가 서비스를 막으면 안 된다
-            print(f"  백업 실패: {e}")
+            logs.log.error("백업 실패: %s", e)
 
 
 @app.get("/sw.js", include_in_schema=False)
@@ -466,9 +502,12 @@ def main() -> None:
 
     # uvicorn 도 X-Forwarded-For 를 보고 접속지를 바꿔치기한다. 규칙이 두 곳에 있으면
     # 어느 쪽이 이겼는지 알 수 없으므로 끄고, 우리 기준(csrf.client_ip)만 쓴다.
+    # 로그 모양을 먼저 정하고, uvicorn 에게는 건드리지 말라고 한다(log_config=None).
+    # 그래야 맨 처음 줄(「Started server process」)부터 시각이 붙는다.
+    logs.setup()
     uvicorn.run(
         "firstout.main:app", host=args.host, port=args.port, reload=args.reload,
-        proxy_headers=False,
+        proxy_headers=False, log_config=None,
     )
 
 

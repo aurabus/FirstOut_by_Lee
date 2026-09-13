@@ -131,6 +131,18 @@ class AuditMiddleware:
 
         try:
             await self.app(scope, receive, watch)
+        except Exception:
+            # 여기서 잡지 않으면 감사 로그에 상태가 **0** 으로 남는다.
+            # 0 은 500 이 아니라서 화면에는 평범한 「열어봄」으로 뜨고,
+            # 정작 터진 일이 정상 조회와 구분되지 않는다. 실제로 그랬다.
+            # 오류 응답은 우리보다 바깥(ServerErrorMiddleware)이 만들므로,
+            # 그때까지 기다리면 우리는 아무것도 못 본다.
+            if not status["code"]:
+                status["code"] = 500
+            from .logs import 오류
+            오류(str(scope.get("state", {}).get("req_id", "")),
+                scope.get("method", ""), path, client_ip(scope))
+            raise
         finally:
             # 화면이 남긴 쪽지 — 되돌리기 어려운 일에만 붙는다 (request.state.audit_note)
             note = str(scope.get("state", {}).get("audit_note", "") or "")
@@ -152,6 +164,7 @@ class AuditMiddleware:
                     method=scope.get("method", ""),
                     path=path,
                     status=status,
+                    req_id=str(scope.get("state", {}).get("req_id", "")),
                     ip=client_ip(scope),
                     agent=_header(scope, b"user-agent"),
                     detail=note,
@@ -167,8 +180,11 @@ class AuditMiddleware:
                     retention.purge_left_children(db)
                     invites.sweep(db)
                     backup.run()          # 오늘 사본이 이미 있으면 아무것도 하지 않는다
-        except Exception:   # noqa: BLE001 — 기록 실패가 서비스를 멈추면 안 된다
-            pass
+        except Exception as e:   # noqa: BLE001 — 기록 실패가 서비스를 멈추면 안 된다
+            # 넘어가되 말은 남긴다. 조용히 넘어가면 몇 달째 기록이 안 되고
+            # 있어도 아무도 모른다.
+            from .logs import 삼킴
+            삼킴("감사 로그를 남기지 못했습니다", e)
 
 
 def _set_cookie_named(set_cookies: list[str], want: str) -> str | None:
@@ -253,8 +269,14 @@ class SecurityHeaders:
 
         import secrets
 
+        from .logs import new_id
+
         nonce = secrets.token_urlsafe(12)
-        scope.setdefault("state", {})["csp_nonce"] = nonce
+        state = scope.setdefault("state", {})
+        state["csp_nonce"] = nonce
+        # 이 요청에 붙는 번호. 가장 바깥에서 한 번만 만들어 화면·기술 로그·
+        # 감사 로그가 **같은 번호**를 쓰게 한다. 셋을 잇는 것은 이것 하나뿐이다.
+        state["req_id"] = new_id()
         https = _is_https(scope)
 
         async def go(message):
@@ -311,7 +333,11 @@ class ForcePasswordChange:
             with SessionLocal() as db:
                 me = audit.user_from_cookie(db, _cookie_named(scope, "majung"))
                 must = bool(me and me.must_change_pw)
-        except Exception:   # noqa: BLE001 — 확인에 실패했다고 서비스를 멈추지 않는다
+        except Exception as e:   # noqa: BLE001 — 확인에 실패했다고 서비스를 멈추지 않는다
+            # 여기서 실패하면 임시 비밀번호를 막는 벽이 **열린 채**로 지나간다.
+            # 열어 주는 쪽을 고른 이상, 열어 줬다는 사실만큼은 남아야 한다.
+            from .logs import 삼킴
+            삼킴("첫 비밀번호 확인을 하지 못해 그냥 통과시킵니다", e)
             must = False
 
         if must:
