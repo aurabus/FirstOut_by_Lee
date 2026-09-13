@@ -530,3 +530,54 @@ def test_NAS_로_보내는_스크립트가_리눅스_문법이다():
     if Path("/bin/sh").exists():
         r = subprocess.run(["sh", "-n", str(sh)], capture_output=True, text=True)
         assert r.returncode == 0, f"sh 문법 오류: {r.stderr}"
+
+
+def test_화면_결_주소에_바뀜표가_붙는다():
+    """브라우저가 예전 화면을 계속 붙들고 있지 않게.
+
+    한 번 받은 app.css 는 서버에 다시 묻지 않는다. 그래서 결을 고쳐 올려도
+    쓰는 분 눈에는 예전 화면이 남는다. 실제로 새 단추가 엉뚱한 자리에 붙어
+    보여, 서버는 멀쩡한데 한참을 찾았다.
+    """
+    from pathlib import Path
+
+    import firstout
+
+    base = (Path(firstout.__file__).parent / "templates" / "base.html").read_text(
+        encoding="utf-8")
+    for 무엇 in ("aurabus.css", "app.css", "app.js"):
+        assert f"{무엇}?v={{{{ v }}}}" in base, f"{무엇} 에 바뀜표가 없다"
+
+
+def test_바뀜표는_결이_바뀔_때만_바뀐다(tmp_path, monkeypatch):
+    """날마다 바뀌면 안 바뀐 날에도 다시 받게 되어 느려진다."""
+    import importlib
+
+    from firstout import config
+
+    앞 = config._static_ver()
+    assert 앞 == config._static_ver(), "같은 파일이면 같은 표여야 한다"
+    assert len(앞) == 8 and 앞.isalnum()
+
+    css = config.STATIC_DIR / "app.css"
+    원래 = css.read_bytes()
+    try:
+        css.write_bytes(원래 + "\n/* 잠깐 바꿔 본다 */\n".encode())
+        assert config._static_ver() != 앞, "결이 바뀌면 표도 바뀌어야 한다"
+    finally:
+        css.write_bytes(원래)
+    assert config._static_ver() == 앞
+    importlib.reload(config)
+
+
+def test_사용_안내_단추는_로그인_카드_안에_있다():
+    """카드 밖에 두었더니 카드 옆에 따로 떨어져 붙었다."""
+    from pathlib import Path
+
+    import firstout
+
+    html = (Path(firstout.__file__).parent / "templates" / "signin.html").read_text(
+        encoding="utf-8")
+    폼끝 = html.index("</form>")
+    단추 = html.index('class="login-help"')
+    assert 단추 < 폼끝, "안내 단추가 카드(form) 밖에 있다"

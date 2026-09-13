@@ -19,6 +19,30 @@ DB_PATH = DATA_DIR / "majung.db"
 TEMPLATE_DIR = PKG_DIR / "templates"
 STATIC_DIR = PKG_DIR / "static"
 
+
+def _static_ver() -> str:
+    """화면 결이 바뀌었는지 알려주는 짧은 표.
+
+    브라우저는 한 번 받은 /static/app.css 를 서버에 다시 묻지 않고 그냥 쓴다.
+    그래서 화면을 고쳐 올려도 **쓰는 사람 눈에는 예전 화면**이 남는다.
+    실제로 새 단추가 카드 옆에 엉뚱하게 붙어 보였고, 서버는 멀쩡한데 한참을
+    찾았다. 주소 뒤에 이 표를 붙여 두면, 파일이 바뀐 날에만 주소가 바뀌어
+    브라우저가 새로 받아 간다. 안 바뀐 날에는 그대로 캐시를 쓴다.
+    """
+    import hashlib
+
+    h = hashlib.sha256()
+    for 이름 in ("aurabus.css", "app.css", "app.js"):
+        f = STATIC_DIR / 이름
+        try:
+            h.update(f.read_bytes())
+        except OSError:      # 없으면 없는 대로 — 여기서 서버가 죽을 일은 아니다
+            h.update(이름.encode())
+    return h.hexdigest()[:8]
+
+
+STATIC_VER = _static_ver()
+
 # 서비스 주소. 회사 서버에 올려 서브도메인으로 열 때 반드시 정해야 한다.
 #     $env:MAJUNG_PUBLIC_URL = "https://majung.aurabus.co.kr"
 # 비워두면 원내망 주소(192.168.x.x)를 안내한다 — 시험·시연용이다.

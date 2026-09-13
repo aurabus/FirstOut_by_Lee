@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
 <link rel="preload" href="/static/fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/static/aurabus.css">
-<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/aurabus.css?v={{ v }}">
+<link rel="stylesheet" href="/static/app.css?v={{ v }}">
 <link rel="manifest" href="/static/manifest.webmanifest">
 <meta name="theme-color" content="#0A6B55">
 <link rel="icon" href="/static/icon-192.png" type="image/png">
@@ -90,7 +90,7 @@
 {% endif %}
 
 {% if me %}
-<script src="/static/app.js" defer></script>
+<script src="/static/app.js?v={{ v }}" defer></script>
 {% endif %}
 <script nonce="{{ nonce }}">
   /* 인쇄 단추와 자동 저장 — 화면마다 두면 CSP 에 걸리므로 여기서 한 번에 맡는다.

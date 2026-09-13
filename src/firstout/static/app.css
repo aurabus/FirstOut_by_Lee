@@ -116,8 +116,7 @@
 .ty.학원{color:var(--plum)} .ty.돌봄{color:var(--ink-2)} .ty.정규{color:var(--ink-3)}
 
 /* ── 로그인 ── */
-.login{min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:.7rem;padding:1.2rem}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.2rem}
 .login-card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-sm);
   padding:1.5rem 1.35rem;width:100%;max-width:22rem;display:flex;flex-direction:column;gap:.5rem;
   box-shadow:0 6px 24px rgba(13,22,19,.12)}
@@ -147,16 +146,15 @@
 .pad button.wide{font-size:.82rem;font-family:var(--sans)}
 .login-hint{font-size:.73rem;color:var(--ink-3);text-align:center;margin-top:.3rem}
 
-/* 로그인 카드 아래의 안내 문 — 처음 오신 선생님이 먼저 눈에 담도록 */
-.login-help{width:100%;max-width:22rem;display:block;text-align:center;
-  background:var(--card);border:1px solid var(--rule);border-radius:var(--r-sm);
-  padding:.65rem .9rem;text-decoration:none;color:inherit;
-  box-shadow:0 2px 10px rgba(13,22,19,.06)}
-.login-help:hover,.login-help:focus-visible{border-color:var(--pine);
-  box-shadow:0 4px 14px rgba(13,22,19,.1)}
-.login-help b{display:block;font-size:.88rem;font-weight:600;color:var(--pine)}
-.login-help em{display:block;font-style:normal;font-size:.72rem;color:var(--ink-3);
-  margin-top:.15rem}
+/* 「사용 안내 보기」 — 로그인 단추 아래의 둘째 단추.
+   카드 밖에 두었더니 카드 옆에 따로 떨어져 붙었다. 카드 안에 둔다. */
+.login-help{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.05rem;margin-top:.55rem;padding:.55rem .8rem;min-height:var(--tap);
+  border:1px solid var(--key-line);border-radius:var(--r-pill);background:var(--key-soft);
+  color:var(--pine);text-decoration:none;text-align:center}
+.login-help:hover,.login-help:focus-visible{border-color:var(--pine);background:var(--card-2)}
+.login-help b{font-size:.88rem;font-weight:700}
+.login-help em{font-style:normal;font-size:.72rem;font-weight:400;color:var(--ink-2)}
 .login-err{background:var(--clay-soft);border-left:3px solid var(--clay);color:var(--clay);
   padding:.45rem .7rem;font-size:.8rem}
 

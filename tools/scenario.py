@@ -213,6 +213,15 @@ def 걷기(바탕: str, 말: list[str]) -> None:
     코드, _, h = 원장.보기("/signin")
     확인(코드 == 200 and "손잡고" in h, "로그인 화면이 뜬다", str(코드))
     확인('href="/help"' in h, "로그인 화면에서 사용 안내로 갈 수 있다")
+    확인('class="login-help"' in h and h.index("login-help") < h.index("</form>"),
+         "안내 단추가 로그인 카드 안에 있다")
+
+    # 결을 고쳐 올려도 브라우저가 예전 것을 붙들고 있으면 아무 소용이 없다
+    표 = re.search(r"/static/app\.css\?v=([0-9a-f]{8})", h)
+    확인(bool(표), "화면 결 주소에 바뀜표가 붙는다")
+    if 표:
+        코드, _, css = 원장.보기("/static/app.css?v=" + 표.group(1))
+        확인(코드 == 200 and ".login-help" in css, "그 주소로 결이 내려온다", str(코드))
 
     코드, 주소, hh = 원장.보기("/help")
     확인(코드 == 200 and urllib.parse.urlparse(주소).path == "/help",
