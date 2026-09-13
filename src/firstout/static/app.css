@@ -116,7 +116,8 @@
 .ty.학원{color:var(--plum)} .ty.돌봄{color:var(--ink-2)} .ty.정규{color:var(--ink-3)}
 
 /* ── 로그인 ── */
-.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.2rem}
+.login{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:.7rem;padding:1.2rem}
 .login-card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-sm);
   padding:1.5rem 1.35rem;width:100%;max-width:22rem;display:flex;flex-direction:column;gap:.5rem;
   box-shadow:0 6px 24px rgba(13,22,19,.12)}
@@ -145,6 +146,17 @@
 .pad button:hover{border-color:var(--pine-2)}
 .pad button.wide{font-size:.82rem;font-family:var(--sans)}
 .login-hint{font-size:.73rem;color:var(--ink-3);text-align:center;margin-top:.3rem}
+
+/* 로그인 카드 아래의 안내 문 — 처음 오신 선생님이 먼저 눈에 담도록 */
+.login-help{width:100%;max-width:22rem;display:block;text-align:center;
+  background:var(--card);border:1px solid var(--rule);border-radius:var(--r-sm);
+  padding:.65rem .9rem;text-decoration:none;color:inherit;
+  box-shadow:0 2px 10px rgba(13,22,19,.06)}
+.login-help:hover,.login-help:focus-visible{border-color:var(--pine);
+  box-shadow:0 4px 14px rgba(13,22,19,.1)}
+.login-help b{display:block;font-size:.88rem;font-weight:600;color:var(--pine)}
+.login-help em{display:block;font-style:normal;font-size:.72rem;color:var(--ink-3);
+  margin-top:.15rem}
 .login-err{background:var(--clay-soft);border-left:3px solid var(--clay);color:var(--clay);
   padding:.45rem .7rem;font-size:.8rem}
 
@@ -219,6 +231,54 @@
   /* 마무리 서명줄 */
   .sign-row{border-top:.8pt solid #000;margin-top:3mm;padding-top:2mm;font-size:9pt;
     display:flex;justify-content:space-between}
+
+  /* ── 사용 안내 ──────────────────────────────────────
+     이건 표가 아니라 **읽는 글**이다. 명단처럼 빽빽하게 찍으면 못 읽는다.
+     선생님 책상에 놓고 넘겨 보실 것이므로 글자를 키우고, 무엇보다
+     제목만 남고 내용이 다음 장으로 넘어가는 일이 없게 한다. */
+  .hp-pub{display:none!important}
+
+  /* 선생님용 — 총괄 관리자만 하는 대목을 접고 뽑는다.
+     한 번만 하는 일을 매일 보시는 분께 드리면 정작 볼 곳을 못 찾으신다. */
+  body.only-teacher section.hp[data-admin]{display:none!important}
+  body.only-teacher .only-t{display:inline!important;font-style:normal;
+    font-weight:400;font-size:9.5pt}
+  section.hp{margin:0 0 5mm;break-inside:auto}
+  section.hp h2{font-size:12.5pt;margin:4mm 0 1.5mm;padding-bottom:1mm;
+    border-bottom:.8pt solid #000;break-after:avoid;page-break-after:avoid}
+  section.hp h3{font-size:10.5pt;margin:3mm 0 1mm;break-after:avoid;page-break-after:avoid}
+  section.hp p,section.hp li,section.hp dd{font-size:9.6pt;line-height:1.5;color:#000!important}
+  .hp-only{border:.5pt solid #000!important;color:#000!important;
+    background:transparent!important;padding:0 .8mm}
+
+  /* 강조 상자 — 색이 없어도 무엇이 중요한지 보이게 왼쪽 굵은 선만 남긴다 */
+  .hp-box,.hp-two > div,.hp-three > div{background:transparent!important;
+    border:.5pt solid #999!important;border-radius:0;box-shadow:none;
+    padding:2mm 2.5mm;margin-top:2.5mm;break-inside:avoid;page-break-inside:avoid}
+  .hp-box.key,.hp-box.care,.hp-box.stop{border-left:1.6pt solid #000!important}
+  .hp-box > b,.hp-two > div > b,.hp-three > div > b{color:#000!important;font-size:9.8pt}
+  .hp-two{grid-template-columns:1fr 1fr;gap:2.5mm}
+  .hp-three{grid-template-columns:1fr;gap:2.5mm}
+  .hp-two .sig,.hp-two .chk{border-top:1.6pt solid #000!important}
+
+  /* 번호 매긴 차례 — 동그라미 대신 테두리 숫자 (흑백에서 안 뭉개진다) */
+  .hp-steps > li{break-inside:avoid;page-break-inside:avoid;margin-top:3mm;padding-left:7mm}
+  .hp-steps > li::before{background:transparent!important;color:#000!important;
+    border:.8pt solid #000;width:4.6mm;height:4.6mm;font-size:8.5pt}
+  .hp-steps > li > b{font-size:10pt}
+  .hp-why{border-left:.8pt solid #999;padding-left:2mm;color:#333!important}
+
+  /* 귀가 차수 — 표처럼 줄을 맞춘다 */
+  .hp-sched{border:.5pt solid #999;border-radius:0;background:transparent!important;
+    break-inside:avoid;page-break-inside:avoid}
+  .hp-sr{border-bottom:.5pt solid #ccc;padding:1.2mm 2mm;font-size:9.4pt}
+  .hp-sr .sg{background:transparent!important;border:0!important;color:#000!important;
+    font-size:9pt}
+
+  /* 이럴 땐 — 물음과 답이 갈라지지 않게 */
+  section.hp dt{font-weight:700;margin-top:2.5mm;break-after:avoid;page-break-after:avoid}
+  section.hp dd{margin-left:0;padding-left:3mm;border-left:.5pt solid #ccc;
+    break-inside:avoid;page-break-inside:avoid}
 }
 .print-head{display:none}
 
@@ -496,9 +556,16 @@ tr.is-change{background:var(--gold-soft)}
 .hp-top{display:flex;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin:1.4rem 0 1rem}
 .hp-title{font-size:1.5rem;font-weight:700;margin:0}
 .hp-sub{font-size:.84rem;color:var(--ink-3);margin-top:.2rem}
-.hp-top .pick{margin-left:auto}
+.hp-prints{margin-left:auto;display:flex;gap:.4rem;flex-wrap:wrap}
+.only-t{display:none}
 .hp-none{background:var(--gold-soft);border-left:3px solid var(--gold-line);color:var(--gold);
   padding:.6rem .8rem;font-size:.86rem;border-radius:0 var(--r-sm) var(--r-sm) 0;margin-bottom:1rem}
+
+.hp-pub{background:var(--pine-soft);border:1px solid var(--pine-line);
+  border-left:3px solid var(--pine);border-radius:var(--r-sm);
+  padding:.8rem 1rem;margin-bottom:.9rem}
+.hp-pub > b{display:block;font-size:.93rem;font-weight:700;color:var(--pine)}
+.hp-pub p{margin-top:.3rem;font-size:.88rem;color:var(--ink-2)}
 
 .hp-toc{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.4rem}
 .hp-toc a{border:1px solid var(--rule);background:var(--card);border-radius:var(--r-sm);

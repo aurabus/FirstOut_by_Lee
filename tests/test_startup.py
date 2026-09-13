@@ -107,7 +107,9 @@ def test_사용_안내의_모든_대목에_갈_수_있다():
 
     root = Path(firstout.__file__).parent / "templates"
     help_html = (root / "help.html").read_text(encoding="utf-8")
-    have = set(re.findall(r'<section class="hp" id="([^"]+)">', help_html))
+    # id 뒤에 다른 속성이 붙을 수 있다 (data-admin 처럼). 닫는 > 까지 붙여 찾으면
+    # 속성을 하나 더하는 날 이 시험이 조용히 대목을 못 찾고 딴소리를 한다.
+    have = set(re.findall(r'<section class="hp" id="([^"]+)"', help_html))
     assert len(have) >= 10
 
     wanted = set()

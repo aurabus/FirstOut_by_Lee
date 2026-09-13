@@ -4,13 +4,31 @@
 {% block body %}
 <div class="wrap" style="max-width:56rem">
 
+  <!-- 종이에서는 화면 머리가 사라지므로, 무슨 서류인지 따로 적어 준다 -->
+  <div class="print-head">
+    <b>{{ app_name }} · 사용 안내<i class="only-t">  (선생님용)</i></b>
+    <span>{{ today_ko }} 기준</span>
+  </div>
+
   <div class="hp-top no-print">
     <div>
       <h1 class="hp-title">사용 안내</h1>
       <p class="hp-sub">처음 등록부터 하루 운영까지 · 궁금한 말을 적으면 그 대목만 남습니다</p>
     </div>
-    <button class="pick" data-print>안내 인쇄 / PDF</button>
+    <div class="hp-prints">
+      <button class="pick" data-print-teacher>선생님용 인쇄</button>
+      <button class="pick" data-print>전체 인쇄 / PDF</button>
+    </div>
   </div>
+
+  {% if 공개 %}
+  <div class="hp-pub no-print">
+    <b>로그인하지 않고 보고 계십니다</b>
+    <p>쓰는 방법만 담겨 있어 누구나 읽으실 수 있습니다. 반·귀가 차수 같은
+      <strong>우리 원의 값은 로그인하신 뒤에 보입니다</strong> — 아래 차수는 보기입니다.</p>
+    <p><a class="btn sm" href="/signin">로그인하러 가기</a></p>
+  </div>
+  {% endif %}
 
   <input class="search no-print" id="hpq" type="search" autocomplete="off"
          placeholder="찾을 말을 적어보세요 — 예: 서명, 결석, 초대, 엑셀, 퇴원">
@@ -53,8 +71,13 @@
         <p>원 차량과 학원 차량. 이름을 누르면 바로 처리됩니다.</p></div>
     </div>
 
+    {% if 공개 %}
+    <h3>귀가 차수는 이렇게 생겼습니다 <i class="hp-only">보기</i></h3>
+    <p>원마다 다릅니다. 로그인하시면 <strong>우리 원의 실제 차수</strong>가 여기에 나옵니다.</p>
+    {% else %}
     <h3>지금 우리 원의 귀가 차수</h3>
     <p>시각과 이름은 <a href="/settings">설정</a>에서 바꾸실 수 있습니다.</p>
+    {% endif %}
     <div class="hp-sched">
       {% for r in rounds %}
       <div class="hp-sr">
@@ -70,7 +93,7 @@
   </section>
 
   <!-- 01 ─────────────────────────────────────────────── -->
-  <section class="hp" id="h-setup">
+  <section class="hp" id="h-setup" data-admin>
     <h2>처음 시작하기 <i class="hp-only">총괄 관리자</i></h2>
     <p>딱 한 번만 하는 일입니다. 네 가지를 끝내면 다음 날부터는 그냥 쓰시면 됩니다.
       끝나기 전까지 <a href="/board">오늘 현황</a> 맨 위에 <strong>시작하기</strong> 안내가
@@ -210,7 +233,7 @@
   </section>
 
   <!-- 05 ─────────────────────────────────────────────── -->
-  <section class="hp" id="h-roster">
+  <section class="hp" id="h-roster" data-admin>
     <h2>명부 관리 <i class="hp-only">총괄 관리자</i></h2>
 
     <h3>엑셀을 다시 올릴 때</h3>
@@ -422,6 +445,17 @@
     toc.hidden = !!want;
   };
   q.addEventListener("input", apply);
+
+  /* 선생님께 나눠드릴 것에는 총괄 관리자만 하는 대목이 없는 편이 낫다.
+     한 번만 하는 일을 매일 보시는 분께 드리면, 정작 볼 곳을 못 찾으신다. */
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("[data-print-teacher]")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    document.body.classList.add("only-teacher");
+    window.print();
+    setTimeout(function () { document.body.classList.remove("only-teacher"); }, 0);
+  }, true);
 
   /* 다른 화면에서 #대목 으로 들어오면 그 자리를 잠깐 밝혀 준다 */
   var mark = function () {

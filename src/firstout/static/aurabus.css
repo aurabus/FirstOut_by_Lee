@@ -313,3 +313,32 @@ thead th.tx{text-align:center}
 .peek strong{color:var(--warn);font-weight:700}
 .peek form{margin-left:auto}
 .peek .btn{background:var(--card);border-color:var(--warn-line);color:var(--warn)}
+
+/* ── 종이 ────────────────────────────────────────────────────────
+   종이는 늘 흰색이다. 그런데 어두운 결로 보시던 분이 그대로 인쇄하면 글자색
+   토큰이 흰색에 가까운 채로 찍혀 **흰 종이에 흰 글씨**가 된다. 실제로
+   사용 안내를 뽑아 보니 강조한 낱말들이 통째로 사라져 있었다.
+
+   그래서 종이에서는 색 토큰을 종이용 값으로 되돌린다. 이렇게 해두면
+   어느 결로 보고 계셨든, 어두운 화면이든 밝은 화면이든 인쇄물은 똑같다.
+   조각(.btn·.card…)은 건드리지 않는다 — 값만 바꾼다. */
+@media print{
+  :root,
+  :root[data-theme="dark"],
+  :root:not([data-theme="light"]){
+    --paper:#FFFFFF; --card:#FFFFFF; --card-2:#FFFFFF; --sunk:#FFFFFF;
+    --head:#ECECEC;
+    --ink:#000000; --ink-2:#2A2A2A; --ink-3:#555555;
+    --rule:#9A9A9A; --rule-2:#C4C4C4;
+
+    /* 뜻을 가진 색 — 흑백 프린터에서도 읽히도록 충분히 어둡게.
+       바탕 칠(--*-soft)은 흰색으로 둔다. 옅은 색 칠은 흑백에서 회색으로
+       뭉개져 그 위의 글씨를 먹는다. */
+    --key:#12503E;  --key-2:#12503E;  --key-soft:#FFFFFF;  --key-line:#6E6E6E;
+    --warn:#63490F; --warn-2:#63490F; --warn-soft:#FFFFFF; --warn-line:#6E6E6E;
+    --stop:#822C20; --stop-2:#822C20; --stop-soft:#FFFFFF; --stop-line:#6E6E6E;
+    --sign:#4E2E58; --sign-2:#4E2E58; --sign-soft:#FFFFFF; --sign-line:#6E6E6E;
+
+    --sh:none; --sh-2:none;
+  }
+}
