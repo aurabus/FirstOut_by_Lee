@@ -26,6 +26,11 @@ import sys
 import urllib.error
 import urllib.request
 
+# 윈도우 명령창은 cp949 로 뱉으려다 「—」 하나에 통째로 죽는다.
+# 검사 결과가 다 나온 뒤 마지막 줄에서 죽으면 무엇이 문제인지 알 수 없다.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 바탕 = "aurabus.com"
 숨어야할포트 = (5000, 5001, 8033, 8043)      # DSM 관리 화면
 좋음, 나쁨, 참고 = "  ○", "  ✗", "  ·"
@@ -73,6 +78,26 @@ def 열기(주소: str, 따라가기: bool = True, 인증서따짐: bool = True)
         return 0, "", ""
 
 
+def 어디서보나(도메인: str) -> str:
+    """이 주소가 우리를 어디로 보내는가.
+
+    사무실 안에서는 도메인이 **사설 주소**(192.168.…)로 풀리는 일이 흔하다.
+    그러면 우리는 공유기를 거치지 않고 NAS 에 곧장 말을 걸게 되고, 밖에서는
+    막혀 있는 포트도 「열려 있다」고 나온다. 그걸 믿고 공유기를 고치러 가면
+    없는 문제를 쫓게 된다 — 실제로 그럴 뻔했다.
+    """
+    try:
+        주소 = socket.gethostbyname(도메인)
+    except OSError:
+        return ""
+    import ipaddress
+    try:
+        ip = ipaddress.ip_address(주소)
+    except ValueError:
+        return ""
+    return 주소 if ip.is_private else ""
+
+
 def 포트열렸나(호스트: str, 포트: int, 시간: float = 5.0) -> bool:
     try:
         with socket.create_connection((호스트, 포트), timeout=시간):
@@ -89,6 +114,13 @@ def main() -> int:
 
     print()
     print(f"  {도메인} 을 바깥에서 두들겨 봅니다")
+    안쪽 = 어디서보나(도메인)
+    if 안쪽:
+        print()
+        print(f"  ※ 여기서는 {도메인} 이 {안쪽} 로 풀립니다 — **사무실 안**입니다.")
+        print("     공유기를 거치지 않고 NAS 에 곧장 말을 걸게 되므로,")
+        print("     아래 「숨어야 할 것」 은 믿을 수 없습니다. 밖에서 다시 돌려주세요")
+        print("     (휴대폰 테더링이면 충분합니다).")
     print()
 
     # ── 인증서 ────────────────────────────────────────────
@@ -107,7 +139,8 @@ def main() -> int:
         남은 = ""
         try:
             d = dt.datetime.strptime(끝, "%b %d %H:%M:%S %Y %Z")
-            남은 = f"{(d - dt.datetime.utcnow()).days}일 남음"
+            d = d.replace(tzinfo=dt.timezone.utc)
+            남은 = f"{(d - dt.datetime.now(dt.timezone.utc)).days}일 남음"
         except ValueError:
             남은 = 끝
         if 맞나:
@@ -154,7 +187,11 @@ def main() -> int:
     # ── 숨어야 할 것 ──────────────────────────────────────
     print("  숨어야 할 것 (DSM 관리 화면)")
     보임 = [p for p in 숨어야할포트 if 포트열렸나(도메인, p)]
-    if 보임:
+    if 안쪽:
+        말 = f"{보임} 이 보입니다" if 보임 else "모두 막혀 보입니다"
+        print(f"{참고} 사무실 안이라 여기서는 알 수 없습니다 ({말})")
+        보임 = []
+    elif 보임:
         print(f"{나쁨} 포트 {보임} 이 밖에서 열려 있습니다 — 공유기 포트포워딩을 지우세요")
         걸린것 += 1
     else:
@@ -174,6 +211,9 @@ def main() -> int:
         print()
         return 2
 
+    if 안쪽 and not 걸린것:
+        print("  안에서 본 것은 다 좋습니다 — 밖에서 한 번 더 돌려주세요.")
+        return 0
     if 걸린것:
         print(f"  걸린 것 {걸린것}개 — deploy/README.md 의 해당 장을 보세요.")
         return 1
