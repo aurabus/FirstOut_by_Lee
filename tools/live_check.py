@@ -41,14 +41,29 @@ def 인증서(호스트: str, 포트: int = 443, 시간: float = 8.0) -> dict | 
         return None
 
 
-def 열기(주소: str, 따라가기: bool = True) -> tuple[int, str, str]:
-    """(응답 번호, 최종 주소, 앞부분). 못 열면 (0, '', '')."""
+def _막무가내() -> ssl.SSLContext:
+    """인증서를 따지지 않는 맥락. 「무엇이 서비스되고 있나」만 볼 때 쓴다."""
+    c = ssl.create_default_context()
+    c.check_hostname = False
+    c.verify_mode = ssl.CERT_NONE
+    return c
+
+
+def 열기(주소: str, 따라가기: bool = True, 인증서따짐: bool = True) -> tuple[int, str, str]:
+    """(응답 번호, 최종 주소, 앞부분). 못 열면 (0, '', '').
+
+    인증서따짐=False 면 인증서가 맞든 말든 열어 본다. 「인증서가 아직 안 맞는 것」과
+    「아예 못 닿는 것」은 완전히 다른 일인데, 둘 다 「연결 안 됨」이라고 말하면
+    무엇을 고쳐야 할지 알 수 없다 — 실제로 그렇게 헷갈렸다.
+    """
     class 안따라감(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, *a, **k):
             return None
 
-    문 = urllib.request.build_opener() if 따라가기 \
-        else urllib.request.build_opener(안따라감)
+    손: list = [] if 인증서따짐 else [urllib.request.HTTPSHandler(context=_막무가내())]
+    if not 따라가기:
+        손.append(안따라감())
+    문 = urllib.request.build_opener(*손)
     try:
         r = 문.open(주소, timeout=10)
         return r.status, r.url, r.read(3000).decode("utf-8", "replace")
@@ -106,16 +121,20 @@ def main() -> int:
     print("  화면")
     for 이름, 무엇 in ((www, "홈페이지"), (도메인, "홈페이지"), (마중, "손잡고 마중")):
         코드, 최종, 몸 = 열기(f"https://{이름}/")
+        꼬리 = ""
+        if 코드 != 200:
+            # 인증서를 빼고 다시 — 열리면 「화면은 되는데 인증서만 아직」이다
+            코드, _, 몸 = 열기(f"https://{이름}/", 인증서따짐=False)
+            꼬리 = "  ← 인증서만 아직입니다"
         if 코드 != 200:
             print(f"{나쁨} https://{이름:22} {코드 or '연결 안 됨'}")
             걸린것 += 1
             continue
-        낌새 = ("Synology" in 몸 or "SYNO" in 몸)
-        if 낌새:
+        if "Synology" in 몸 or "SYNO" in 몸:
             print(f"{나쁨} https://{이름:22} DSM 화면이 나옵니다 — 역방향 프록시 규칙이 없습니다")
             걸린것 += 1
         else:
-            print(f"{좋음} https://{이름:22} 열림 ({무엇})")
+            print(f"{참고 if 꼬리 else 좋음} https://{이름:22} 열림 ({무엇}){꼬리}")
     print()
 
     # ── http 로 들어오면 ───────────────────────────────────
@@ -142,7 +161,9 @@ def main() -> int:
         print(f"{좋음} {list(숨어야할포트)} 모두 막혀 있습니다")
     print()
 
-    if 걸린것 >= 6 and 밖으로_나가지나():
+    # 숨어야 할 포트 중 하나라도 닿았다면 우리는 분명히 밖에 있다.
+    # 그 사실을 무시하고 「안에서 돌리는 것 같다」고 말하면 엉뚱한 데를 보게 된다.
+    if 걸린것 >= 6 and not 보임 and 밖으로_나가지나():
         print("  ── 잠깐 ──")
         print("  바깥 인터넷은 되는데 이 주소만 전부 안 열립니다.")
         print("  **사무실 안에서 돌리고 계신 것 같습니다.**")
