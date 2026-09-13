@@ -20,6 +20,17 @@
 # 주의 — 이 파일은 UTF-8 BOM 으로 저장해야 합니다 (PowerShell 5.1 이 cp949 로 읽습니다).
 
 $ErrorActionPreference = "Stop"
+
+# docker 나 ssh 가 stderr 로 한 줄만 흘려도 PowerShell 5.1 은 그것을 "오류"로
+# 감싸 던진다. ErrorActionPreference=Stop 과 만나면 **경고 한 줄에 배포가 멈춘다** —
+# 실제로 도커 플러그인 경고 하나에 멈췄다. 밖에서 불러온 명령의 성패는
+# 종료 코드($LASTEXITCODE)로만 본다.
+function Run-Native([scriptblock] $what) {
+    $keep = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { & $what } finally { $ErrorActionPreference = $keep }
+}
+
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
@@ -58,31 +69,31 @@ Say "놓을 자리: $base"
 # ── 1. 여기서 만든다 ──────────────────────────────────────
 Step "이미지를 만듭니다"
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { Die "Docker Desktop 을 켜 주세요." }
-docker info 2>&1 | Out-Null
+Run-Native { docker info --format "{{.ServerVersion}}" | Out-Null }
 if ($LASTEXITCODE -ne 0) { Die "Docker Desktop 이 아직 준비되지 않았습니다." }
 
 # 한 겹짜리 linux/amd64 로 만든다 — 여러 겹이면 NAS 의 도커가 못 읽는다
-docker build --platform linux/amd64 --provenance=false --sbom=false -t majung:latest .
+Run-Native { docker build --platform linux/amd64 --provenance=false --sbom=false -t majung:latest . }
 if ($LASTEXITCODE -ne 0) { Die "만들지 못했습니다." }
 
 # ── 2. 보내기 전에 여기서 확인한다 ─────────────────────────
 Step "보내기 전에 여기서 띄워 봅니다"
-docker rm -f majung-precheck 2>&1 | Out-Null
-docker run -d --name majung-precheck -e MAJUNG_SECRET=precheck-only-not-a-real-secret-123456 -p 18765:8000 majung:latest | Out-Null
+Run-Native { docker rm -f majung-precheck | Out-Null }
+Run-Native { docker run -d --name majung-precheck -e MAJUNG_SECRET=precheck-only-not-a-real-secret-123456 -p 18765:8000 majung:latest | Out-Null }
 $ok = $false
 foreach ($i in 1..40) {
     try { if ((Invoke-WebRequest "http://127.0.0.1:18765/health" -TimeoutSec 3 -UseBasicParsing).StatusCode -eq 200) { $ok = $true; break } }
     catch { Start-Sleep -Milliseconds 1500 }
 }
 if (-not $ok) {
-    docker logs majung-precheck
-    docker rm -f majung-precheck | Out-Null
+    Run-Native { docker logs majung-precheck }
+    Run-Native { docker rm -f majung-precheck | Out-Null }
     Die "여기서도 안 뜹니다. NAS 로 보내지 않았습니다."
 }
 $page = Invoke-WebRequest "http://127.0.0.1:18765/signin" -TimeoutSec 5 -UseBasicParsing
 if ($page.Content -match "손잡고") { Say "○ 로그인 화면이 그려집니다" } else { Say "✗ 화면이 이상합니다" }
 Say ("○ 시각: " + ((docker exec majung-precheck date "+%Y-%m-%d %H:%M %Z") -join ""))
-docker rm -f majung-precheck | Out-Null
+Run-Native { docker rm -f majung-precheck | Out-Null }
 
 # ── 3. 보낼 짐을 싼다 ─────────────────────────────────────
 Step "보낼 짐을 쌉니다"
@@ -90,7 +101,7 @@ $pack = Join-Path $env:TEMP "aurabus-pack"
 if (Test-Path $pack) { Remove-Item $pack -Recurse -Force }
 New-Item -ItemType Directory $pack | Out-Null
 
-docker save -o (Join-Path $pack "majung.tar") majung:latest
+Run-Native { docker save -o (Join-Path $pack "majung.tar") majung:latest }
 if ($LASTEXITCODE -ne 0) { Die "이미지를 파일로 내보내지 못했습니다." }
 Copy-Item (Join-Path $root "deploy\compose.nas.yml") $pack
 Copy-Item (Join-Path $root "deploy\nas-run.sh") $pack
@@ -113,7 +124,7 @@ Write-Host ""
 # PowerShell 은 파이프로 흐르는 바이트를 망가뜨린다. 그래서 cmd 에게 맡긴다.
 $remote = "rm -rf /tmp/aurabus-pack && mkdir -p /tmp/aurabus-pack && tar -xf - -C /tmp/aurabus-pack && sh /tmp/aurabus-pack/nas-run.sh '$base'"
 $line = "tar -cf - -C `"$pack`" . | ssh -p $port -o StrictHostKeyChecking=accept-new $NAS `"$remote`""
-cmd /c $line
+Run-Native { cmd /c $line }
 $code = $LASTEXITCODE
 
 Remove-Item $pack -Recurse -Force -ErrorAction SilentlyContinue
