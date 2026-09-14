@@ -35,6 +35,10 @@
           <p>{{ r.reply }}</p>
           <em>{{ r.replied_at.strftime('%m월 %d일') if r.replied_at }}</em>
         </div>
+        {% else %}
+        {# 「받음」인 채로 멈춰 있으면 아무도 안 보는 것처럼 느껴진다 #}
+        {% set 기다림 = r.waiting %}
+        <p class="sug-wait {{ 기다림[1] }}">{{ 기다림[0] }}</p>
         {% endif %}
 
         {% if me.is_operator %}

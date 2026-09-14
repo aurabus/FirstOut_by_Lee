@@ -429,3 +429,25 @@ class Suggestion(Base):
     @property
     def answered(self) -> bool:
         return bool(self.reply)
+
+    @property
+    def waiting(self) -> tuple[str, str]:
+        """답을 기다리는 동안 화면에 보여줄 말. (문구, 결 이름)
+
+        보내고 나면 상태가 「받음」인 채로 멈춰 있었다. 그러면 보낸 분은
+        **아무도 안 보고 있다**고 느끼신다. 실제로는 보고 있어도 그렇다.
+        그래서 얼마나 기다리고 계신지를 화면이 스스로 말하게 한다.
+
+        하루가 넘으면 말을 바꾼다 — 기다리게 해놓고 「곧 드립니다」를 그대로
+        두면 그게 더 무례하다.
+        """
+        if self.reply:
+            return ("", "")
+        시작 = self.created_at or dt.datetime.now()
+        시간 = (dt.datetime.now() - 시작).total_seconds() / 3600
+        if 시간 < 1:
+            return ("접수됐습니다 · 보통 하루 안에 답을 드립니다", "ok")
+        if 시간 < 24:
+            return (f"{int(시간)}시간째 기다리고 계십니다 · 오늘 안에 답을 드립니다", "ok")
+        날 = int(시간 // 24)
+        return (f"{날}일째 답을 못 드렸습니다 — 늦어서 죄송합니다", "late")

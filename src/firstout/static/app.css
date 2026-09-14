@@ -720,6 +720,11 @@ section.hp.hp-hit{background:var(--pine-soft);border-radius:var(--r-sm);
 .sug-reply b{display:block;font-size:.76rem;color:var(--pine);font-weight:700}
 .sug-reply p{margin:.25rem 0 0;font-size:.9rem;line-height:1.7;white-space:pre-wrap}
 .sug-reply em{font-style:normal;font-size:.72rem;color:var(--ink-3)}
+/* 답을 기다리는 동안 — 「받음」만 떠 있으면 아무도 안 보는 것처럼 느껴진다 */
+.sug-wait{margin-top:.55rem;font-size:.8rem;color:var(--ink-3);
+  padding-left:.7rem;border-left:2px solid var(--rule)}
+.sug-wait.late{color:var(--warn);border-left-color:var(--warn-line)}
+
 .sug-form{margin-top:.65rem;border-top:1px dashed var(--rule);padding-top:.6rem;
   display:flex;flex-direction:column;gap:.4rem}
 .sug-form textarea{width:100%;font-family:inherit;font-size:.9rem;resize:vertical}
