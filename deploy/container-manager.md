@@ -127,7 +127,7 @@ http://NAS주소:8765/
 그 컨테이너를 고르고 **터미널** 탭 → **생성** → `bash` 를 누른 뒤:
 
 ```bash
-firstout --setup-only --operator admin:1234 --open-kinder "주덕화곡초등학교 병설유치원" --admin "지민희:jimin:1234"
+firstout --setup-only --operator admin:1234 --open-kinder "주덕화곡초등학교병설유치원" --admin "지민희:jimin:1234"
 ```
 
 `준비를 마쳤습니다` 가 뜨면 됩니다. 이제 `admin` 이나 `jimin` 으로 (둘 다 `1234`)

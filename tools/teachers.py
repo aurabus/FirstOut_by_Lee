@@ -41,7 +41,7 @@ if hasattr(sys.stdout, "reconfigure"):
 뿌리 = Path(__file__).resolve().parent.parent
 좋음, 나쁨 = "  ○", "  ✗"
 
-유치원 = "주덕화곡초등학교 병설유치원"
+유치원 = "주덕화곡초등학교병설유치원"
 원장 = ("지민희", "jimin", "1234")
 원장새비번 = "majung-jimin-2026"
 바깥주소 = "https://majung.aurabus.com"      # 실제 서비스와 같은 값으로 띄운다

@@ -55,7 +55,7 @@ if hasattr(sys.stdout, "reconfigure"):
 뿌리 = Path(__file__).resolve().parent.parent
 좋음, 나쁨 = "  ○", "  ✗"
 
-유치원 = "주덕화곡초등학교 병설유치원"
+유치원 = "주덕화곡초등학교병설유치원"
 관리자 = ("지민희", "admin", "1234")
 새비번 = "majung-2026-pilot"
 선생님 = ("김하늘", "hanul")

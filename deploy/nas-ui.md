@@ -205,14 +205,14 @@ http://192.168.100.10:8765/
 검은 칸이 하나 열리는데, 거기에 이 한 줄을 붙여 넣고 엔터를 칩니다.
 
 ```
-firstout --setup-only --operator admin:1234 --open-kinder "주덕화곡초등학교 병설유치원" --admin "지민희:jimin:1234"
+firstout --setup-only --operator admin:1234 --open-kinder "주덕화곡초등학교병설유치원" --admin "지민희:jimin:1234"
 ```
 
 이렇게 나오면 됩니다.
 
 ```
   운영자 계정 생성: admin
-  유치원 개설: 주덕화곡초등학교 병설유치원
+  유치원 개설: 주덕화곡초등학교병설유치원
   총괄 관리자: 지민희 (jimin)
   준비를 마쳤습니다. 서버는 띄우지 않았습니다.
 ```

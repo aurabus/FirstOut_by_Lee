@@ -39,11 +39,11 @@ def db():
 
 
 def test_유치원과_총괄_관리자가_함께_생긴다(db):
-    got = open_kinder(db, "주덕화곡초등학교 병설유치원", "지민희", "jimin", "1234")
+    got = open_kinder(db, "주덕화곡초등학교병설유치원", "지민희", "jimin", "1234")
     assert got is not None
     k, u = got
 
-    assert k.name == "주덕화곡초등학교 병설유치원"
+    assert k.name == "주덕화곡초등학교병설유치원"
     assert k.usable, "바로 쓸 수 있는 상태여야 한다"
     assert u.name == "지민희"
     assert u.login_id == "jimin"

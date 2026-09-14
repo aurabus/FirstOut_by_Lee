@@ -405,7 +405,7 @@ curl -s -o /dev/null -w "홈페이지 %{http_code}
 ```bash
 docker compose run --rm majung firstout --setup-only \
   --operator admin:1234 \
-  --open-kinder "주덕화곡초등학교 병설유치원" \
+  --open-kinder "주덕화곡초등학교병설유치원" \
   --admin "지민희:jimin:1234"
 ```
 
@@ -413,7 +413,7 @@ docker compose run --rm majung firstout --setup-only \
 
 ```
   운영자 계정 생성: admin
-  유치원 개설: 주덕화곡초등학교 병설유치원
+  유치원 개설: 주덕화곡초등학교병설유치원
   총괄 관리자: 지민희 (jimin)
                첫 로그인 때 비밀번호를 새로 정하게 됩니다
   준비를 마쳤습니다. 서버는 띄우지 않았습니다.
